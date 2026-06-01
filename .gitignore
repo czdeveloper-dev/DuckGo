@@ -1,0 +1,30 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+packages/
+
+# JetBrains Rider
+.idea/
+
+# VS Code
+.vscode/
+
+# Local configuration (if any)
+*.local
+appsettings.local.json

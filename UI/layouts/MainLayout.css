@@ -1,0 +1,16 @@
+/* ============================================================
+   MainLayout.css - Main Layout Styles
+   Premium Design System
+   ============================================================ */
+
+/* Main layout wrapper */
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+/* Main area is defined in styles/layout.css */
+/* This file contains additional layout-specific styles */

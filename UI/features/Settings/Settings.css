@@ -1,0 +1,257 @@
+/* ============================================================
+   Settings.css - Settings Page Styles
+   ============================================================ */
+
+/* ── Settings Layout ──────────────────────────────────────── */
+.settings-container {
+    display: flex;
+    gap: 24px;
+    height: 100%;
+}
+
+.settings-nav {
+    width: 220px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.settings-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--r);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--t);
+}
+
+.settings-nav-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.settings-nav-item.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+}
+
+.settings-nav-item .material-symbols-outlined {
+    font-size: 18px;
+}
+
+/* ── Settings Content ──────────────────────────────────────── */
+.settings-content {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+}
+
+.settings-panel {
+    display: none;
+}
+
+.settings-panel.active {
+    display: block;
+}
+
+/* ── Settings Section ─────────────────────────────────────── */
+.settings-section {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-lg);
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+.settings-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-default);
+}
+
+.settings-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.settings-section-desc {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+}
+
+/* ── Settings Item ────────────────────────────────────────── */
+.settings-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-muted);
+}
+
+.settings-item:last-child {
+    border-bottom: none;
+}
+
+.settings-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.settings-item-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.settings-item-desc {
+    font-size: 12px;
+    color: var(--text-tertiary);
+}
+
+.settings-item-control {
+    flex-shrink: 0;
+    margin-left: 16px;
+}
+
+/* ── Settings Toggle ─────────────────────────────────────── */
+.settings-toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--surface-3);
+    border: 1px solid var(--border-default);
+    cursor: pointer;
+    transition: all var(--t);
+}
+
+.settings-toggle.active {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.settings-toggle::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    top: 2px;
+    left: 2px;
+    transition: all var(--t);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.settings-toggle.active::after {
+    left: 22px;
+}
+
+/* ── Settings Input ─────────────────────────────────────── */
+.settings-input {
+    width: 200px;
+    padding: 6px 10px;
+    background: var(--bg-base);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r);
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+}
+
+.settings-input:focus {
+    border-color: var(--accent);
+}
+
+/* ── Settings Select ───────────────────────────────────── */
+.settings-select {
+    min-width: 160px;
+    padding: 6px 32px 6px 12px;
+    background: var(--bg-base);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r);
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+.settings-select:focus {
+    border-color: var(--accent);
+}
+
+/* ── Settings Footer ─────────────────────────────────────── */
+.settings-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-default);
+    background: var(--bg-subtle);
+}
+
+/* ── Settings About ──────────────────────────────────────── */
+.settings-about {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.settings-about-logo {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    border-radius: var(--r-xl);
+    background: var(--accent-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings-about-logo .material-symbols-outlined {
+    font-size: 32px;
+    color: var(--accent);
+}
+
+.settings-about h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.settings-about-version {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin-bottom: 16px;
+}
+
+.settings-about-links {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.settings-about-link {
+    font-size: 13px;
+    color: var(--accent);
+    cursor: pointer;
+}
+
+.settings-about-link:hover {
+    text-decoration: underline;
+}

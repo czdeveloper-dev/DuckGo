@@ -1,0 +1,104 @@
+/* ============================================================
+   InlineButton.css - Inline Button Control Styles
+   ============================================================ */
+
+.duck-inline-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--t);
+    white-space: nowrap;
+}
+
+.duck-inline-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+.duck-inline-btn:active {
+    transform: translateY(1px);
+}
+
+.duck-inline-btn .material-symbols-outlined {
+    font-size: 16px;
+}
+
+/* Variants */
+.duck-inline-btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+.duck-inline-btn-primary:hover {
+    background: var(--accent-light);
+    border-color: var(--accent-light);
+    color: #fff;
+}
+
+.duck-inline-btn-ghost {
+    background: transparent;
+    border-color: transparent;
+}
+
+.duck-inline-btn-ghost:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-default);
+}
+
+.duck-inline-btn-dropdown {
+    padding-right: 8px;
+}
+
+.duck-inline-btn-dropdown::after {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid currentColor;
+    margin-left: 4px;
+    opacity: 0.6;
+}
+
+.duck-inline-btn-split {
+    border-radius: 0;
+    border-right: none;
+}
+
+.duck-inline-btn-split + .duck-inline-btn-split {
+    border-radius: 0 var(--r) var(--r) 0;
+    border-right: 1px solid var(--border-default);
+}
+
+/* Sizes */
+.duck-inline-btn-sm {
+    height: 28px;
+    padding: 0 8px;
+    font-size: 11px;
+}
+
+.duck-inline-btn-sm .material-symbols-outlined {
+    font-size: 14px;
+}
+
+.duck-inline-btn-lg {
+    height: 38px;
+    padding: 0 16px;
+    font-size: 13px;
+}
+
+.duck-inline-btn-lg .material-symbols-outlined {
+    font-size: 18px;
+}

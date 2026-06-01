@@ -1,0 +1,140 @@
+/* ============================================================
+   variables.css - Design Tokens
+   DuckAntidetect Premium Design System v6
+   ============================================================ */
+
+:root {
+    /* ── Backgrounds ─────────────────────────────────────── */
+    --bg-base: #F8FAFC;
+    --bg-surface: #FFFFFF;
+    --bg-elevated: #FFFFFF;
+    --bg-overlay: #FFFFFF;
+    --bg-subtle: #F1F5F9;
+    --bg-glass: rgba(255, 255, 255, 0.88);
+    --bg-glass-hover: rgba(248, 250, 252, 0.92);
+    --bg-card: #FFFFFF;
+    --bg-hover: rgba(94, 106, 210, 0.08);
+    --bg-sidebar: #FFFFFF;
+
+    /* ── Text ─────────────────────────────────────────────── */
+    --text-primary: #1E293B;
+    --text-secondary: #64748B;
+    --text-tertiary: #94A3B8;
+    --text-placeholder: #CBD5E1;
+    --text-muted: #94A3B8;
+
+    /* ── Borders ──────────────────────────────────────────── */
+    --border-default: #E2E8F0;
+    --border-muted: #F1F5F9;
+    --border-subtle: #F8FAFC;
+    --border-accent: rgba(94, 106, 210, 0.4);
+    --border-strong: #CBD5E1;
+
+    /* ── Accent — Linear Indigo ───────────────────────────── */
+    --accent: #5E6AD2;
+    --accent-light: #818CF8;
+    --accent-dark: #4F46E5;
+    --accent-glow: rgba(94, 106, 210, 0.15);
+    --accent-glow-strong: rgba(94, 106, 210, 0.28);
+    --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    --accent-primary: #5E6AD2;
+    --accent-primary-bg: #4F46E5;
+
+    /* ── Surface States ───────────────────────────────────── */
+    --surface-hover: #F8FAFC;
+    --surface-active: rgba(94, 106, 210, 0.1);
+    --surface-1: #FFFFFF;
+    --surface-2: #F8FAFC;
+    --surface-3: #F1F5F9;
+    --surface-border: #E2E8F0;
+    --surface-border-soft: #F1F5F9;
+    --surface-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 6px rgba(0, 0, 0, 0.02);
+    --surface-shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.03);
+    --surface-tint: linear-gradient(180deg, rgba(94, 106, 210, 0.03), transparent);
+
+    /* ── Semantic ─────────────────────────────────────────── */
+    --success: #10b981;
+    --success-bg: rgba(16, 185, 129, 0.1);
+    --success-border: rgba(16, 185, 129, 0.2);
+    --warning: #f59e0b;
+    --warning-bg: rgba(245, 158, 11, 0.1);
+    --warning-border: rgba(245, 158, 11, 0.2);
+    --danger: #ef4444;
+    --danger-bg: rgba(239, 68, 68, 0.1);
+    --danger-border: rgba(239, 68, 68, 0.2);
+    --info: #0ea5e9;
+    --info-bg: rgba(14, 165, 233, 0.1);
+    --info-border: rgba(14, 165, 233, 0.2);
+
+    /* ── Shadows ───────────────────────────────────────────── */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    --shadow-glow: 0 0 0 1px rgba(94, 106, 210, 0.15), 0 4px 16px rgba(94, 106, 210, 0.15);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 3px 12px rgba(0, 0, 0, 0.02);
+
+    /* ── Radii ───────────────────────────────────────────── */
+    --r-sm: 4px;
+    --r: 8px;
+    --r-lg: 12px;
+    --r-xl: 16px;
+    --r-2xl: 24px;
+
+    /* ── Transitions ──────────────────────────────────────── */
+    --t-fast: 0.15s ease;
+    --t: 0.2s ease;
+    --t-slow: 0.3s ease;
+    --t-spring: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --fast: var(--t-fast);
+    --normal: var(--t);
+    --slow: var(--t-slow);
+    --spring: var(--t-spring);
+
+    /* ── Layout ───────────────────────────────────────────── */
+    --sidebar-w: 250px;
+    --sidebar-col: 68px;
+
+    /* ── Typography ───────────────────────────────────────── */
+    --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --font-size-xs: 11px;
+    --font-size-sm: 12px;
+    --font-size-base: 13px;
+    --font-size-md: 14px;
+    --font-size-lg: 16px;
+    --font-size-xl: 22px;
+}
+
+/* ── Dark Theme Override ─────────────────────────────────── */
+[data-theme="dark"] {
+    --bg-base: #0f1117;
+    --bg-surface: #1a1d27;
+    --bg-elevated: #1e2231;
+    --bg-overlay: #232738;
+    --bg-subtle: #151820;
+    --bg-glass: rgba(26, 29, 39, 0.88);
+    --bg-card: #1e2231;
+    --bg-hover: rgba(99, 102, 241, 0.12);
+    --bg-sidebar: #161625;
+
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-tertiary: #64748b;
+    --text-placeholder: #475569;
+    --text-muted: #64748b;
+
+    --border-default: #2a2f3e;
+    --border-muted: #1f2333;
+    --border-subtle: #161a26;
+    --border-accent: rgba(99, 102, 241, 0.4);
+    --border-strong: #334155;
+
+    --surface-hover: #232738;
+    --surface-active: rgba(99, 102, 241, 0.15);
+    --surface-1: #1a1d27;
+    --surface-2: #1e2231;
+    --surface-3: #232738;
+    --surface-border: #2a2f3e;
+    --surface-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 6px rgba(0, 0, 0, 0.2);
+}

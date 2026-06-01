@@ -1,0 +1,90 @@
+/* ============================================================
+   Checkbox.css - Custom Checkbox Control Styles
+   ============================================================ */
+
+.duck-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.duck-checkbox.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Checkbox Box */
+.duck-checkbox-box {
+    position: relative;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    border: 1.5px solid var(--border-strong);
+    border-radius: 4px;
+    background: var(--bg-surface);
+    transition: all var(--t-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.duck-checkbox:hover .duck-checkbox-box {
+    border-color: var(--accent);
+}
+
+.duck-checkbox.is-disabled:hover .duck-checkbox-box {
+    border-color: var(--border-strong);
+}
+
+/* Check Icon */
+.duck-checkbox-check {
+    width: 10px;
+    height: 10px;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all var(--t-fast);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.5 5.5L4 8L8.5 2' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Checked State */
+.duck-checkbox-box.is-checked {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.duck-checkbox-box.is-checked .duck-checkbox-check {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Indeterminate State */
+.duck-checkbox-box.is-indeterminate {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.duck-checkbox-box.is-indeterminate::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 2px;
+    background: white;
+    border-radius: 1px;
+}
+
+/* Focus State */
+.duck-checkbox:focus-visible .duck-checkbox-box {
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Label */
+.duck-checkbox-label {
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1;
+}

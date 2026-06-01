@@ -1,0 +1,155 @@
+/* ============================================================
+   typography.css - Typography System
+   ============================================================ */
+
+/* ── Base Typography ─────────────────────────────────────── */
+body {
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+/* ── Headings ───────────────────────────────────────────── */
+h1 {
+    font-size: 22px;
+    font-weight: 650;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+h2 {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+h3 {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+}
+
+h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* ── Text Utilities ──────────────────────────────────────── */
+.text-xs { font-size: var(--font-size-xs); }
+.text-sm { font-size: var(--font-size-sm); }
+.text-base { font-size: var(--font-size-base); }
+.text-md { font-size: var(--font-size-md); }
+.text-lg { font-size: var(--font-size-lg); }
+.text-xl { font-size: var(--font-size-xl); }
+
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.text-muted { color: var(--text-muted); }
+.text-accent { color: var(--accent); }
+.text-success { color: var(--success); }
+.text-warning { color: var(--warning); }
+.text-danger { color: var(--danger); }
+.text-info { color: var(--info); }
+
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+.font-mono { font-family: var(--font-mono); }
+
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.uppercase {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ── Page Hero / Header ──────────────────────────────────── */
+.page-hero {
+    margin-bottom: 8px;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.page-header-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-lg);
+    background: var(--accent-glow);
+    border: 1px solid var(--border-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.page-header-icon .material-symbols-outlined {
+    font-size: 22px;
+    color: var(--accent);
+}
+
+.page-header-left h1 {
+    font-size: 22px;
+    letter-spacing: -0.03em;
+}
+
+.page-header-left p,
+.page-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.page-header-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.page-eyebrow {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-light);
+    margin-bottom: 2px;
+}
+
+/* ── Workspace sections ──────────────────────────────────── */
+.workspace-section {
+    margin-bottom: 16px;
+}
+
+.workspace-section-controls {
+    margin-bottom: 12px;
+}

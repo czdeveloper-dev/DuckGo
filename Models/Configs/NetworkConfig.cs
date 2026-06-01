@@ -1,0 +1,15 @@
+namespace DuckGo.Models.Configs;
+
+public class NetworkConfig
+{
+    public ProxyConfig? Proxy { get; set; }
+}
+
+public class ProxyConfig
+{
+    public string Type { get; set; } = "http";
+    public string Host { get; set; } = "";
+    public int Port { get; set; }
+    public string Username { get; set; } = "";
+    public string Password { get; set; } = "";
+}

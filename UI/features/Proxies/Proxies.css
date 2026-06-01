@@ -1,0 +1,191 @@
+/* ============================================================
+   Proxies.css - Proxy Management Styles
+   ============================================================ */
+
+/* ── Proxy Card ───────────────────────────────────────────── */
+.proxy-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-lg);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all var(--t);
+}
+
+.proxy-card:hover {
+    border-color: var(--accent);
+}
+
+.proxy-card.disabled {
+    opacity: 0.6;
+}
+
+/* ── Proxy Header ─────────────────────────────────────────── */
+.proxy-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.proxy-type {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.proxy-type-badge {
+    padding: 2px 8px;
+    border-radius: var(--r-sm);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: var(--accent-glow);
+    color: var(--accent);
+}
+
+.proxy-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.proxy-status .status-dot {
+    width: 8px;
+    height: 8px;
+}
+
+.proxy-status.working {
+    color: var(--success);
+}
+
+.proxy-status.error {
+    color: var(--danger);
+}
+
+/* ── Proxy Info ───────────────────────────────────────────── */
+.proxy-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.proxy-host {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+.proxy-details {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+}
+
+.proxy-detail {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.proxy-detail .material-symbols-outlined {
+    font-size: 12px;
+}
+
+/* ── Proxy Auth ───────────────────────────────────────────── */
+.proxy-auth {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.proxy-auth .material-symbols-outlined {
+    font-size: 14px;
+}
+
+/* ── Proxy Actions ───────────────────────────────────────── */
+.proxy-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-muted);
+}
+
+/* ── Proxy Table ─────────────────────────────────────────── */
+.proxies-table-wrap {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+}
+
+.proxies-table th {
+    background: var(--bg-subtle);
+}
+
+.proxy-type-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Proxy Checker ───────────────────────────────────────── */
+.proxy-checker {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-lg);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.proxy-checker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.proxy-checker-result {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--r);
+    background: var(--bg-subtle);
+}
+
+.proxy-checker-result.success {
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+}
+
+.proxy-checker-result.error {
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-border);
+}
+
+/* ── Proxy Import ─────────────────────────────────────────── */
+.proxy-import-zone {
+    border: 2px dashed var(--border-default);
+    border-radius: var(--r-lg);
+    padding: 40px;
+    text-align: center;
+    transition: all var(--t);
+    cursor: pointer;
+}
+
+.proxy-import-zone:hover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+}
+
+.proxy-import-zone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+}

@@ -1,0 +1,193 @@
+/* ============================================================
+   Automation.css - Automation Workflow Styles
+   ============================================================ */
+
+/* ── Workflow Card ─────────────────────────────────────────── */
+.workflow-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-lg);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all var(--t);
+}
+
+.workflow-card:hover {
+    border-color: var(--accent);
+}
+
+.workflow-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.workflow-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--r);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-glow);
+    color: var(--accent);
+}
+
+.workflow-card-icon .material-symbols-outlined {
+    font-size: 20px;
+}
+
+.workflow-card-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-top: 8px;
+}
+
+.workflow-card-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* ── Workflow Status ──────────────────────────────────────── */
+.workflow-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--r-full);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.workflow-status.active {
+    background: var(--success-bg);
+    color: var(--success);
+}
+
+.workflow-status.paused {
+    background: var(--warning-bg);
+    color: var(--warning);
+}
+
+.workflow-status.stopped {
+    background: var(--surface-2);
+    color: var(--text-tertiary);
+}
+
+/* ── Workflow Builder ──────────────────────────────────────── */
+.workflow-builder {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-lg);
+    padding: 20px;
+}
+
+.workflow-builder-canvas {
+    min-height: 400px;
+    background: var(--bg-base);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r);
+    position: relative;
+}
+
+.workflow-node {
+    position: absolute;
+    background: var(--bg-elevated);
+    border: 2px solid var(--border-default);
+    border-radius: var(--r);
+    padding: 12px 16px;
+    min-width: 160px;
+    cursor: move;
+    transition: border-color var(--t), box-shadow var(--t);
+}
+
+.workflow-node:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-md);
+}
+
+.workflow-node.selected {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-glow);
+}
+
+.workflow-node.start {
+    border-radius: var(--r-full);
+    background: var(--accent);
+    color: #fff;
+}
+
+.workflow-node.end {
+    border-radius: var(--r-full);
+    background: var(--danger);
+    color: #fff;
+}
+
+/* ── Workflow Actions ──────────────────────────────────────── */
+.workflow-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-muted);
+}
+
+/* ── Scheduler ─────────────────────────────────────────────── */
+.scheduler-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-lg);
+    padding: 16px;
+}
+
+.scheduler-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.scheduler-cron {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    padding: 8px 12px;
+    background: var(--bg-base);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r);
+    margin-bottom: 12px;
+}
+
+/* ── Cron Presets ─────────────────────────────────────────── */
+.cron-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.cron-preset {
+    padding: 4px 12px;
+    border-radius: var(--r-full);
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--surface-2);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--t);
+}
+
+.cron-preset:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-glow);
+}
+
+.cron-preset.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}

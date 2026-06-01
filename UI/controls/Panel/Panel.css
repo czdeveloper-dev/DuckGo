@@ -1,0 +1,75 @@
+/* ============================================================
+   Panel.css - Panel Control Styles
+   ============================================================ */
+
+.duck-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.duck-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 6px 0;
+    min-height: 16px;
+}
+
+.duck-panel-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-tertiary);
+    cursor: default;
+    user-select: none;
+}
+
+.duck-panel-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.duck-panel-action-btn {
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--accent);
+    cursor: pointer;
+    border-radius: var(--r-sm);
+    transition: all var(--t);
+}
+
+.duck-panel-action-btn:hover {
+    background: var(--accent-glow);
+    color: var(--accent-dark);
+}
+
+.duck-panel-content {
+    flex: 1;
+}
+
+/* Inline variant */
+.duck-panel-inline .duck-panel-header {
+    padding: 0 0 0 8px;
+    border-left: 2px solid var(--accent);
+    min-height: auto;
+}
+
+.duck-panel-inline .duck-panel-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Card variant */
+.duck-panel-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+}

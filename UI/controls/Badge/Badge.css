@@ -1,0 +1,19 @@
+/* ============================================================
+   Badge.css - Badge Control Styles
+   ============================================================ */
+
+.duck-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0 10px;
+    border-radius: 8px;
+    min-width: 52px;
+    height: 34px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+}

@@ -1,0 +1,71 @@
+/* ============================================================
+   Input.css - Input Control Styles
+   ============================================================ */
+
+.duck-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.duck-input-group label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-tertiary);
+}
+
+.duck-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.duck-input {
+    width: 100%;
+    height: 32px;
+    padding: 0 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r);
+    font-size: 13px;
+    color: var(--text-primary);
+    transition: all var(--t);
+}
+
+.duck-input::placeholder {
+    color: var(--text-placeholder);
+}
+
+.duck-input:hover {
+    border-color: var(--border-strong);
+}
+
+.duck-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.duck-input-icon {
+    position: absolute;
+    left: 10px;
+    font-size: 16px;
+    color: var(--text-tertiary);
+    pointer-events: none;
+}
+
+.duck-input-has-icon {
+    padding-left: 34px;
+}
+.filter-stacked { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; position: relative; flex: 0 0 auto; margin: 0; }
+.filter-stacked-head { display: flex; align-items: baseline; height: auto; justify-content: space-between; width: 100%; gap: 8px; margin-bottom: 1px; }
+.ui-label-sm { font-size: 10.5px; font-weight: 700; color: var(--text-tertiary); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0; line-height: 1; }
+.filter-stacked-create { font-size: 10px; font-weight: 700; color: var(--accent); cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8; transition: opacity 0.2s, color 0.2s; line-height: 1; }
+.filter-stacked-create:hover { opacity: 1; color: var(--accent-light); text-decoration: none; }
+.search-box { background: var(--bg-surface); border: 1px solid var(--border-default); box-shadow: none; display: flex; align-items: center; width: 200px; flex-shrink: 0; padding: 0; border-radius: 8px; height: 34px; line-height: 34px; font-size: 13px; }
+.search-box.bg-subtle { background: var(--bg-subtle); }
+.search-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(94,106,210,0.18); }
+.search-box input { background: transparent; border: none; box-shadow: none; color: var(--text-primary); padding: 0 10px 0 34px; height: 100%; font-size: 13px; width: 100%; outline: none; }
+.search-icon { position: absolute; left: 10px; color: var(--text-tertiary); font-size: 16px; pointer-events: none; }
