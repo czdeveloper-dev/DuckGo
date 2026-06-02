@@ -46,10 +46,33 @@
                 const header = document.createElement('div');
                 header.className = 'duck-modal-header';
 
+                const titleWrap = document.createElement('div');
+                titleWrap.className = 'duck-modal-title-wrap';
+                titleWrap.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
+
                 const title = document.createElement('h2');
                 title.className = 'duck-modal-title';
-                title.textContent = this.options.title;
-                header.appendChild(title);
+                
+                if (this.options.icon) {
+                    title.style.display = 'flex';
+                    title.style.alignItems = 'center';
+                    title.style.gap = '8px';
+                    title.innerHTML = `<span class="material-symbols-outlined" style="font-size: 20px; color: var(--text-secondary);">${this.options.icon}</span> <span>${this.options.title}</span>`;
+                } else {
+                    title.textContent = this.options.title;
+                }
+                
+                titleWrap.appendChild(title);
+                
+                if (this.options.subtitle) {
+                    const subtitle = document.createElement('div');
+                    subtitle.className = 'duck-modal-subtitle';
+                    subtitle.style.cssText = 'font-size: 12px; color: var(--text-secondary); font-weight: 500; display:flex; align-items:center; gap:4px;';
+                    subtitle.innerHTML = this.options.subtitle;
+                    titleWrap.appendChild(subtitle);
+                }
+                
+                header.appendChild(titleWrap);
 
                 if (this.options.showClose !== false) {
                     const closeBtn = document.createElement('button');
@@ -73,14 +96,30 @@
             this.container.appendChild(body);
 
             // Footer
-            if (this.options.footer) {
+            if (this.options.footer || (this.options.buttons && this.options.buttons.length > 0)) {
                 const footer = document.createElement('div');
                 footer.className = 'duck-modal-footer';
-                if (typeof this.options.footer === 'string') {
-                    footer.innerHTML = this.options.footer;
-                } else if (this.options.footer instanceof HTMLElement) {
-                    footer.appendChild(this.options.footer);
+                
+                if (this.options.footer) {
+                    if (typeof this.options.footer === 'string') {
+                        footer.innerHTML = this.options.footer;
+                    } else if (this.options.footer instanceof HTMLElement) {
+                        footer.appendChild(this.options.footer);
+                    }
                 }
+
+                if (this.options.buttons && Array.isArray(this.options.buttons)) {
+                    this.options.buttons.forEach(btnDef => {
+                        const btn = document.createElement('button');
+                        btn.className = `duck-btn ${btnDef.class || 'duck-btn-surface'}`;
+                        btn.textContent = btnDef.text;
+                        if (btnDef.onClick) {
+                            btn.addEventListener('click', (e) => btnDef.onClick(e, this));
+                        }
+                        footer.appendChild(btn);
+                    });
+                }
+                
                 this.container.appendChild(footer);
             }
         }

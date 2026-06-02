@@ -73,5 +73,5 @@
 }
 .input-field-sm { background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-primary); border-radius: 8px; height: 34px; padding: 0 10px; font-size: 13px; cursor: pointer; outline: none; }
 .input-field-sm.bg-subtle { background: var(--bg-subtle); }
-.input-field-sm:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(94,106,210,0.18); }
+.input-field-sm:focus, .input-field-sm.focused { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 select.input-field-sm { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(0,0,0,0.35)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 30px; }

@@ -43,33 +43,64 @@
                 selectContainer.appendChild(icon);
             }
             
-            const select = document.createElement('select');
-            select.className = 'duck-combobox-select';
+            const displaySpan = document.createElement('span');
+            displaySpan.className = 'duck-combobox-select';
+            displaySpan.style.cssText = 'flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text-primary);';
+            let currentValue = options.value || '';
+            let originalOptions = options.options || [];
+            let currentOptions = [...originalOptions];
+            if (currentOptions.length === 0) {
+                currentOptions = [{ label: 'No records found', icon: 'inbox', disabled: true }];
+            }
             
-            const renderOptions = (opts) => {
-                select.innerHTML = '';
-                (opts || []).forEach(opt => {
-                    const option = document.createElement('option');
-                    option.value = opt.value;
-                    option.textContent = opt.label;
-                    if (options.value == opt.value) option.selected = true;
-                    select.appendChild(option);
-                });
+            const updateDisplay = () => {
+                const selectedOpt = originalOptions.find(o => o.value == currentValue);
+                displaySpan.textContent = selectedOpt ? selectedOpt.label : (options.placeholder || 'Select...');
             };
+            updateDisplay();
             
-            renderOptions(options.options || []);
-            if (options.onChange) select.addEventListener('change', options.onChange);
-            
-            selectContainer.appendChild(select);
+            selectContainer.appendChild(displaySpan);
             
             // Arrow
             const arrow = document.createElement('span');
             arrow.className = 'material-symbols-outlined duck-combobox-arrow';
             arrow.textContent = 'expand_more';
+            arrow.style.transition = 'transform 0.2s';
             selectContainer.appendChild(arrow);
             
             left.appendChild(selectContainer);
             wrap.appendChild(left);
+            // Initialize Dropdown
+            let dropdown = null;
+            if (window.DuckControls && window.DuckControls.Dropdown) {
+                dropdown = window.DuckControls.Dropdown.create(wrap, {
+                    value: currentValue,
+                    items: currentOptions,
+                    onChange: (item) => {
+                        currentValue = item.value;
+                        updateDisplay();
+                        if (options.onChange) {
+                            options.onChange({ target: { value: item.value } });
+                        }
+                    }
+                });
+                
+                // Sync arrow and focus state with dropdown's open class
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((m) => {
+                        if (m.attributeName === 'class') {
+                            if (dropdown.menu.classList.contains('duck-dropdown-open')) {
+                                arrow.style.transform = 'rotate(180deg)';
+                                wrap.classList.add('focused');
+                            } else {
+                                arrow.style.transform = 'rotate(0deg)';
+                                wrap.classList.remove('focused');
+                            }
+                        }
+                    });
+                });
+                observer.observe(dropdown.menu, { attributes: true });
+            }
             
             // Right side: Actions
             if (options.actions?.length) {
@@ -87,13 +118,24 @@
             
             return {
                 element: wrap,
-                select: select,
-                getValue: () => select.value,
+                getValue: () => currentValue,
                 setValue: (val) => {
-                    select.value = val;
-                    select.dispatchEvent(new Event('change'));
+                    currentValue = val;
+                    updateDisplay();
+                    if (dropdown) dropdown.selectedValue = val;
                 },
-                setOptions: renderOptions
+                setOptions: (opts) => {
+                    originalOptions = opts || [];
+                    currentOptions = [...originalOptions];
+                    if (currentOptions.length === 0) {
+                        currentOptions = [{ label: 'No records found', icon: 'inbox', disabled: true }];
+                    }
+                    updateDisplay();
+                    if (dropdown) dropdown.setItems(currentOptions);
+                },
+                destroy: () => {
+                    if (dropdown) dropdown.destroy();
+                }
             };
         }
     };

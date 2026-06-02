@@ -1,137 +1,186 @@
 window.DuckControls = window.DuckControls || {};
 window.DuckControls.Table = {
     create(options) {
+        // ── Outer wrapper (flex container that fills parent) ─────────
         const wrap = document.createElement('div');
-        wrap.className = 'table-wrap table-scroll-wrapper';
-        wrap.style.flex = '1';
-        wrap.style.display = 'flex';
-        wrap.style.flexDirection = 'column';
-        if (options.height) {
-            wrap.style.maxHeight = options.height;
-        }
-        
+        wrap.className = 'data-table-wrap';
+
+        // ── Scroll container ─────────────────────────────────────────
+        const container = document.createElement('div');
+        container.className = 'data-table-container';
+        wrap.appendChild(container);
+
+        // ── Unique ID for CSS-injection ───────────────────────────────
+        const tableId = options.id || `duck-tbl-${Math.random().toString(36).substr(2, 8)}`;
+
+        // ── Style tag for dynamic column widths & sticky offsets ──────
+        const dynStyle = document.createElement('style');
+        dynStyle.id = `${tableId}-dyn`;
+        container.appendChild(dynStyle);
+
+        // ── Style tag for column visibility (hide/show columns) ──────────
+        const visStyle = document.createElement('style');
+        visStyle.id = `${tableId}-vis`;
+        container.appendChild(visStyle);
+
+        // Set of column IDs that are currently hidden (via CSS)
+        const _hiddenColIds = new Set();
+
+        // ── Table element ─────────────────────────────────────────────
         const table = document.createElement('table');
-        table.className = 'data-table data-table-container';
-        if (options.id) table.id = options.id;
-        
+        table.className = 'data-table';
+        table.id = tableId;
+        container.appendChild(table);
+
+        // ── Colgroup - source of truth for column widths ──────────────
         const colgroup = document.createElement('colgroup');
-        options.columns.forEach(col => {
+        const cols = options.columns.map(col => {
             const colEl = document.createElement('col');
-            const colName = col.id || col.field || 'select';
-            colEl.className = `col-col col-col--${colName}`;
-            if (col.field) colEl.dataset.col = col.field;
+            colEl.className = `col-col--${col.id || col.field || 'unknown'}`;
             colgroup.appendChild(colEl);
+            return colEl;
         });
         table.appendChild(colgroup);
-        
+
+        // ─────────────────────────────────────────────────────────────
+        // Width parsing helpers
+        // ch → px: we use a canvas-based measurement for accuracy.
+        // parseWidthToPx is used only to seed initial colWidths from
+        // column config strings like '15ch', '200px', etc.
+        // ─────────────────────────────────────────────────────────────
+
+        // Measure 1ch in the actual rendered font of the table header.
+        // We defer this to first use so the element is in the DOM.
+        let _chPx = null;
+        function getChPx() {
+            if (_chPx !== null) return _chPx;
+            const tmp = document.createElement('span');
+            tmp.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font-size:13px;font-family:inherit;';
+            tmp.textContent = '0'; // '0' is the reference character for 1ch
+            document.body.appendChild(tmp);
+            _chPx = tmp.getBoundingClientRect().width || 8;
+            document.body.removeChild(tmp);
+            return _chPx;
+        }
+
+        function parseWidthToPx(w) {
+            if (!w || w === 'auto' || String(w).endsWith('%')) return 0;
+            const s = String(w);
+            if (s.endsWith('ch')) return Math.ceil(parseInt(s) * getChPx());
+            if (s.endsWith('px')) return parseInt(s);
+            return parseInt(s) || 0;
+        }
+
+        function getMinPx(col) {
+            if (col.minWidth) return parseWidthToPx(col.minWidth);
+            return 40;
+        }
+        function getMaxPx(col) {
+            if (col.maxWidth) return parseWidthToPx(col.maxWidth);
+            return 9999;
+        }
+
+        // ── Find filler index ────────────────────────────────────────
+        // Filler = the one column (id='filler', or width='auto'/'%')
+        // that absorbs all remaining horizontal space.
+        const fillerIdx = options.columns.findIndex(c =>
+            c.id === 'filler' || c.width === 'auto' || String(c.width || '').endsWith('%')
+        );
+
+        // colWidths[i] = current pixel width (0 = filler/auto, set after measurement)
+        const colWidths = options.columns.map((col, idx) => {
+            if (idx === fillerIdx) return 0;
+            return parseWidthToPx(col.width);
+        });
+
+        // ── Header ────────────────────────────────────────────────────
         const thead = document.createElement('thead');
         const trHead = document.createElement('tr');
-        
-        options.columns.forEach((col, colIndex) => {
+        let selectAllCheckbox = null;
+
+        options.columns.forEach((col, colIdx) => {
             const th = document.createElement('th');
-            const colName = col.id || col.field || 'select';
-            th.className = `data-col-${colName}`;
-            th.dataset.colIndex = colIndex;
+            th.className = `data-col-${col.id || col.field || 'unknown'}`;
+            th.dataset.colIndex = colIdx;
             if (col.field) th.dataset.col = col.field;
-            if (col.width) th.style.width = col.width;
             if (col.align) th.style.textAlign = col.align;
-            
+
             if (col.type === 'checkbox') {
-                // Create custom checkbox container
-                const cbContainer = document.createElement('div');
-                cbContainer.className = 'table-checkbox';
-                
-                // Create checkbox using DuckControls.Checkbox if available
-                if (window.DuckControls && window.DuckControls.Checkbox) {
-                    const cbElement = document.createElement('span');
-                    cbContainer.appendChild(cbElement);
-                    th.appendChild(cbContainer);
-                    
-                    const checkbox = DuckControls.Checkbox.create(cbElement, {
-                        title: col.title || 'Select all',
-                        onChange: (e) => {
-                            if (col.onCheckAll) col.onCheckAll({ target: { checked: e.checked } });
-                        }
-                    });
-                    th._duckCheckbox = checkbox;
-                } else {
-                    // Fallback to native checkbox
-                    const cb = document.createElement('input');
-                    cb.type = 'checkbox';
-                    cb.className = 'table-checkbox-native';
-                    if (col.id) cb.id = col.id;
-                    cb.title = col.title || 'Select all';
-                    if (col.onCheckAll) cb.addEventListener('change', col.onCheckAll);
-                    cbContainer.appendChild(cb);
-                    th.appendChild(cbContainer);
-                }
+                const cbEl = document.createElement('span');
+                // Ensure header checkbox has same size class (if any styling targets it)
+                cbEl.className = 'header-checkbox-wrap';
+                th.appendChild(cbEl);
+                const cb = window.DuckControls.Checkbox.create(cbEl, {
+                    title: col.title || 'Select all',
+                    onChange: e => { 
+                        // Synchronize all rows
+                        tbody.querySelectorAll('tr').forEach(tr => {
+                            const firstTd = tr.querySelector('td .duck-checkbox');
+                            if (firstTd) {
+                                // We access the instance
+                                const rowCb = firstTd.closest('td')._duckCheckbox;
+                                if (rowCb) {
+                                    if (e.checked && !rowCb.isChecked()) {
+                                        rowCb.element.click();
+                                    } else if (!e.checked && rowCb.isChecked()) {
+                                        rowCb.element.click();
+                                    }
+                                }
+                            }
+                        });
+                        if (col.onCheckAll) col.onCheckAll(e); 
+                    }
+                });
+                th._duckCheckbox = cb;
+                selectAllCheckbox = cb;
+            } else if (col.id === 'filler') {
+                // Filler: purely empty spacer, no resizer, no label
             } else {
-                th.textContent = col.label;
-                
-                // Resizable columns - only for non-locked columns
-                if (col.resizable !== false && col.locked !== true) {
+                th.textContent = col.label || '';
+
+                // Resizer handle
+                const canResize = col.resizable !== false && !col.locked;
+                if (!canResize) {
+                    const resizer = document.createElement('div');
+                    resizer.className = 'col-resizer col-resizer--locked';
+                    th.appendChild(resizer);
+                } else {
                     const resizer = document.createElement('div');
                     resizer.className = 'col-resizer';
-                    resizer.dataset.colIndex = colIndex;
-                    
-                    let startX, startWidth, startColWidths;
-                    
-                    resizer.addEventListener('mousedown', (e) => {
+                    resizer.dataset.colIndex = colIdx;
+
+                    let startX, startW;
+                    resizer.addEventListener('mousedown', e => {
                         startX = e.clientX;
-                        startWidth = th.offsetWidth;
-                        
-                        // Store initial widths of all columns
-                        startColWidths = [];
-                        const allTh = trHead.querySelectorAll('th');
-                        allTh.forEach((headerCell, idx) => {
-                            startColWidths[idx] = headerCell.offsetWidth;
-                        });
-                        
-                        // Store the next column reference
-                        const nextTh = allTh[colIndex + 1];
-                        resizer.dataset.nextColWidth = nextTh ? nextTh.offsetWidth : 0;
-                        
+                        startW = colWidths[colIdx] || th.offsetWidth;
                         document.body.style.cursor = 'col-resize';
-                        resizer.classList.add('is-resizing');
                         document.body.classList.add('is-resizing-cols');
-                        
-                        const onMouseMove = (moveEvent) => {
-                            const deltaX = moveEvent.clientX - startX;
-                            const newWidth = Math.max(40, startWidth + deltaX);
-                            
-                            th.style.width = `${newWidth}px`;
-                            th.style.minWidth = `${newWidth}px`;
-                            
-                            // Update colgroup for proper width sync
-                            const colEl = colgroup.children[colIndex];
-                            if (colEl) {
-                                colEl.style.width = `${newWidth}px`;
-                            }
+                        resizer.classList.add('is-resizing');
+
+                        const onMove = mv => {
+                            const delta = mv.clientX - startX;
+                            const min = getMinPx(col);
+                            const max = getMaxPx(col);
+                            const newW = Math.min(Math.max(min, startW + delta), max);
+                            colWidths[colIdx] = newW;
+                            applyColumnWidths();
                         };
-                        
-                        const onMouseUp = () => {
+
+                        const onUp = () => {
                             document.body.style.cursor = '';
-                            resizer.classList.remove('is-resizing');
                             document.body.classList.remove('is-resizing-cols');
-                            document.removeEventListener('mousemove', onMouseMove);
-                            document.removeEventListener('mouseup', onMouseUp);
-                            
-                            // Trigger resize callback if provided
-                            if (col.onResize) {
-                                col.onResize(th.offsetWidth);
-                            }
+                            resizer.classList.remove('is-resizing');
+                            document.removeEventListener('mousemove', onMove);
+                            document.removeEventListener('mouseup', onUp);
+                            updateDynCSS();
+                            if (col.onResize) col.onResize(colWidths[colIdx]);
                         };
-                        
-                        document.addEventListener('mousemove', onMouseMove);
-                        document.addEventListener('mouseup', onMouseUp);
+
+                        document.addEventListener('mousemove', onMove);
+                        document.addEventListener('mouseup', onUp);
                         e.preventDefault();
                         e.stopPropagation();
                     });
-                    th.appendChild(resizer);
-                } else if (col.locked === true) {
-                    // Locked column - add locked resizer visual
-                    const resizer = document.createElement('div');
-                    resizer.className = 'col-resizer col-resizer--locked';
                     th.appendChild(resizer);
                 }
             }
@@ -139,147 +188,451 @@ window.DuckControls.Table = {
         });
         thead.appendChild(trHead);
         table.appendChild(thead);
-        
+
+        // ── Body ──────────────────────────────────────────────────────
         const tbody = document.createElement('tbody');
         table.appendChild(tbody);
-        wrap.appendChild(table);
-        
-        const emptyState = document.createElement('tr');
+
+        // ── Empty row ─────────────────────────────────────────────────
+        const emptyRow = document.createElement('tr');
         const emptyTd = document.createElement('td');
         emptyTd.colSpan = options.columns.length;
-        emptyTd.style.textAlign = 'center';
-        emptyTd.style.padding = '60px 0';
+        emptyTd.className = 'empty-cell';
         emptyTd.innerHTML = `
-            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--text-secondary);">
-                <span class="material-symbols-outlined" style="font-size: 36px; opacity: 0.5; margin-bottom: 12px;">cloud_off</span>
-                <div style="font-size: 13px;">${options.emptyText || 'No data'}</div>
-            </div>
-        `;
-        emptyState.appendChild(emptyTd);
-        
-        const renderData = (data) => {
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-tertiary);">
+                <span class="material-symbols-outlined" style="font-size:36px;opacity:0.4;margin-bottom:12px;">cloud_off</span>
+                <div style="font-size:13px;">${options.emptyText || 'No data'}</div>
+            </div>`;
+        emptyRow.appendChild(emptyTd);
+
+        // ─────────────────────────────────────────────────────────────
+        // measureTextWidth(el)
+        // Uses Range API to measure the actual rendered pixel width of
+        // all text/content inside an element. This is the ONLY reliable
+        // way to measure content width when the containing cell may be
+        // smaller than the content (table-layout:fixed clips overflow).
+        // 
+        // Unlike scrollWidth (which fails on centered text in 1px cells)
+        // Range.getBoundingClientRect() measures the real bounding box
+        // of the rendered text regardless of the cell's CSS dimensions.
+        // ─────────────────────────────────────────────────────────────
+        function measureCellContent(cell) {
+            if (!cell) return 0;
+            // For cells with child elements (custom renders), measure the element
+            const child = cell.firstElementChild;
+            if (child) {
+                return child.getBoundingClientRect().width;
+            }
+            // For plain text cells, use Range
+            const text = cell.firstChild;
+            if (text && text.nodeType === Node.TEXT_NODE && text.textContent.trim()) {
+                const range = document.createRange();
+                range.selectNode(text);
+                return range.getBoundingClientRect().width;
+            }
+            return 0;
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // applyColumnWidths()
+        // Sets exact pixel widths on <col> elements for fixed layout.
+        // Filler column: width = '' (auto) → absorbs remaining space.
+        // table.style.minWidth = sum of all fixed cols so scrollbar
+        // appears when container is narrower than table content.
+        // ─────────────────────────────────────────────────────────────
+        function applyColumnWidths() {
+            let totalFixed = 0;
+            cols.forEach((colEl, idx) => {
+                if (idx === fillerIdx) {
+                    colEl.style.width = ''; // filler absorbs remaining space
+                    return;
+                }
+                const col = options.columns[idx];
+                const colId = col.id || col.field || 'unknown';
+                if (_hiddenColIds.has(colId)) {
+                    // Hidden columns: collapse <col> to 0 so table-layout:fixed doesn't reserve space
+                    colEl.style.width = '0';
+                } else if (colWidths[idx] > 0) {
+                    colEl.style.width = `${colWidths[idx]}px`;
+                    totalFixed += colWidths[idx];
+                }
+            });
+            if (totalFixed > 0) {
+                table.style.minWidth = totalFixed + 'px';
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // runAutoSize()
+        // For each column with autoSize:true, measures the actual
+        // rendered content width of every cell in that column (header
+        // + all rows), then sets colWidths[idx] to max(measured, min).
+        //
+        // Key technique: We temporarily set the <col> width to '' (auto)
+        // during measurement so cells are NOT clipped by table-layout:fixed.
+        // After measurement we restore to the computed pixel width.
+        //
+        // The filler column must be set to 0 width during measurement so
+        // it doesn't steal space from autoSize columns.
+        // ─────────────────────────────────────────────────────────────
+        // Canvas 2D context reused across measurements for performance
+        let _measureCanvas = null;
+        let _measureCtx = null;
+
+        function measureTextPx(text, fontSpec) {
+            if (!_measureCanvas) {
+                _measureCanvas = document.createElement('canvas');
+                _measureCtx = _measureCanvas.getContext('2d');
+            }
+            _measureCtx.font = fontSpec;
+            return _measureCtx.measureText(String(text)).width;
+        }
+
+        // Get the computed font string for a real rendered cell.
+        // We do this once per autoSize run against the REAL table cells.
+        function getCellFont(cell) {
+            const cs = window.getComputedStyle(cell);
+            return `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        }
+
+        function getCellPadding(cell) {
+            const cs = window.getComputedStyle(cell);
+            return parseFloat(cs.paddingLeft || 0) + parseFloat(cs.paddingRight || 0);
+        }
+
+        function runAutoSize() {
+            const autoSizeCols = [];
+            options.columns.forEach((col, idx) => {
+                if (!col.autoSize) return;
+                autoSizeCols.push({ col, idx });
+            });
+            if (autoSizeCols.length === 0) return;
+
+            autoSizeCols.forEach(({ col, idx }) => {
+                const th = trHead.children[idx];
+                if (!th) return;
+
+                // Measure using real computed font of the header cell
+                const headerFont = getCellFont(th);
+                const headerPadding = getCellPadding(th);
+                // Header text is the label; measure it and add its actual padding
+                let maxW = measureTextPx(col.label || '', headerFont) + headerPadding + 8; // +8 safety buffer
+
+                // Measure data cells in real tbody (not a clone)
+                tbody.querySelectorAll('tr').forEach(row => {
+                    if (row.children.length === 1 && row.children[0].classList.contains('empty-cell')) return;
+                    const td = row.children[idx];
+                    if (!td) return;
+
+                    // Get the actual text content for measurement
+                    const cellFont = getCellFont(td);
+                    const cellPadding = getCellPadding(td);
+
+                    // Measure all leaf text nodes or the first child element
+                    const child = td.firstElementChild;
+                    let textContent;
+                    if (child) {
+                        // For custom renders (span, div, etc.), measure the text inside
+                        textContent = child.textContent || '';
+                    } else {
+                        textContent = td.textContent || '';
+                    }
+                    const w = measureTextPx(textContent, cellFont) + cellPadding + 8; // +8 safety buffer
+                    if (w > maxW) maxW = w;
+                });
+
+                const minW = col.minWidth ? parseWidthToPx(col.minWidth) : Math.max(parseWidthToPx(col.width || '0'), 40);
+                const maxConstraint = getMaxPx(col);
+                colWidths[idx] = Math.round(Math.min(Math.max(minW, maxW), maxConstraint));
+            });
+
+            applyColumnWidths();
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // updateDynCSS()
+        // Injects dynamic CSS for sticky column left/right offsets
+        // and shadow effects on the outermost locked columns.
+        // ─────────────────────────────────────────────────────────────
+        function updateDynCSS() {
+            let css = '';
+
+            // ── Left-sticky: compute offsets ──────────────────────────
+            let leftPx = 0;
+            let lastLeftIdx = -1;
+            options.columns.forEach((col, idx) => {
+                if (col.locked && col.lockedPosition !== 'right') lastLeftIdx = idx;
+            });
+
+            options.columns.forEach((col, idx) => {
+                if (!col.locked || col.lockedPosition === 'right') return;
+                const cls = `data-col-${col.id || col.field || 'unknown'}`;
+                const th = trHead.children[idx];
+                const isHidden = _hiddenColIds.has(col.id || col.field || 'unknown');
+                const w = isHidden ? 0 : (colWidths[idx] > 0 ? colWidths[idx] : (th ? th.offsetWidth : 0));
+
+                let shadowRule = '';
+                if (idx === lastLeftIdx && !isHidden) {
+                    shadowRule = `box-shadow: inset -1px 0 0 var(--border-muted), 3px 0 8px -2px rgba(0,0,0,0.14); clip-path: inset(0 -20px 0 0);`;
+                }
+
+                css += `
+#${tableId} .${cls} {
+    position: sticky !important;
+    left: ${leftPx}px !important;
+    z-index: ${30 - idx} !important;
+    background: var(--row-bg, var(--bg-surface)) !important;
+    ${shadowRule}
+}`;
+                leftPx += w;
+            });
+
+            // ── Right-sticky: compute offsets ────────────────────────
+            let rightPx = 0;
+            let firstRightIdx = -1;
+            for (let i = options.columns.length - 1; i >= 0; i--) {
+                const col = options.columns[i];
+                if (col.locked && col.lockedPosition === 'right') {
+                    firstRightIdx = i;
+                    break;
+                }
+            }
+
+            for (let i = options.columns.length - 1; i >= 0; i--) {
+                const col = options.columns[i];
+                if (!col.locked || col.lockedPosition !== 'right') continue;
+                const cls = `data-col-${col.id || col.field || 'unknown'}`;
+                const th = trHead.children[i];
+                const isHidden = _hiddenColIds.has(col.id || col.field || 'unknown');
+                const w = isHidden ? 0 : (colWidths[i] > 0 ? colWidths[i] : (th ? th.offsetWidth : 0));
+
+                let shadowRule = '';
+                if (i === firstRightIdx && !isHidden) {
+                    shadowRule = `box-shadow: inset 1px 0 0 var(--border-muted), -3px 0 8px -2px rgba(0,0,0,0.14); clip-path: inset(0 0 0 -20px);`;
+                }
+
+                css += `
+#${tableId} .${cls} {
+    position: sticky !important;
+    right: ${rightPx}px !important;
+    z-index: ${30 - (options.columns.length - i)} !important;
+    background: var(--row-bg, var(--bg-surface)) !important;
+    ${shadowRule}
+}`;
+                rightPx += w;
+            }
+
+            // Filler column: fully invisible — no padding, no border, no background
+            if (fillerIdx >= 0) {
+                const fillerCol = options.columns[fillerIdx];
+                const cls = `data-col-${fillerCol.id || 'filler'}`;
+                css += `
+#${tableId} th.${cls},
+#${tableId} td.${cls} {
+    padding: 0 !important;
+    border-bottom: none !important;
+    border-right: none !important;
+    overflow: hidden !important;
+    background: transparent !important;
+}`;
+            }
+
+            dynStyle.textContent = css;
+        }
+
+        // ── Initial layout seed ───────────────────────────────────────
+        options.columns.forEach((col, idx) => {
+            if (idx === fillerIdx) return;
+            if (colWidths[idx] > 0) {
+                cols[idx].style.width = `${colWidths[idx]}px`;
+            }
+        });
+        updateDynCSS();
+
+        // ── ResizeObserver: run autoSize ONCE when container first becomes visible ─
+        let roDebounce = null;
+        let _autoSizeDone = false;
+        const ro = new ResizeObserver(entries => {
+            for (const entry of entries) {
+                if (entry.contentRect.width > 0 && !_autoSizeDone) {
+                    clearTimeout(roDebounce);
+                    roDebounce = setTimeout(() => {
+                        runAutoSize();
+                        updateDynCSS();
+                        _autoSizeDone = true;
+                    }, 50);
+                } else if (entry.contentRect.width > 0) {
+                    // On resize: only update sticky positions, NOT autoSize
+                    clearTimeout(roDebounce);
+                    roDebounce = setTimeout(() => updateDynCSS(), 50);
+                }
+            }
+        });
+        ro.observe(container);
+
+        // ── Render rows ───────────────────────────────────────────────
+        function renderData(data) {
             tbody.innerHTML = '';
-            table.style.display = '';
             
+            // Sync select all checkbox
+            if (selectAllCheckbox) {
+                selectAllCheckbox.uncheck();
+                if (!data || data.length === 0) {
+                    selectAllCheckbox.element.style.pointerEvents = 'none';
+                    selectAllCheckbox.element.style.opacity = '0.5';
+                } else {
+                    selectAllCheckbox.element.style.pointerEvents = 'auto';
+                    selectAllCheckbox.element.style.opacity = '1';
+                }
+            }
+
             if (!data || data.length === 0) {
-                tbody.appendChild(emptyState);
+                emptyTd.colSpan = options.columns.length;
+                tbody.appendChild(emptyRow);
+                updateDynCSS();
                 return;
             }
-            
 
-            data.forEach((row, index) => {
+            const frag = document.createDocumentFragment();
+            data.forEach((row, rowIdx) => {
                 const tr = document.createElement('tr');
-                if (row.id) tr.dataset.id = row.id;
-                
+                if (row.id != null) tr.dataset.id = row.id;
                 if (row.status === 'running' || row.status === 'ready') {
                     tr.classList.add('profile-running');
                 }
-                
-                options.columns.forEach((col, colIndex) => {
+
+                options.columns.forEach((col, colIdx) => {
                     const td = document.createElement('td');
-                    const colName = col.id || col.field || 'select';
-                    td.className = `data-col-${colName}`;
-                    td.dataset.colIndex = colIndex;
+                    td.className = `data-col-${col.id || col.field || 'unknown'}`;
+                    td.dataset.colIndex = colIdx;
                     if (col.align) td.style.textAlign = col.align;
-                    
+
                     if (col.type === 'checkbox') {
-                        // Custom checkbox container for row
-                        const cbContainer = document.createElement('div');
-                        cbContainer.className = 'table-checkbox';
-                        
-                        if (window.DuckControls && window.DuckControls.Checkbox) {
-                            const cbElement = document.createElement('span');
-                            cbContainer.appendChild(cbElement);
-                            td.appendChild(cbContainer);
-                            
-                            const checkbox = DuckControls.Checkbox.create(cbElement, {
-                                value: row.id,
-                                onChange: (e) => {
-                                    if (e.checked) tr.classList.add('selected');
-                                    else tr.classList.remove('selected');
-                                    if (options.onCheckRow) options.onCheckRow({ target: { checked: e.checked } }, row);
-                                }
-                            });
-                            td._duckCheckbox = checkbox;
-                        } else {
-                            const cb = document.createElement('input');
-                            cb.type = 'checkbox';
-                            cb.className = 'table-checkbox-native row-check';
-                            cb.value = row.id;
-                            if (options.onCheckRow) cb.addEventListener('change', (e) => {
-                                if (e.target.checked) tr.classList.add('selected');
+                        const cbEl = document.createElement('span');
+                        td.appendChild(cbEl);
+                        const cb = window.DuckControls.Checkbox.create(cbEl, {
+                            title: col.title || 'Select',
+                            onChange: e => {
+                                if (e.checked) tr.classList.add('selected');
                                 else tr.classList.remove('selected');
-                                options.onCheckRow(e, row);
-                            });
-                            cbContainer.appendChild(cb);
-                            td.appendChild(cbContainer);
-                        }
+                                if (options.onCheckRow) options.onCheckRow(e, row);
+                            }
+                        });
+                        cb.setValue(row.id);
+                        td._duckCheckbox = cb;
+                    } else if (col.id === 'filler') {
+                        // filler: empty spacer cell, no content
                     } else if (col.render) {
-                        const content = col.render(row, index);
-                        if (typeof content === 'string') {
-                            td.innerHTML = content;
-                        } else if (content instanceof HTMLElement) {
-                            td.appendChild(content);
-                        }
+                        const content = col.render(row, rowIdx);
+                        if (typeof content === 'string') td.innerHTML = content;
+                        else if (content instanceof HTMLElement) td.appendChild(content);
                     } else if (col.field) {
-                        td.textContent = row[col.field] || '';
+                        td.textContent = row[col.field] ?? '';
                     }
+
                     tr.appendChild(td);
                 });
-                
-                // Row Context Menu
+
                 if (options.onRowContextMenu) {
-                    tr.addEventListener('contextmenu', (e) => {
+                    tr.addEventListener('contextmenu', e => {
                         e.preventDefault();
-                        options.onRowContextMenu(e, row, index);
+                        options.onRowContextMenu(e, row, rowIdx);
                     });
                 }
                 
-                tbody.appendChild(tr);
+                // Row click selection
+                tr.addEventListener('click', (e) => {
+                    // Ignore if clicked on an interactive element or editable columns
+                    if (e.target.closest('button, input, a, .duck-checkbox, .duck-btn, .duck-inline-btn, .proxy-panel, .data-col-name, .data-col-note')) {
+                        return;
+                    }
+                    // Find checkbox in this row and click it
+                    const firstTd = tr.firstElementChild;
+                    if (firstTd && firstTd._duckCheckbox) {
+                        firstTd._duckCheckbox.element.click();
+                    }
+                });
+
+                frag.appendChild(tr);
             });
-        };
-        
+            tbody.appendChild(frag);
+
+            // After rendering, run autoSize once then update sticky CSS
+            requestAnimationFrame(() => {
+                if (!_autoSizeDone) {
+                    runAutoSize();
+                    _autoSizeDone = true;
+                }
+                updateDynCSS();
+            });
+        }
+
         if (options.data) renderData(options.data);
-        
+        else renderData([]);
+
+        // ── Public API ────────────────────────────────────────────────
         return {
             element: wrap,
             renderData,
-            table: table,
-            tbody: tbody,
-            getCheckedValues: () => {
-                const checks = [];
-                tbody.querySelectorAll('.duck-checkbox').forEach(el => {
-                    const cb = el.querySelector('span')?._duckCheckbox || el._duckCheckbox;
-                    if (cb && cb.isChecked()) {
-                        checks.push(cb.getValue() || el.querySelector('input')?.value);
+            table,
+            tbody,
+            updateStickyPositions: updateDynCSS,
+            getCheckedValues() {
+                const result = [];
+                tbody.querySelectorAll('td').forEach(td => {
+                    const cb = td._duckCheckbox;
+                    if (cb && cb.isChecked()) result.push(cb.getValue());
+                });
+                return result;
+            },
+            clearChecked() {
+                tbody.querySelectorAll('td').forEach(td => {
+                    const cb = td._duckCheckbox;
+                    if (cb) {
+                        cb.uncheck();
+                        const tr = td.closest('tr');
+                        if (tr) tr.classList.remove('selected');
                     }
                 });
-                // Fallback to native checkboxes
-                if (checks.length === 0) {
-                    const nativeChecks = tbody.querySelectorAll('.row-check:checked');
-                    return Array.from(nativeChecks).map(cb => cb.value);
+                if (selectAllCheckbox) selectAllCheckbox.uncheck();
+            },
+            showSelectAll(show = true) {
+                if (selectAllCheckbox?.element) {
+                    selectAllCheckbox.element.style.display = show ? '' : 'none';
                 }
-                return checks;
             },
-            clearChecked: () => {
-                // Clear custom checkboxes
-                tbody.querySelectorAll('.duck-checkbox').forEach(el => {
-                    const cb = el.querySelector('span')?._duckCheckbox || el._duckCheckbox;
-                    if (cb) cb.uncheck();
-                    const tr = el.closest('tr');
-                    if (tr) tr.classList.remove('selected');
-                });
-                // Clear native checkboxes
-                table.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                    cb.checked = false;
-                    const tr = cb.closest('tr');
-                    if (tr) tr.classList.remove('selected');
-                });
+            checkAll(checked = true) {
+                if (!selectAllCheckbox) return;
+                if (checked) selectAllCheckbox.check();
+                else selectAllCheckbox.uncheck();
             },
-            getCheckboxControl: (colIndex = 0) => {
-                // Get header checkbox control
-                const headerTh = trHead.children[colIndex];
-                return headerTh?._duckCheckbox;
+            setSelectAllIndeterminate(indeterminate = true) {
+                if (selectAllCheckbox) selectAllCheckbox.setIndeterminate(indeterminate);
+            },
+            // updateColumnVisibility(visibleColIds: Set<string>)
+            // Shows/hides optional columns via CSS without rebuilding the table.
+            // Always-visible columns (select, seq, name, resource, status, message, action, filler)
+            // are never hidden regardless of visibleColIds.
+            updateColumnVisibility(visibleColIds) {
+                const alwaysVisible = new Set(['select', 'seq', 'name', 'resource', 'status', 'message', 'action', 'filler']);
+                _hiddenColIds.clear();
+                let css = '';
+                options.columns.forEach((col) => {
+                    const colId = col.id || col.field || 'unknown';
+                    if (alwaysVisible.has(colId)) return;
+                    if (!visibleColIds.has(colId)) {
+                        _hiddenColIds.add(colId);
+                        css += `#${tableId} th.data-col-${colId}, #${tableId} td.data-col-${colId} { display: none !important; }\n`;
+                    }
+                });
+                visStyle.textContent = css;
+                // applyColumnWidths now handles hidden cols (sets their <col> to width:0)
+                applyColumnWidths();
+                updateDynCSS();
+            },
+            destroy() {
+                ro.disconnect();
+                clearTimeout(roDebounce);
             }
         };
     }

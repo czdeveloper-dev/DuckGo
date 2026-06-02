@@ -40,6 +40,10 @@
             // Set icon
             if (this.options.icon) {
                 this.setIcon(this.options.icon, this.options.iconPosition);
+                // Auto-detect icon-only: no text → make it a proper square icon button
+                if (!this.options.text) {
+                    this.element.classList.add('duck-btn-icon-only');
+                }
             }
 
             // Set loading

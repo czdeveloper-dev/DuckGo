@@ -427,13 +427,11 @@
 /* ── Page Container ──────────────────────────────────────── */
 #page-container {
     flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 24px 28px;
+    overflow: hidden;
     min-width: 0;
-    scroll-behavior: smooth;
     display: flex;
     flex-direction: column;
+    padding: 0;
 }
 
 #page-container::-webkit-scrollbar {
@@ -453,13 +451,19 @@
     background: var(--text-tertiary);
 }
 
-/* Page views */
+/* Page views - hidden by default, show as flex when active */
+/* !important required: .page-shell and feature CSS also set display:flex
+   with same specificity but declared later, so they would override without !important */
 .page-view {
-    display: none;
+    display: none !important;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .page-view.active {
-    display: block;
+    display: flex !important;
     animation: fadeIn var(--t);
 }
 
@@ -476,9 +480,11 @@
 
 /* Page shell */
 .page-shell {
+    display: flex;
     flex-direction: column;
     flex: 1;
-    height: 100%;
+    min-height: 0;
+    overflow: hidden;
 }
 
 /* ── Split Panel ─────────────────────────────────────────── */

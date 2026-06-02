@@ -18,13 +18,13 @@
 /* Checkbox Box */
 .duck-checkbox-box {
     position: relative;
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
-    border: 1.5px solid var(--border-strong);
-    border-radius: 4px;
+    border: 2px solid var(--border-strong);
+    border-radius: 6px;
     background: var(--bg-surface);
-    transition: all var(--t-fast);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -32,6 +32,12 @@
 
 .duck-checkbox:hover .duck-checkbox-box {
     border-color: var(--accent);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(234, 179, 8, 0.15);
+}
+
+.duck-checkbox:active .duck-checkbox-box {
+    transform: scale(0.95);
 }
 
 .duck-checkbox.is-disabled:hover .duck-checkbox-box {
@@ -40,11 +46,11 @@
 
 /* Check Icon */
 .duck-checkbox-check {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     opacity: 0;
-    transform: scale(0.5);
-    transition: all var(--t-fast);
+    transform: scale(0.2);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.5 5.5L4 8L8.5 2' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-size: contain;
     background-repeat: no-repeat;

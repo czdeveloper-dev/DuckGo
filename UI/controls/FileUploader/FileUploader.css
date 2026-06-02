@@ -1,0 +1,76 @@
+/* ============================================================
+   FileUploader.css - File Upload Control Styles
+   ============================================================ */
+
+.duck-file-uploader {
+    position: relative;
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--r-lg);
+    background: var(--bg-surface);
+    padding: 32px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.duck-file-uploader:hover,
+.duck-file-uploader.is-dragover {
+    border-color: var(--accent);
+    background: rgba(234, 179, 8, 0.05);
+}
+
+.duck-file-uploader.is-dragover {
+    transform: scale(1.02);
+}
+
+.duck-file-uploader-icon {
+    font-size: 48px !important;
+    color: var(--text-secondary);
+    transition: color 0.3s;
+}
+
+.duck-file-uploader:hover .duck-file-uploader-icon,
+.duck-file-uploader.is-dragover .duck-file-uploader-icon {
+    color: var(--accent);
+}
+
+.duck-file-uploader-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.duck-file-uploader-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.duck-file-uploader-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* Selected File State */
+.duck-file-uploader.has-file {
+    border-style: solid;
+    padding: 24px;
+    gap: 8px;
+}
+
+.duck-file-uploader.has-file .duck-file-uploader-icon {
+    font-size: 36px !important;
+    color: var(--accent);
+}
+
+.duck-file-uploader.has-file .duck-file-uploader-title {
+    color: var(--accent);
+}

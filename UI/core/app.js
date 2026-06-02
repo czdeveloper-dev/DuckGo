@@ -102,23 +102,18 @@
          */
         async showView(name) {
             console.log('[DuckApp] showView called:', name);
-            if (this._currentView === name) {
-                console.log('[DuckApp] Same view, skipping');
-                return;
-            }
 
-            // Hide current view
-            if (this._currentView) {
-                const current = document.querySelector(`[data-view-name="${this._currentView}"]`);
-                if (current) {
-                    current.classList.remove('active');
-                }
-            }
+            // Hide ALL currently active views (bulletproof approach)
+            document.querySelectorAll('.page-view.active').forEach(el => {
+                el.classList.remove('active');
+            });
 
             // Show new view
             const target = document.querySelector(`[data-view-name="${name}"]`);
             if (!target) {
-                console.warn(`[DuckApp] View not found: ${name}`);
+                console.warn(`[DuckApp] View not found: ${name} - screen is blank`);
+                this._currentView = null;
+                if (window.DuckSidebar) window.DuckSidebar.setActiveView(name);
                 return;
             }
             target.classList.add('active');

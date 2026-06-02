@@ -84,7 +84,6 @@
                 }
 
                 el.addEventListener('click', (e) => {
-                    e.stopPropagation();
                     if (!item.disabled) {
                         this._selectItem(item);
                     }
@@ -119,19 +118,18 @@
         }
 
         _handleClick(e) {
-            e.stopPropagation();
             this.toggle();
         }
 
         _handleKeydown(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === 'Enter' || (e.key === ' ' && this.trigger.tagName !== 'INPUT' && this.trigger.tagName !== 'TEXTAREA')) {
                 e.preventDefault();
                 this.toggle();
             }
         }
 
         _handleOutsideClick(e) {
-            if (this.isOpen && !this.menu.contains(e.target) && e.target !== this.trigger) {
+            if (this.isOpen && !this.menu.contains(e.target) && (!this.trigger || !this.trigger.contains(e.target))) {
                 this.close();
             }
         }

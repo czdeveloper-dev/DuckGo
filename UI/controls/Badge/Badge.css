@@ -11,9 +11,36 @@
     font-weight: 600;
     padding: 0 10px;
     border-radius: 8px;
-    min-width: 52px;
-    height: 34px;
+    height: 24px;
     background: var(--bg-surface);
     border: 1px solid var(--border-default);
     color: var(--text-secondary);
+}
+
+/* Badge Variants */
+.duck-badge-success {
+    background: rgba(16, 185, 129, 0.1) !important;
+    color: #059669 !important;
+    border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+.duck-badge-danger {
+    background: var(--bg-subtle) !important;
+    color: var(--text-secondary) !important;
+    border-color: var(--border-default) !important;
+}
+
+.duck-badge-info {
+    background: rgba(59, 130, 246, 0.1) !important;
+    color: #3b82f6 !important;
+    border-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Stat variant — for large number values like "0/0" in stat panels */
+.duck-badge-stat {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    height: 28px !important;
+    padding: 0 14px !important;
+    letter-spacing: 0.02em;
 }

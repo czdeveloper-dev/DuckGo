@@ -1,10 +1,176 @@
-/* Profiles Feature CSS */
+/* Page shell for profiles view */
+.page-shell-profiles {
+    background: transparent;
+    padding: 12px 20px 0;
+    margin: 14px auto;
+    width: 100%;
+    max-width: var(--profiles-frame-max, 1800px);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
 
-.prof-topbar { background: transparent; border: 1px solid var(--border-default); border-radius: 12px; padding: 12px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
-.prof-topbar-t1 { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: nowrap; width: 100%; box-sizing: border-box; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 10px; padding: 12px 16px; box-shadow: var(--shadow-sm); }
-.prof-t1-left { display: flex; align-items: flex-end; gap: 16px; min-width: 0; flex: 1; flex-wrap: nowrap; }
-.prof-t1-right { display: flex; align-items: flex-end; gap: 8px; flex-shrink: 0; justify-content: flex-end; }
-.prof-t1-divider { width: 1px; height: 34px; background: var(--border-default); flex-shrink: 0; margin: 0 4px; }
-.prof-topbar-t2 { padding: 0; background: transparent; }
-.prof-action-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.prof-topbar {
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-shrink: 0;
+    
+    background: transparent;
+    border: 1px solid var(--border-default);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Tier 1: Search & Filters */
+.prof-topbar-t1 {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: nowrap;
+    padding: 14px 18px;
+    min-height: 0;
+    flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.prof-t1-left {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex: 1;
+    flex-wrap: wrap;
+}
+
+.prof-t1-left > .duck-panel {
+    display: flex;
+    flex-direction: row !important;
+    align-items: flex-end;
+    gap: 12px;
+    flex: 1;
+    flex-wrap: wrap;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    border-radius: 0;
+}
+
+.prof-t1-right > .duck-panel {
+    /* Override panel's default column direction → row so stat + buttons lay out horizontally */
+    flex-direction: row !important;
+    align-items: flex-end;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    border-radius: 0;
+    gap: 8px;
+}
+
+.prof-t1-right {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.prof-t1-divider {
+    width: 1px;
+    height: 34px;
+    background: var(--border-default);
+    flex-shrink: 0;
+}
+
+/* Tier 2: Action Chips container */
+.prof-topbar-t2 {
+    background: transparent;
+}
+
+.prof-action-chips {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* Bulk Actions Bar */
+.bulk-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+    border-radius: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    display: none;
+}
+
+.bulk-actions-bar.visible {
+    display: flex;
+}
+
+.bulk-actions-bar .bulk-count {
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.bulk-actions-divider {
+    width: 1px;
+    height: 18px;
+    background: color-mix(in srgb, var(--accent) 30%, transparent);
+    margin: 0 4px;
+}
+
+/* Force bulk action buttons to exactly 30px height */
+.bulk-actions-bar .duck-btn {
+    height: 30px !important;
+    padding: 0 12px;
+}
+.bulk-actions-bar .duck-btn-icon-only {
+    width: 30px !important;
+    padding: 0;
+}
+
+/* Content Area */
+.content-fill {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0 0 4px 0;
+}
+
+.profiles-table-view {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.table-card--profiles {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.table-wrap {
+    flex: 1;
+    overflow: auto;
+}
+
 

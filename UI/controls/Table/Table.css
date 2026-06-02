@@ -1,241 +1,256 @@
 /* ============================================================
    Table.css - Table Control Styles
+   DuckAntidetect Design System
    ============================================================ */
 
-/* ── Table */
-.table-card, .data-surface { background: var(--bg-surface) !important; border: 1px solid var(--border-default) !important; border-radius: 12px !important; overflow: hidden !important; box-shadow: var(--shadow-card) !important; }
-.data-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; box-sizing: border-box; }
-.data-table * { box-sizing: border-box; }
-.data-table-container { width: 100%; }
-
-/* Scroll wrapper handles scrolling - establishes new stacking context for sticky */
-.table-scroll-wrapper { 
-    overflow: auto; 
-    position: relative; 
-    max-width: 100%;
-    min-height: 0; /* Fix for flex children */
-    will-change: scroll-position;
+/* ── Base Table Container ── */
+.table-card, .data-surface {
     background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
-/* Make table wider than container to enable horizontal scroll */
-.table-scroll-wrapper .data-table-container {
-    width: max-content;
-    min-width: 100%;
-    background: var(--bg-surface);
-}
-
-.data-table { background: var(--bg-surface); }
-.data-table thead { position: sticky; top: 0; z-index: 30; }
-.data-table thead th { 
-    color: var(--text-secondary) !important; 
-    font-size: 11px !important; 
-    font-weight: 600 !important; 
-    letter-spacing: 0.06em !important; 
-    text-transform: uppercase !important; 
-    background: var(--bg-subtle) !important; 
-    padding: 10px 16px !important; 
-    border-bottom: 1px solid var(--border-strong) !important; 
-    white-space: nowrap; 
-    overflow: hidden; 
-    text-overflow: ellipsis; 
-    vertical-align: middle; 
-}
-.data-table th:last-child { overflow: visible; }
-.data-table td { 
-    border-bottom: 1px solid var(--border-default) !important; 
-    color: var(--text-primary) !important; 
-    padding: 13px 16px !important; 
-    background: var(--bg-surface); 
-    white-space: nowrap; 
-    overflow: hidden; 
-    text-overflow: ellipsis; 
-    vertical-align: middle; 
-    font-size: 13px; 
-}
-.data-table tbody tr { transition: background var(--t); }
-.data-table tbody tr:hover td { background: var(--surface-hover) !important; }
-.data-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02) !important; }
-.data-table tbody tr.selected td { background: rgba(94,106,210,0.08) !important; }
-tr.profile-running { background: rgba(16,185,129,0.04) !important; }
-tr.profile-running td { background: transparent !important; }
-
-/* ── Table Checkbox Styles */
-.table-checkbox {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+/* ── Table element ──
+   table-layout: fixed is REQUIRED so that <col> widths are respected.
+   width: 100% fills the container. Columns wider than container → scrollbar. */
+.data-table {
     width: 100%;
-    height: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+    box-sizing: border-box;
+}
+.data-table * { box-sizing: border-box; }
+
+/* ── Table wrapper fills parent with flex ── */
+.data-table-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
 }
 
-.table-checkbox-native {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-    accent-color: var(--accent);
+/* ── Scroll container ── */
+.data-table-container {
+    flex: 1;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: auto;
+    position: relative;
+    background: var(--bg-surface);
 }
 
-/* ── Table Scrollbar size increase ── */
-.table-scroll-wrapper::-webkit-scrollbar { width: 14px; height: 14px; }
-.table-scroll-wrapper::-webkit-scrollbar-track { background: var(--bg-subtle); border-radius: 8px; }
-.table-scroll-wrapper::-webkit-scrollbar-thumb { background-color: rgba(148, 163, 184, 0.6); border-radius: 8px; border: 3px solid var(--bg-subtle); }
-.table-scroll-wrapper::-webkit-scrollbar-thumb:hover { background-color: rgba(148, 163, 184, 0.9); }
-
-/* ── Resizable Columns ── */
-.col-resizer {
-  position: absolute;
-  top: 20%; right: 0; bottom: 20%; width: 7px;
-  cursor: col-resize;
-  background-color: transparent;
-  z-index: 10;
-}
-.col-resizer::after {
-  content: "";
-  position: absolute;
-  top: 0; bottom: 0; right: 3px;
-  width: 1.5px;
-  background-color: var(--border-strong);
-  border-radius: 2px;
-  transition: background-color 0.2s, width 0.2s, transform 0.2s;
-}
-.col-resizer:hover::after, .col-resizer.is-resizing::after {
-  background-color: var(--accent);
-  width: 3px;
-  transform: translateX(1px);
-}
-.col-resizer--locked { cursor: default !important; }
-.col-resizer--locked:hover::after { background-color: var(--border-strong) !important; width: 1.5px !important; transform: none !important; }
-
-/* Column Resize - prevent affecting other columns */
-body.is-resizing-cols {
-    user-select: none;
-    cursor: col-resize;
+/* ── Table Header ── */
+.data-table thead,
+.data-table thead tr {
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
-/* Sticky Columns Base - Critical for preventing scroll bleed */
-.data-table th.data-col-select,
-.data-table td.data-col-select { 
-    width: 44px; 
-    min-width: 44px; 
-    position: sticky !important; 
-    left: 0; 
-    z-index: 10 !important; 
-    background-color: var(--bg-surface) !important; 
-    border-right: 1px solid var(--border-default) !important;
+.data-table thead th {
+    color: var(--text-secondary) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    background: var(--bg-surface) !important;
+    padding: 12px !important;
+    border-bottom: 1px solid var(--border-muted) !important;
+    position: relative;          /* needed for .col-resizer absolute positioning */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
 }
 
-.data-table th.data-col-seq,
-.data-table td.data-col-seq { 
-    width: 50px; 
-    min-width: 50px; 
-    position: sticky !important; 
-    left: 44px; 
-    z-index: 9 !important; 
-    background-color: var(--bg-surface) !important; 
-    border-right: 1px solid var(--border-default) !important;
+/* ── Table Body ── */
+.data-table td {
+    border-bottom: 1px solid var(--border-muted) !important;
+    color: var(--text-primary) !important;
+    padding: 12px 12px !important;
+    background: inherit !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
 }
 
-.data-table th.data-col-name,
-.data-table td.data-col-name { 
-    width: 200px; 
-    min-width: 200px; 
-    position: sticky !important; 
-    left: 94px; 
-    z-index: 8 !important; 
-    background-color: var(--bg-surface) !important; 
-    border-right: 1px solid var(--border-default) !important;
-}
-
-.data-table th.data-col-action,
-.data-table td.data-col-action { 
-    width: 110px; 
-    min-width: 110px; 
-    text-align: right; 
-    position: sticky !important; 
-    right: 0; 
-    z-index: 6 !important; 
-    padding-right: 20px !important; 
-    white-space: nowrap; 
-    background-color: var(--bg-surface) !important; 
-    border-left: 1px solid var(--border-default) !important;
-}
-
-/* Locked columns shadow that extends down entire table */
-.data-table th.data-col-action,
-.data-table td.data-col-action {
-    box-shadow: -4px 0 10px -4px rgba(0,0,0,0.15) !important;
-}
-
-/* Left sticky columns shadow - name column */
-.data-table th.data-col-name,
-.data-table td.data-col-name {
-    box-shadow: -2px 0 6px -2px rgba(0,0,0,0.1) !important;
-}
-
-/* Enable GPU acceleration for sticky columns */
-.data-table th.data-col-select,
-.data-table th.data-col-seq,
-.data-table th.data-col-name,
-.data-table th.data-col-action,
+/* Checkbox and seq columns: never clip content, reduce padding */
 .data-table td.data-col-select,
+.data-table th.data-col-select {
+    overflow: visible !important;
+    padding: 0 8px !important;
+    text-align: center;
+}
 .data-table td.data-col-seq,
-.data-table td.data-col-name,
-.data-table td.data-col-action {
-    will-change: transform;
-    transform: translateZ(0);
+.data-table th.data-col-seq {
+    overflow: visible !important;
+    padding: 9px 8px !important;
+    text-align: center !important;
+    display: table-cell !important;
+    vertical-align: middle !important;
+}
+/* th has a 7px resizer on the right — compensate so text stays visually centered */
+.data-table th.data-col-seq {
+    padding-right: 15px !important; /* 8px normal + 7px resizer width */
+}
+.data-table td.data-col-seq span {
+    display: inline !important;
 }
 
-/* Elevate TH z-index over TD */
-.data-table thead th.data-col-select { z-index: 20 !important; background-color: var(--bg-subtle) !important; }
-.data-table thead th.data-col-seq { z-index: 19 !important; background-color: var(--bg-subtle) !important; }
-.data-table thead th.data-col-name { z-index: 18 !important; background-color: var(--bg-subtle) !important; }
-.data-table thead th.data-col-action { z-index: 16 !important; background-color: var(--bg-subtle) !important; }
 
-/* Sticky Backgrounds - MUST be explicit to prevent transparency bleed */
-.data-table-container tbody tr td.data-col-select,
-.data-table-container tbody tr td.data-col-seq,
-.data-table-container tbody tr td.data-col-name,
-.data-table-container tbody tr td.data-col-action {
-    background-color: var(--bg-surface) !important;
+.data-table tbody tr {
+    --row-bg: var(--bg-surface);
+    background: var(--row-bg);
+    transition: background var(--t, 0.15s), --row-bg var(--t, 0.15s);
 }
 
-/* Alternating row bg for sticky columns */
-.data-table-container tbody tr:nth-child(even) td.data-col-select,
-.data-table-container tbody tr:nth-child(even) td.data-col-seq,
-.data-table-container tbody tr:nth-child(even) td.data-col-name,
-.data-table-container tbody tr:nth-child(even) td.data-col-action {
-    background-color: rgba(255, 255, 255, 0.02) !important;
+.data-table tbody tr:hover {
+    --row-bg: color-mix(in srgb, var(--accent) 8%, var(--bg-surface));
+    background: var(--row-bg);
 }
 
-/* Hover state for sticky columns */
-.data-table-container tbody tr:hover td.data-col-select,
-.data-table-container tbody tr:hover td.data-col-seq,
-.data-table-container tbody tr:hover td.data-col-name,
-.data-table-container tbody tr:hover td.data-col-action {
-    background-color: color-mix(in srgb, var(--accent) 5%, var(--bg-surface)) !important;
+.data-table tbody tr.selected {
+    --row-bg: color-mix(in srgb, var(--accent) 8%, var(--bg-surface));
+    background: var(--row-bg) !important;
 }
 
-/* Selected state for sticky columns */
-.data-table-container tbody tr.selected td.data-col-select,
-.data-table-container tbody tr.selected td.data-col-seq,
-.data-table-container tbody tr.selected td.data-col-name,
-.data-table-container tbody tr.selected td.data-col-action {
-    background-color: color-mix(in srgb, var(--accent) 8%, var(--bg-surface)) !important;
+.data-table tbody tr.selected:hover {
+    --row-bg: color-mix(in srgb, var(--accent) 12%, var(--bg-surface));
+    background: var(--row-bg) !important;
 }
 
-/* Selected + hover state for sticky columns */
-.data-table-container tbody tr.selected:hover td.data-col-select,
-.data-table-container tbody tr.selected:hover td.data-col-seq,
-.data-table-container tbody tr.selected:hover td.data-col-name,
-.data-table-container tbody tr.selected:hover td.data-col-action {
-    background-color: color-mix(in srgb, var(--accent) 12%, var(--bg-surface)) !important;
+/* Profile Running State */
+tr.profile-running {
+    --row-bg: color-mix(in srgb, var(--success) 6%, var(--bg-surface));
+    background: var(--row-bg) !important;
+}
+tr.profile-running:hover {
+    --row-bg: color-mix(in srgb, var(--success) 10%, var(--bg-surface));
+}
+/* ── Scrollbar ── */
+.data-table-container::-webkit-scrollbar { width: 14px; height: 14px; }
+.data-table-container::-webkit-scrollbar-track {
+    background: var(--bg-subtle);
+    border-radius: 8px;
+}
+.data-table-container::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.6);
+    border-radius: 8px;
+    border: 3px solid var(--bg-subtle);
+}
+.data-table-container::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(148, 163, 184, 0.9);
 }
 
-/* Empty state in sticky columns */
-td.data-col-select:empty,
-td.data-col-seq:empty,
-td.data-col-name:empty,
-td.data-col-action:empty {
-    background-color: var(--bg-surface) !important;
+/* ── Resizable Columns ──
+   .col-resizer is absolutely positioned inside <th> (which has position: relative).
+   It sits at the right edge of the header cell. */
+.col-resizer {
+    position: absolute;
+    top: 20%;
+    right: 0;
+    bottom: 20%;
+    width: 7px;
+    cursor: col-resize;
+    background-color: transparent;
+    z-index: 10;
+}
+
+.col-resizer::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 3px;
+    width: 1.5px;
+    background-color: var(--border-strong);
+    border-radius: 2px;
+    transition: background-color 0.2s, width 0.2s, transform 0.2s;
+}
+
+.col-resizer:hover::after,
+.col-resizer.is-resizing::after {
+    background-color: var(--accent);
+    width: 3px;
+    transform: translateX(1px);
+}
+
+.col-resizer--locked {
+    cursor: default !important;
+    pointer-events: none;
+}
+
+/* ── Sticky Column Core ──
+   Actual left/right values are injected by Table.js dynStyle. */
+.data-col--sticky-left {
+    position: sticky !important;
+    z-index: 18 !important;
+}
+
+.data-col--sticky-right {
+    position: sticky !important;
+    z-index: 17 !important;
+}
+
+/* ── Empty state cell: must NOT be sticky ── */
+.data-table .empty-cell {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    z-index: 1 !important;
+}
+
+/* ── Table Checkbox ── */
+.data-table td .duck-checkbox,
+.data-table th .duck-checkbox {
+    cursor: pointer;
+}
+
+.data-table th .duck-checkbox-box, .data-table td .duck-checkbox-box { width: 18px; height: 18px; }
+.data-table th .duck-checkbox-check, .data-table td .duck-checkbox-check { width: 12px; height: 12px; }
+.data-table th .duck-checkbox-box.is-indeterminate::after, .data-table td .duck-checkbox-box.is-indeterminate::after { width: 10px; height: 2.5px; }
+
+/* ── Status Dot ── */
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.status-dot.running { background: var(--success); box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
+.status-dot.stopped { background: var(--text-tertiary); }
+.status-dot.ready   { background: var(--info); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+
+/* ── Hover Actions ── */
+.actions-cell, .action-cell {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+/* ── Empty State ── */
+.empty-cell {
+    text-align: center;
+    color: var(--text-tertiary);
+    padding: 48px !important;
+}
+
+/* ── Date cell ── */
+.date {
+    font-size: 12px;
+    color: var(--text-tertiary);
 }

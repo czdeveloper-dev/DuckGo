@@ -1,0 +1,35 @@
+.duck-textarea-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.duck-textarea-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.duck-textarea {
+    width: 100%;
+    background: var(--bg-base);
+    border: 1px solid var(--border-input);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+    resize: vertical;
+}
+
+.duck-textarea:focus {
+    border-color: var(--accent);
+}
+
+.duck-textarea::placeholder {
+    color: var(--text-muted);
+}

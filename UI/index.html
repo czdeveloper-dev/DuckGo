@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DuckGo</title>
     <link rel="stylesheet" href="http://duckgo.local/main.css">
+    <link rel="stylesheet" href="http://duckgo.local/controls/List/List.css">
+    <link rel="stylesheet" href="http://duckgo.local/controls/FileUploader/FileUploader.css">
+    <link rel="stylesheet" href="http://duckgo.local/features/Profiles/Profiles.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
     <div id="app">
@@ -45,6 +49,9 @@
     <link rel="stylesheet" href="http://duckgo.local/controls/InlineButton/InlineButton.css">
     <link rel="stylesheet" href="http://duckgo.local/controls/ContextMenu/ContextMenu.css">
     <link rel="stylesheet" href="http://duckgo.local/controls/Checkbox/Checkbox.css">
+    <link rel="stylesheet" href="http://duckgo.local/controls/Autocomplete/Autocomplete.css">
+    <link rel="stylesheet" href="http://duckgo.local/controls/Textarea/Textarea.css">
+    <link rel="stylesheet" href="http://duckgo.local/controls/Tooltip/Tooltip.css">
 
     <!-- Feature CSS -->
     <link rel="stylesheet" href="http://duckgo.local/features/Profiles/Profiles.css">
@@ -69,8 +76,25 @@
     <script src="http://duckgo.local/controls/ComboBox/ComboBox.js"></script>
     <script src="http://duckgo.local/controls/InlineButton/InlineButton.js"></script>
     <script src="http://duckgo.local/controls/ContextMenu/ContextMenu.js"></script>
+    <script src="http://duckgo.local/controls/Autocomplete/Autocomplete.js"></script>
+    <script src="http://duckgo.local/controls/Textarea/Textarea.js"></script>
+    <script src="http://duckgo.local/controls/Tooltip/Tooltip.js"></script>
+
+    <!-- Modal Scripts -->
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/ClearCache/ClearCache.js"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/NewFingerprint/NewFingerprint.js"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/SetBrowserVersion/SetBrowserVersion.js"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/ChangeLocation/ChangeLocation.js"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/ChangeBookmark/ChangeBookmark.js"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/UpdateStartUrl/UpdateStartUrl.js"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/CustomizeColumn/CustomizeColumn.js"></script>
+    <script src="http://duckgo.local/controls/FileUploader/FileUploader.js"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/ImportProfiles/ImportProfiles.js"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/ExportProfiles/ExportProfiles.js"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/CompareProfiles/CompareProfiles.js"></script>
 
     <!-- Feature Scripts (must load before app.js) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="http://duckgo.local/features/Profiles/Profiles.js"></script>
     <script src="http://duckgo.local/features/Proxies/Proxies.js"></script>
     <script src="http://duckgo.local/features/Groups/Groups.js"></script>

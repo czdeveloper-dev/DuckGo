@@ -63,7 +63,27 @@
                     }
 
                     if (html) {
-                        host.outerHTML = html;
+                        const wasActive = host.classList.contains('active');
+                        const viewName = host.getAttribute('data-view-name');
+                        const hostId = host.id;
+                        
+                        // Parse fragment HTML
+                        const temp = document.createElement('div');
+                        temp.innerHTML = html.trim();
+                        const fragment = temp.firstElementChild;
+                        
+                        if (fragment) {
+                            // Only apply page-view semantics if this is a view placeholder (has data-view-name)
+                            if (viewName) {
+                                fragment.classList.add('page-view');
+                                if (wasActive) fragment.classList.add('active');
+                                fragment.setAttribute('data-view-name', viewName);
+                            }
+                            if (hostId) fragment.id = hostId;
+                            host.replaceWith(fragment);
+                        } else {
+                            host.outerHTML = html;
+                        }
                         console.log(`[DuckLayout] Fragment loaded: ${path}`);
                     }
                 } catch (e) {

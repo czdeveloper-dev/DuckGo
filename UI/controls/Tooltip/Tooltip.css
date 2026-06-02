@@ -1,0 +1,78 @@
+/* ============================================================
+   Tooltip.css - Custom Tooltip Control Styles
+   ============================================================ */
+
+.duck-tooltip {
+    position: absolute;
+    z-index: 9999;
+    padding: 6px 10px;
+    background: var(--bg-inverse, #1e293b);
+    color: var(--text-inverse, #ffffff);
+    font-family: var(--font-family);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.4;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    white-space: nowrap;
+    max-width: 250px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.duck-tooltip.is-visible {
+    opacity: 1;
+}
+
+/* Tooltip Arrow */
+.duck-tooltip::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+}
+
+/* Positions */
+.duck-tooltip[data-position="top"] { transform: translateY(4px); }
+.duck-tooltip[data-position="top"].is-visible { transform: translateY(0); }
+.duck-tooltip[data-position="top"]::after {
+    bottom: -4px;
+    left: 50%;
+    margin-left: -4px;
+    border-width: 4px 4px 0 4px;
+    border-color: var(--bg-inverse, #1e293b) transparent transparent transparent;
+}
+
+.duck-tooltip[data-position="bottom"] { transform: translateY(-4px); }
+.duck-tooltip[data-position="bottom"].is-visible { transform: translateY(0); }
+.duck-tooltip[data-position="bottom"]::after {
+    top: -4px;
+    left: 50%;
+    margin-left: -4px;
+    border-width: 0 4px 4px 4px;
+    border-color: transparent transparent var(--bg-inverse, #1e293b) transparent;
+}
+
+.duck-tooltip[data-position="left"] { transform: translateX(4px); }
+.duck-tooltip[data-position="left"].is-visible { transform: translateX(0); }
+.duck-tooltip[data-position="left"]::after {
+    right: -4px;
+    top: 50%;
+    margin-top: -4px;
+    border-width: 4px 0 4px 4px;
+    border-color: transparent transparent transparent var(--bg-inverse, #1e293b);
+}
+
+.duck-tooltip[data-position="right"] { transform: translateX(-4px); }
+.duck-tooltip[data-position="right"].is-visible { transform: translateX(0); }
+.duck-tooltip[data-position="right"]::after {
+    left: -4px;
+    top: 50%;
+    margin-top: -4px;
+    border-width: 4px 4px 4px 0;
+    border-color: transparent var(--bg-inverse, #1e293b) transparent transparent;
+}

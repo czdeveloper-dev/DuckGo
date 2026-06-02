@@ -9,18 +9,16 @@
         AllowsTransparency="False"
         ResizeMode="CanResize"
         WindowStartupLocation="CenterScreen"
-        Background="#2d2d30"
-        BorderThickness="0">
+        Background="#2d2d30">
 
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="40"
-                      ResizeBorderThickness="5"
-                      GlassFrameThickness="-1"
-                      CornerRadius="0"
+                      ResizeBorderThickness="6"
+                      GlassFrameThickness="1"
                       UseAeroCaptionButtons="False" />
     </WindowChrome.WindowChrome>
 
-    <Border Background="#2d2d30">
+    <Border x:Name="RootBorder" Background="#2d2d30">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="40" />

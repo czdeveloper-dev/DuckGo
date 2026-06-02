@@ -13,6 +13,14 @@ window.DuckControls.ContextMenu = {
                 return;
             }
             
+            if (item.type === 'label') {
+                const label = document.createElement('div');
+                label.className = 'duck-context-label';
+                label.textContent = item.label;
+                menu.appendChild(label);
+                return;
+            }
+            
             const btn = document.createElement('button');
             btn.className = `duck-context-item ${item.danger ? 'danger' : ''} ${item.selected ? 'selected' : ''} ${item.disabled ? 'disabled' : ''}`;
             
@@ -79,16 +87,37 @@ window.DuckControls.ContextMenu = {
         
         if (triggerElement) {
             triggerElement.addEventListener('click', (e) => {
-                e.stopPropagation();
                 if (menu.classList.contains('active')) {
                     menu.classList.remove('active');
                 } else {
                     document.querySelectorAll('.duck-context-menu.active').forEach(m => m.classList.remove('active'));
-                    const rect = triggerElement.getBoundingClientRect();
-                    menu.style.left = `${rect.left}px`;
-                    menu.style.top = `${rect.bottom + 4}px`;
-                    menu.style.minWidth = `${rect.width}px`;
+                    
+                    // Add active class first so we can measure the menu's dimensions
                     menu.classList.add('active');
+                    
+                    const rect = triggerElement.getBoundingClientRect();
+                    const menuRect = menu.getBoundingClientRect();
+                    const viewportWidth = window.innerWidth;
+                    const viewportHeight = window.innerHeight;
+                    
+                    let left = rect.left;
+                    let top = rect.bottom + 4;
+                    
+                    // Adjust horizontal position if it overflows the right edge
+                    if (left + menuRect.width > viewportWidth) {
+                        left = rect.right - menuRect.width;
+                        if (left < 4) left = 4; // Add a small padding from edge
+                    }
+                    
+                    // Adjust vertical position if it overflows the bottom edge
+                    if (top + menuRect.height > viewportHeight) {
+                        top = rect.top - menuRect.height - 4;
+                        if (top < 4) top = 4;
+                    }
+                    
+                    menu.style.left = `${left}px`;
+                    menu.style.top = `${top}px`;
+                    // Removed minWidth = rect.width because context menu usually doesn't need to match button width
                 }
             });
         }

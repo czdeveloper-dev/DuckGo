@@ -1,69 +1,68 @@
-<div class="page-view active" data-view-name="profiles" id="view-profiles" style="display: flex; flex-direction: column; height: 100%;">
-    <div class="prof-topbar">
-        <div class="prof-topbar-t1 duck-panel-card">
-            <div class="prof-t1-left">
-                <div id="ph-search" style="flex: 1; max-width: 180px;"></div>
-                <div id="ph-id"></div>
-                <div class="prof-t1-divider"></div>
-                <div id="ph-group"></div>
-                <div id="ph-tag"></div>
-                <div id="ph-status"></div>
-            </div>
-            <div class="prof-t1-right">
-                <div class="filter-stacked" style="margin-right: 12px; align-items: stretch; justify-content: flex-start;">
-                    <div class="filter-stacked-head">
-                        <span class="ui-label-sm">TOTAL PROFILES</span>
-                    </div>
-                    <div id="stat-total-profiles" class="input-field-sm bg-subtle" style="display: flex; align-items: center; justify-content: center; width: 100%; box-sizing: border-box; cursor: default; height: 34px;">0</div>
-                </div>
-                <button id="btn-refresh" class="duck-btn-icon-only"></button>
-                <button id="btn-cols" class="duck-btn-icon-only"></button>
-                <button id="btn-create"></button>
-            </div>
-        </div>
-        <div class="prof-topbar-t2">
-            <div class="prof-action-chips" id="ph-action-chips">
-                <!-- Chips will be appended here by JS -->
-            </div>
-        </div>
-    </div>
+<div class="page-shell page-shell-profiles">
 
-    <!-- -, Content Area with proper layout & shadows -->
-    <div class="content-fill" style="flex: 1; min-height: 500px; display: flex; flex-direction: column;">
-        <div id="profiles-table-view" style="height:100%; display:flex; flex-direction:column;">
-            <div class="card table-card table-card--profiles data-surface" style="flex:1; overflow:hidden; display:flex; flex-direction:column; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; box-shadow:var(--shadow-sm);">
-                <div style="flex:1; overflow:auto; display:flex; flex-direction:column;" id="profile-table-container">
+    <!-- 2-TIER TOPBAR CONTAINER -->
+    <div class="prof-topbar">
+        <!-- TIER 1: Search & Filters -->
+        <div class="prof-topbar-t1 duck-panel-card" style="box-shadow: none;">
+            <div class="prof-t1-left">
+                <div class="duck-panel">
+                    <!-- Search by Name -->
+                    <div id="ctrl-search"></div>
+
+                    <!-- Search by ID -->
+                    <div id="ctrl-id"></div>
+
+                    <div class="prof-t1-divider"></div>
+
+                    <!-- Group Select -->
+                    <div id="ctrl-group"></div>
+
+                    <!-- Tag Select -->
+                    <div id="ctrl-tag"></div>
+
+                    <!-- Status Select -->
+                    <div id="ctrl-status"></div>
                 </div>
             </div>
+
+            <div class="prof-t1-right">
+                <div class="duck-panel">
+                    <!-- Total Profiles Stat -->
+                    <div id="ctrl-stat"></div>
+
+                    <!-- Header Actions -->
+                    <button type="button" id="ctrl-refresh" class="duck-btn duck-btn-surface"></button>
+                    <button type="button" id="ctrl-cols" class="duck-btn duck-btn-surface"></button>
+                    <button type="button" id="ctrl-create" class="duck-btn duck-btn-primary"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TIER 2: Bulk Action Chips -->
+        <div class="prof-topbar-t2">
+            <div class="prof-action-chips" id="ctrl-chips"></div>
         </div>
     </div>
 
     <!-- Bulk Actions Bar -->
-    <div class="bulk-actions-bar" id="bulk-actions" style="display:none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--bg-surface); padding: 10px 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid var(--border-strong); z-index: 100; align-items: center; gap: 12px;">
-        <span class="material-symbols-outlined" style="font-size:16px;color:var(--accent);">checklist</span>
-        <span class="bulk-count" id="bulk-count" style="font-weight: 600; font-size: 13px;">0 selected</span>
-        <div style="width: 1px; height: 24px; background: var(--border-default);"></div>
-        <button id="btn-bulk-launch"></button>
-        <button id="btn-bulk-stop"></button>
-        <button id="btn-bulk-rename"></button>
-        <button id="btn-bulk-health"></button>
-        <button id="btn-bulk-delete"></button>
+    <div class="bulk-actions-bar" id="bulk-actions">
+        <div style="display:flex; align-items:center; gap:6px;">
+            <span class="material-symbols-outlined" style="font-size:15px;color:var(--accent);">checklist</span>
+            <span class="bulk-count" id="bulk-count">0 selected</span>
+        </div>
+        <div class="bulk-actions-divider"></div>
+        <div id="ctrl-bulk-launch"></div>
+        <div id="ctrl-bulk-stop"></div>
+        <div id="ctrl-bulk-rename"></div>
+        <div id="ctrl-bulk-delete"></div>
+        <div id="ctrl-bulk-close"></div>
     </div>
-    
-    <!-- Column Visibility Modal -->
-    <div id="modal-col-visibility" class="modal-overlay" style="display:none;z-index:1000; position: fixed; inset: 0; background: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
-        <div class="modal" style="width:320px; background: var(--bg-surface); padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-            <div class="modal-header" style="display: flex; justify-content: space-between; margin-bottom: 16px;">
-                <h3 style="margin: 0; font-size: 16px;">Customize Columns</h3>
-                <button class="duck-btn-icon-only" style="background:none; border:none; cursor:pointer;" onclick="document.getElementById('modal-col-visibility').style.display='none'">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">Select columns to show/hide.</p>
-                <div style="display:flex;flex-direction:column;gap:8px;" id="col-visibility-checkboxes">
-                    <!-- Checkboxes injected by JS -->
-                </div>
+
+    <!-- Content Area -->
+    <div class="content-fill">
+        <div id="profiles-table-view" class="profiles-table-view">
+            <div class="card table-card table-card--profiles data-surface">
+                <!-- Table will be dynamically inserted here by DuckControls.Table -->
             </div>
         </div>
     </div>

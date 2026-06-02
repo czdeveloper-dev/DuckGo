@@ -1,0 +1,131 @@
+/* ============================================================
+   Autocomplete.css - Searchable Input Control
+   Styled to match Input.css design language
+   ============================================================ */
+
+.duck-autocomplete-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+}
+
+.duck-autocomplete-group label,
+.duck-autocomplete-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-tertiary);
+}
+
+/* Wrapper mimics .duck-input-wrap */
+.duck-autocomplete {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Inner input mimics .duck-input */
+.duck-autocomplete-input {
+    width: 100%;
+    height: 36px;
+    padding: 0 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r);
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-primary);
+    transition: all var(--t);
+    outline: none;
+    box-sizing: border-box;
+}
+
+.duck-autocomplete-input::placeholder {
+    color: var(--text-placeholder);
+}
+
+.duck-autocomplete-input:hover {
+    border-color: var(--border-strong);
+}
+
+.duck-autocomplete-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Icon inside input (left) - mimics .duck-input-icon */
+.duck-autocomplete-icon {
+    position: absolute;
+    left: 10px;
+    font-size: 16px;
+    color: var(--text-tertiary);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* When icon is present, indent input text */
+.duck-autocomplete-icon ~ .duck-autocomplete-input {
+    padding-left: 34px;
+}
+
+/* Dropdown panel - matches Dropdown/ComboBox dropdown style */
+.duck-autocomplete-dropdown {
+    position: fixed;
+    background: var(--bg-card, var(--bg-surface));
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-md, 8px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+    z-index: 99999;
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+    min-width: 180px;
+}
+
+.duck-autocomplete-dropdown.active {
+    display: flex;
+}
+
+/* Scrollbar */
+.duck-autocomplete-dropdown::-webkit-scrollbar { width: 6px; }
+.duck-autocomplete-dropdown::-webkit-scrollbar-track { background: transparent; }
+.duck-autocomplete-dropdown::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 3px;
+}
+
+/* Options - match Dropdown item style */
+.duck-autocomplete-option {
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-primary);
+    transition: background 0.1s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.duck-autocomplete-option:hover,
+.duck-autocomplete-option.selected {
+    background: var(--bg-hover, var(--bg-subtle));
+    color: var(--accent);
+}
+
+/* Loading indicator */
+.duck-autocomplete-loading {
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: center;
+    display: none;
+}
+
+.duck-autocomplete-loading.active {
+    display: block;
+}

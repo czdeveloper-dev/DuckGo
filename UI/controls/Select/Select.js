@@ -74,26 +74,28 @@ window.DuckControls.Select = {
         
         const menuCtrl = DuckControls.ContextMenu.create(triggerBtn, { items: contextItems });
         
-        // Listen to menu open/close to rotate arrow and update selected state
-        triggerBtn.addEventListener('click', () => {
-            const isActive = menuCtrl.element.classList.contains('active');
-            if (isActive) {
-                arrow.style.transform = 'rotate(180deg)';
-                if (menuCtrl.itemButtons) {
-                    menuCtrl.itemButtons.forEach(ib => {
-                        if (ib.item.value === selectValue) ib.btn.classList.add('selected');
-                        else ib.btn.classList.remove('selected');
-                    });
+        // Sync arrow and focus state with menu's active class
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((m) => {
+                if (m.attributeName === 'class') {
+                    const isActive = menuCtrl.element.classList.contains('active');
+                    if (isActive) {
+                        arrow.style.transform = 'rotate(180deg)';
+                        triggerBtn.classList.add('focused');
+                        if (menuCtrl.itemButtons) {
+                            menuCtrl.itemButtons.forEach(ib => {
+                                if (ib.item.value === selectValue) ib.btn.classList.add('selected');
+                                else ib.btn.classList.remove('selected');
+                            });
+                        }
+                    } else {
+                        arrow.style.transform = 'rotate(0deg)';
+                        triggerBtn.classList.remove('focused');
+                    }
                 }
-            } else {
-                arrow.style.transform = 'rotate(0deg)';
-            }
+            });
         });
-        document.addEventListener('click', (e) => {
-            if (!triggerBtn.contains(e.target)) {
-                arrow.style.transform = 'rotate(0deg)';
-            }
-        });
+        observer.observe(menuCtrl.element, { attributes: true });
         
         wrap.appendChild(triggerBtn);
         

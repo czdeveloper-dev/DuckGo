@@ -18,6 +18,9 @@
             if (this.options.text) {
                 this.setText(this.options.text);
             }
+            if (this.options.height) {
+                this.element.style.height = this.options.height;
+            }
         }
 
         setText(text) {
