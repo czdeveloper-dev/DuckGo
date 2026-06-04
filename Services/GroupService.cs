@@ -13,10 +13,12 @@ public class GroupService
     public async Task<List<ProfileGroup>> GetGroupsAsync()
         => await _repo.GetAllAsync();
 
-    public async Task<int> CreateGroupAsync(GroupCreateRequest req)
+    public async Task<ProfileGroup> CreateGroupAsync(GroupCreateRequest req)
     {
         var group = new ProfileGroup { Name = req.Name, CreatedAt = DateTime.Now };
-        return await _repo.CreateAsync(group);
+        var id = await _repo.CreateAsync(group);
+        group.Id = id;
+        return group;
     }
 
     public async Task UpdateGroupAsync(GroupUpdateRequest req)

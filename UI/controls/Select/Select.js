@@ -69,7 +69,7 @@ window.DuckControls.Select = {
 
         const textSpan = document.createElement('span');
         const selectedOpt = getOptionsArr().find(o => o.value === selectValue);
-        textSpan.textContent = selectedOpt ? selectedOpt.label : (initialOptions.placeholder || 'Select...');
+        textSpan.textContent = selectedOpt ? selectedOpt.label : (initialOptions.label || initialOptions.placeholder || 'Select...');
         textSpan.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
 
         const arrow = document.createElement('span');
@@ -92,6 +92,7 @@ window.DuckControls.Select = {
                 label: opt.label,
                 value: opt.value,
                 icon: opt.icon,
+                actions: opt.actions,
                 disabled: !!opt.isPlaceholder,
                 selected: selectValue === opt.value,
                 onClick: opt.isPlaceholder ? null : () => {
@@ -148,7 +149,7 @@ window.DuckControls.Select = {
             setValue(val) {
                 selectValue = val;
                 const opt = getOptionsArr().find(o => o.value === val);
-                textSpan.textContent = opt ? opt.label : (initialOptions.placeholder || 'Select...');
+                textSpan.textContent = opt ? opt.label : (initialOptions.label || initialOptions.placeholder || 'Select...');
             },
 
             /** Rebuild dropdown items when the options list changes (e.g. after CRUD) */

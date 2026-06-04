@@ -13,11 +13,16 @@ public class TagService
     public async Task<List<ProfileTag>> GetTagsAsync()
         => await _repo.GetAllAsync();
 
-    public async Task<int> CreateTagAsync(TagCreateRequest req)
+    public async Task<ProfileTag> CreateTagAsync(TagCreateRequest req)
     {
         var tag = new ProfileTag { Name = req.Name, CreatedAt = DateTime.Now };
-        return await _repo.CreateAsync(tag);
+        var id = await _repo.CreateAsync(tag);
+        tag.Id = id;
+        return tag;
     }
+
+    public async Task UpdateTagAsync(TagUpdateRequest req)
+        => await _repo.UpdateAsync(req.Id, req.Name);
 
     public async Task DeleteTagAsync(int id)
         => await _repo.DeleteAsync(id);

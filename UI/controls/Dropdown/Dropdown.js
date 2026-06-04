@@ -85,9 +85,13 @@
 
                 if (this.options.multi && window.DuckControls && window.DuckControls.Checkbox) {
                     const cbWrap = document.createElement('div');
-                    cbWrap.style.width = '100%';
+                    cbWrap.style.cssText = 'width: 100%; display: flex; overflow: hidden;';
                     cbWrap.style.pointerEvents = 'none'; // let the row handle the click
                     window.DuckControls.Checkbox.create(cbWrap, { label: item.label, checked: this.selectedValues.includes(item.value) });
+                    const lbl = cbWrap.querySelector('.duck-checkbox-label');
+                    if (lbl) {
+                        lbl.style.cssText = 'overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;';
+                    }
                     el.appendChild(cbWrap);
                 } else {
                     if (item.icon) {
@@ -101,6 +105,7 @@
                         const label = document.createElement('span');
                         label.className = 'duck-dropdown-label';
                         label.textContent = item.label;
+                        label.style.cssText = 'overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;';
                         el.appendChild(label);
                     }
 
@@ -110,6 +115,32 @@
                         desc.textContent = item.description;
                         el.appendChild(desc);
                     }
+                }
+
+                if (item.actions && item.actions.length > 0) {
+                    const acts = document.createElement('div');
+                    acts.className = 'duck-dropdown-item-actions';
+                    acts.style.cssText = 'display: flex; gap: 8px; margin-left: auto; align-items: center; padding-left: 8px; z-index: 2;';
+                    
+                    item.actions.forEach(act => {
+                        const btn = document.createElement('span');
+                        btn.className = `material-symbols-outlined duck-dropdown-item-action ${act.danger ? 'danger' : ''}`;
+                        btn.style.cssText = 'font-size: 16px; cursor: pointer; color: var(--text-secondary); transition: color 0.2s;';
+                        btn.textContent = act.icon;
+                        
+                        btn.addEventListener('click', (e) => { 
+                            e.preventDefault();
+                            e.stopPropagation(); 
+                            if (act.onClick) act.onClick(e); 
+                            this.close(); 
+                        });
+                        
+                        btn.addEventListener('mouseenter', () => btn.style.color = act.danger ? 'var(--danger)' : 'var(--accent)');
+                        btn.addEventListener('mouseleave', () => btn.style.color = 'var(--text-secondary)');
+                        
+                        acts.appendChild(btn);
+                    });
+                    el.appendChild(acts);
                 }
 
                 el.addEventListener('click', (e) => {
@@ -164,7 +195,7 @@
             this.menu.style.top = `${top}px`;
             this.menu.style.left = `${left}px`;
             
-            if (this.options.width === '100%') {
+            if (this.options.width === '100%' || this.options.matchTriggerWidth) {
                 this.menu.style.width = `${rect.width}px`;
             } else {
                 this.menu.style.minWidth = `${Math.max(rect.width, widthVal)}px`;

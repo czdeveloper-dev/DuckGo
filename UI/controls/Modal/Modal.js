@@ -165,6 +165,7 @@
             this.isOpen = true;
             this.overlay.classList.add('duck-modal-open');
             document.body.style.overflow = 'hidden';
+            window.dispatchEvent(new CustomEvent('duck-popup-opened', { detail: { source: this } }));
 
             if (this.options.onOpen) {
                 this.options.onOpen();

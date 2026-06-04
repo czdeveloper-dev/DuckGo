@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Web.WebView2.Core;
 using DuckGo.Data;
 using DuckGo.Data.Repositories;
+using DuckGo.Infrastructure.API;
 using DuckGo.Services;
 
 namespace DuckGo;
@@ -51,7 +52,13 @@ public partial class MainWindow : Window
             new ProfileFolderService(), new ConfigBuilder());
 
         // ── Unified dispatcher ───────────────────────────────────────────
-        _dispatcher = new MessageDispatcher(_profileService, _groupService, _tagService, _proxyService);
+        _dispatcher = new MessageDispatcher(new IDispatcher[]
+        {
+            new ProfileDispatcher(_profileService!),
+            new GroupDispatcher(_groupService!),
+            new TagDispatcher(_tagService!),
+            new ProxyDispatcher(_proxyService!),
+        });
 
         // ── WebView2 setup ───────────────────────────────────────────────
         WebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(255, 244, 246, 248);
@@ -115,9 +122,8 @@ public partial class MainWindow : Window
             Console.WriteLine($"[DuckGo] UI folder: {tempPath}");
             return tempPath;
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"[DuckGo] Extract error: {ex.Message}");
             return null;
         }
     }
@@ -140,13 +146,11 @@ public partial class MainWindow : Window
         try
         {
             var raw = e.WebMessageAsJson;
-            // Parse only to check the type field; let MessageDispatcher own full parsing
             if (string.IsNullOrWhiteSpace(raw))
             {
                 return;
             }
 
-            // Fast-path: if it's a request, dispatch via unified dispatcher
             if (raw.Contains("\"type\"") && raw.Contains("\"request\""))
             {
                 var responseJson = await _dispatcher!.DispatchAsync(raw);
@@ -154,21 +158,19 @@ public partial class MainWindow : Window
             }
             else
             {
-                // Legacy flat { id, action, data } format — forward to dispatcher (action-only)
                 var responseJson = await _dispatcher!.DispatchAsync(raw);
                 WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({responseJson})");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[DuckBridge] Error: {ex.Message}");
             try
             {
                 var errJson = System.Text.Json.JsonSerializer.Serialize(
                     new { type = "response", id = 0, success = false, error = ex.Message });
                 WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({errJson})");
             }
-            catch { /* swallow */ }
+            catch { }
         }
     }
 
@@ -182,7 +184,7 @@ public partial class MainWindow : Window
                 new { type = "push", channel, payload });
             WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({json})");
         }
-        catch { /* swallow if WebView not ready */ }
+            catch { }
     }
 
     protected override void OnClosed(EventArgs e)

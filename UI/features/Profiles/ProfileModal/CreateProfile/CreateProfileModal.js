@@ -55,11 +55,11 @@
             window.ProfileModals.CreateEntity.show('group', async (name) => {
                 try {
                     const result = await DuckBridge.call('group.create', { name });
-                    this._groups.push({ Id: result?.id, Name: name, CreatedAt: new Date().toISOString() });
+                    // result = { Id, Name, CreatedAt } from backend
+                    this._groups.push(result);
                     this._groups.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
                     if (this._groupCtrl) this._groupCtrl.setOptions(this._buildGroupOptions());
-                    // Auto-select the newly created group
-                    this._groupCtrl?.setValue(String(result?.id));
+                    this._groupCtrl?.setValue(String(result.Id));
                     window.DuckControls?.Toast?.success('Group Created', `Group "${name}" created.`);
                 } catch (e) {
                     window.DuckControls?.Toast?.error('Create Failed', e.message);
@@ -72,7 +72,8 @@
             window.ProfileModals.CreateEntity.show('tag', async (name) => {
                 try {
                     const result = await DuckBridge.call('tag.create', { name });
-                    this._tags.push({ Id: result?.id, Name: name, CreatedAt: new Date().toISOString() });
+                    // result = { Id, Name, CreatedAt } from backend
+                    this._tags.push(result);
                     this._tags.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
                     if (this._tagCtrl) this._tagCtrl.setOptions(this._buildTagOptions());
                     window.DuckControls?.Toast?.success('Tag Created', `Tag "${name}" created.`);

@@ -39,6 +39,17 @@ public class TagRepository : ITagRepository
         return Convert.ToInt32(await cmd.ExecuteScalarAsync());
     }
 
+    public async Task UpdateAsync(int id, string name)
+    {
+        await using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE Tags SET Name = @name WHERE Id = @id";
+        cmd.Parameters.AddWithValue("@id", id);
+        cmd.Parameters.AddWithValue("@name", name);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
     public async Task DeleteAsync(int id)
     {
         await using var conn = _db.GetConnection();

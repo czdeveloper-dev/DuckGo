@@ -29,6 +29,7 @@ public record BulkAssignGroupRequest(List<int> Ids, int? GroupId);
 public record GroupCreateRequest(string Name);
 public record GroupUpdateRequest(int Id, string Name);
 public record TagCreateRequest(string Name);
+public record TagUpdateRequest(int Id, string Name);
 public record TagDeleteRequest(int Id);
 
 public record ProxyCreateRequest(

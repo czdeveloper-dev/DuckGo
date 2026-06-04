@@ -95,8 +95,8 @@
             
             const updateDisplay = () => {
                 if (currentValues.size === 0) {
-                    // Fallback to placeholder or label
-                    textSpan.textContent = options.placeholder || options.label || 'Select...';
+                    // Fallback to label or placeholder
+                    textSpan.textContent = options.label || options.placeholder || 'Select...';
                     textSpan.style.color = 'var(--text-secondary)';
                 } else if (currentValues.size === 1) {
                     const val = Array.from(currentValues)[0];

@@ -109,14 +109,25 @@
         _buildGroupOptions() {
             return [
                 { label: 'All Groups', value: '' },
-                ...this._groups.map(g => ({ label: g.Name || g.name || '', value: String(g.Id ?? g.id) }))
+                ...this._groups.map(g => ({
+                    label: g.Name || g.name || '',
+                    value: String(g.Id ?? g.id),
+                    actions: [
+                        { icon: 'edit', onClick: (e) => this._editGroup(g) }
+                    ]
+                }))
             ];
         },
 
         _buildTagOptions() {
             return [
-                { label: 'All Tags', value: '' },
-                ...this._tags.map(t => ({ label: t.Name || t.name || '', value: String(t.Id ?? t.id) }))
+                ...this._tags.map(t => ({
+                    label: t.Name || t.name || '',
+                    value: String(t.Id ?? t.id),
+                    actions: [
+                        { icon: 'edit', onClick: (e) => this._editTag(t) }
+                    ]
+                }))
             ];
         },
 
@@ -138,7 +149,8 @@
             window.ProfileModals.CreateEntity.show('group', async (name) => {
                 try {
                     const result = await DuckBridge.call('group.create', { name });
-                    this._groups.push({ Id: result?.id, Name: name, CreatedAt: new Date().toISOString() });
+                    // result = { Id, Name, CreatedAt } from backend
+                    this._groups.push(result);
                     this._groups.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
                     this._updateGroupSelect();
                     window.DuckControls?.Toast?.success('Group Created', `Group "${name}" created successfully.`);
@@ -148,13 +160,16 @@
             });
         },
 
-        async _editGroup() {
-            const selectedValue = this._groupCtrl?.getValue() || '';
-            if (!selectedValue) {
-                window.DuckControls?.Toast?.info('Select a Group', 'Select a group from the dropdown to edit.');
-                return;
+        async _editGroup(groupObj) {
+            let group = groupObj;
+            if (!group) {
+                const selectedValue = this._groupCtrl?.getValue() || '';
+                if (!selectedValue) {
+                    window.DuckControls?.Toast?.info('Select a Group', 'Select a group from the dropdown to edit.');
+                    return;
+                }
+                group = this._groups.find(g => String(g.Id ?? g.id) === selectedValue);
             }
-            const group = this._groups.find(g => String(g.Id ?? g.id) === selectedValue);
             if (!group) return;
             const currentName = group.Name || group.name || '';
             if (!window.ProfileModals?.CreateEntity) return;
@@ -200,7 +215,8 @@
             window.ProfileModals.CreateEntity.show('tag', async (name) => {
                 try {
                     const result = await DuckBridge.call('tag.create', { name });
-                    this._tags.push({ Id: result?.id, Name: name, CreatedAt: new Date().toISOString() });
+                    // result = { Id, Name, CreatedAt } from backend
+                    this._tags.push(result);
                     this._tags.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
                     this._updateTagSelect();
                     window.DuckControls?.Toast?.success('Tag Created', `Tag "${name}" created successfully.`);
@@ -210,14 +226,17 @@
             });
         },
 
-        async _editTag() {
-            const selectedValues = this._tagCtrl?.getValues() || [];
-            if (selectedValues.length === 0) {
-                window.DuckControls?.Toast?.info('Select a Tag', 'Select a tag from the dropdown to edit.');
-                return;
+        async _editTag(tagObj) {
+            let tag = tagObj;
+            if (!tag) {
+                const selectedValues = this._tagCtrl?.getValues() || [];
+                if (selectedValues.length === 0) {
+                    window.DuckControls?.Toast?.info('Select a Tag', 'Select a tag from the dropdown to edit.');
+                    return;
+                }
+                const tagId = parseInt(selectedValues[0]);
+                tag = this._tags.find(t => (t.Id ?? t.id) === tagId);
             }
-            const tagId = parseInt(selectedValues[0]);
-            const tag = this._tags.find(t => (t.Id ?? t.id) === tagId);
             if (!tag) return;
             const currentName = tag.Name || tag.name || '';
             if (!window.ProfileModals?.CreateEntity) return;
@@ -319,10 +338,15 @@
         _initSelectControls() {
             const groupContainer = document.getElementById('ctrl-group');
             if (groupContainer) {
+                const defaultGroup = this._groups.find(g => (g.Name || g.name) === 'Default');
+                if (defaultGroup && !this._filters.group) {
+                    this._filters.group = String(defaultGroup.Id ?? defaultGroup.id);
+                }
+                
                 this._groupCtrl = DuckControls.Select.create({
                     label: 'GROUP', placeholder: 'All Groups', width: '180px', bgVariant: 'subtle',
+                    value: this._filters.group,
                     actions: [
-                        { text: 'Edit', icon: 'edit', onClick: () => this._editGroup() },
                         { text: 'Delete', icon: 'delete', color: 'var(--danger)', onClick: () => this._deleteGroup() },
                         { text: '+ Create', icon: 'add', onClick: () => this._createGroup() }
                     ],
@@ -337,7 +361,6 @@
                 this._tagCtrl = DuckControls.MultiSelectComboBox.create({
                     label: 'TAG', placeholder: 'All Tags', width: '180px', bgVariant: 'subtle',
                     actions: [
-                        { text: 'Edit', icon: 'edit', onClick: () => this._editTag() },
                         { text: 'Delete', icon: 'delete', color: 'var(--danger)', onClick: () => this._deleteTag() },
                         { text: '+ Create', icon: 'add', onClick: () => this._createTag() }
                     ],
