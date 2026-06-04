@@ -122,7 +122,7 @@
                 setValue: (val) => {
                     currentValue = val;
                     updateDisplay();
-                    if (dropdown) dropdown.selectedValue = val;
+                    if (dropdown) dropdown.setSelectedValue(val);
                 },
                 setOptions: (opts) => {
                     originalOptions = opts || [];

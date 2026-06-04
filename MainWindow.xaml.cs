@@ -7,6 +7,9 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Runtime.InteropServices;
 using Microsoft.Web.WebView2.Core;
+using DuckGo.Data;
+using DuckGo.Data.Repositories;
+using DuckGo.Services;
 
 namespace DuckGo;
 
@@ -15,15 +18,43 @@ public partial class MainWindow : Window
     private static readonly string ResourcePrefix = "DuckGo.UI.";
     private string? _uiFolder;
 
+    // Services & Dispatcher (unified message pipeline)
+    private DatabaseService?   _db;
+    private ProfileService?   _profileService;
+    private GroupService?     _groupService;
+    private TagService?       _tagService;
+    private ProxyService?     _proxyService;
+    private MessageDispatcher? _dispatcher;
+
     public MainWindow()
     {
         InitializeComponent();
         Loaded += OnLoaded;
-        StateChanged += OnStateChanged;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
+        // ── Init services ─────────────────────────────────────────────────
+        _db = new DatabaseService();
+        await _db.InitializeAsync();
+
+        var groupRepo   = new GroupRepository(_db);
+        var tagRepo     = new TagRepository(_db);
+        var proxyRepo   = new ProxyRepository(_db);
+        var profileRepo = new ProfileRepository(_db);
+
+        _groupService   = new GroupService(groupRepo);
+        _tagService     = new TagService(tagRepo);
+        _proxyService   = new ProxyService(proxyRepo);
+        _profileService = new ProfileService(
+            profileRepo, groupRepo, tagRepo, proxyRepo,
+            new ProfileFolderService(), new ConfigBuilder());
+
+        // ── Unified dispatcher ───────────────────────────────────────────
+        _dispatcher = new MessageDispatcher(_profileService, _groupService, _tagService, _proxyService);
+
+        // ── WebView2 setup ───────────────────────────────────────────────
+        WebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(255, 244, 246, 248);
         await WebView.EnsureCoreWebView2Async();
 
         WebView.CoreWebView2.Settings.IsScriptEnabled = true;
@@ -31,7 +62,7 @@ public partial class MainWindow : Window
         WebView.CoreWebView2.Settings.IsStatusBarEnabled = false;
         WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
 
-        // Extract UI files to temp folder
+        // ── Extract & host UI ─────────────────────────────────────────────
         _uiFolder = ExtractUiFiles();
         if (_uiFolder == null)
         {
@@ -39,18 +70,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Map virtual host "duckgo.local" to the extracted folder
-        // HTML can now use absolute URLs like http://duckgo.local/main.css
         WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-            "duckgo.local",
-            _uiFolder,
-            CoreWebView2HostResourceAccessKind.Allow
-        );
+            "duckgo.local", _uiFolder, CoreWebView2HostResourceAccessKind.Allow);
 
         WebView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
         PreviewKeyDown += OnPreviewKeyDown;
 
-        // Navigate using the virtual host
         WebView.CoreWebView2.Navigate("http://duckgo.local/index.html");
     }
 
@@ -59,13 +84,7 @@ public partial class MainWindow : Window
         try
         {
             var tempPath = Path.Combine(Path.GetTempPath(), "DuckGo_UI");
-            
-            // Clean old files first
-            if (Directory.Exists(tempPath))
-            {
-                try { Directory.Delete(tempPath, true); } catch { }
-            }
-            
+            if (Directory.Exists(tempPath)) { try { Directory.Delete(tempPath, true); } catch { } }
             Directory.CreateDirectory(tempPath);
 
             var assembly = Assembly.GetExecutingAssembly();
@@ -73,16 +92,12 @@ public partial class MainWindow : Window
             {
                 if (!name.StartsWith(ResourcePrefix)) continue;
 
-                // Convert resource name to file path
-                // "DuckGo.UI.index.html" -> "index.html"
-                // "DuckGo.UI.core.app.js" -> "core/app.js"
                 var relativePath = name.Substring(ResourcePrefix.Length);
                 var lastDot = relativePath.LastIndexOf('.');
                 if (lastDot > 0)
                 {
-                    var nameWithoutExt = relativePath.Substring(0, lastDot);
-                    var ext = relativePath.Substring(lastDot);
-                    relativePath = nameWithoutExt.Replace('.', Path.DirectorySeparatorChar) + ext;
+                    relativePath = relativePath.Substring(0, lastDot).Replace('.', Path.DirectorySeparatorChar)
+                                   + relativePath.Substring(lastDot);
                 }
 
                 var fullPath = Path.Combine(tempPath, relativePath);
@@ -107,39 +122,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnStateChanged(object? sender, EventArgs e)
-    {
-        if (WindowState == WindowState.Maximized)
-        {
-            MaximizeIcon.Children.Clear();
-            MaximizeIcon.Children.Add(new System.Windows.Controls.TextBlock
-            {
-                Text = "\uE923",
-                FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
-                FontSize = 10
-            });
-            BtnMaximize.ToolTip = "Restore";
-        }
-        else
-        {
-            MaximizeIcon.Children.Clear();
-            MaximizeIcon.Children.Add(new System.Windows.Controls.TextBlock
-            {
-                Text = "\uE922",
-                FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
-                FontSize = 10
-            });
-            BtnMaximize.ToolTip = "Maximize";
-        }
-    }
-
-    private void BtnMinimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
-    private void BtnMaximize_Click(object sender, RoutedEventArgs e)
-    {
-        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-    }
-    private void BtnClose_Click(object sender, RoutedEventArgs e) => Close();
-
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.F12)
@@ -149,14 +131,62 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+    // ── Unified message handler ─────────────────────────────────────────────
+    // Protocol:  JS →  { type: "request", id, action, payload }
+    //            C# →  { type: "response", id, success, error, data }
+    //            C# →  { type: "push", channel, payload }   (server-initiated)
+    private async void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
-        // TODO: wire up handlers
+        try
+        {
+            var raw = e.WebMessageAsJson;
+            // Parse only to check the type field; let MessageDispatcher own full parsing
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return;
+            }
+
+            // Fast-path: if it's a request, dispatch via unified dispatcher
+            if (raw.Contains("\"type\"") && raw.Contains("\"request\""))
+            {
+                var responseJson = await _dispatcher!.DispatchAsync(raw);
+                WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({responseJson})");
+            }
+            else
+            {
+                // Legacy flat { id, action, data } format — forward to dispatcher (action-only)
+                var responseJson = await _dispatcher!.DispatchAsync(raw);
+                WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({responseJson})");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DuckBridge] Error: {ex.Message}");
+            try
+            {
+                var errJson = System.Text.Json.JsonSerializer.Serialize(
+                    new { type = "response", id = 0, success = false, error = ex.Message });
+                WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({errJson})");
+            }
+            catch { /* swallow */ }
+        }
+    }
+
+    // ── Push notification helper ────────────────────────────────────────────
+    // Call this from anywhere in the C# backend to push data to JS without a request.
+    public void Push(string channel, object payload)
+    {
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(
+                new { type = "push", channel, payload });
+            WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({json})");
+        }
+        catch { /* swallow if WebView not ready */ }
     }
 
     protected override void OnClosed(EventArgs e)
     {
-        // Cleanup temp folder
         if (!string.IsNullOrEmpty(_uiFolder) && Directory.Exists(_uiFolder))
         {
             try { Directory.Delete(_uiFolder, true); } catch { }
@@ -164,60 +194,37 @@ public partial class MainWindow : Window
         base.OnClosed(e);
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct POINT { public int x; public int y; }
+    public enum DWMWINDOWATTRIBUTE
+    {
+        DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
+        DWMWA_WINDOW_CORNER_PREFERENCE = 33,
+        DWMWA_CAPTION_COLOR = 35,
+        DWMWA_TEXT_COLOR = 36
+    }
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct MINMAXINFO { public POINT ptReserved; public POINT ptMaxSize; public POINT ptMaxPosition; public POINT ptMinTrackSize; public POINT ptMaxTrackSize; }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct RECT { public int left, top, right, bottom; }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct MONITORINFO { public int cbSize; public RECT rcMonitor; public RECT rcWork; public uint dwFlags; }
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
-
-    [DllImport("user32.dll")]
-    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
-
-    private const uint MONITOR_DEFAULTTONEAREST = 2;
+    [DllImport("dwmapi.dll", PreserveSig = true)]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, DWMWINDOWATTRIBUTE attr, ref int attrValue, int attrSize);
 
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
         if (PresentationSource.FromVisual(this) is HwndSource source)
         {
-            source.AddHook(HwndSourceHook);
-        }
-    }
-
-    private IntPtr HwndSourceHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-    {
-        const int WM_GETMINMAXINFO = 0x0024;
-        if (msg == WM_GETMINMAXINFO)
-        {
-            var mmi = (MINMAXINFO)Marshal.PtrToStructure(lParam, typeof(MINMAXINFO))!;
-            IntPtr monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-            if (monitor != IntPtr.Zero)
+            try
             {
-                MONITORINFO monitorInfo = new MONITORINFO();
-                monitorInfo.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
-                if (GetMonitorInfo(monitor, ref monitorInfo))
-                {
-                    RECT rcWorkArea = monitorInfo.rcWork;
-                    RECT rcMonitorArea = monitorInfo.rcMonitor;
+                int trueValue = 1;
+                DwmSetWindowAttribute(source.Handle, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE,
+                    ref trueValue, Marshal.SizeOf(typeof(int)));
 
-                    mmi.ptMaxPosition.x = Math.Abs(rcWorkArea.left - rcMonitorArea.left);
-                    mmi.ptMaxPosition.y = Math.Abs(rcWorkArea.top - rcMonitorArea.top);
-                    mmi.ptMaxSize.x = Math.Abs(rcWorkArea.right - rcWorkArea.left);
-                    mmi.ptMaxSize.y = Math.Abs(rcWorkArea.bottom - rcWorkArea.top);
-                }
+                int captionColor = 0x00302D2D;
+                DwmSetWindowAttribute(source.Handle, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR,
+                    ref captionColor, Marshal.SizeOf(typeof(int)));
+
+                int textColor = 0x00E0E0E0;
+                DwmSetWindowAttribute(source.Handle, DWMWINDOWATTRIBUTE.DWMWA_TEXT_COLOR,
+                    ref textColor, Marshal.SizeOf(typeof(int)));
             }
-            Marshal.StructureToPtr(mmi, lParam, true);
-            handled = true;
+            catch { /* Ignore on older Windows */ }
         }
-        return IntPtr.Zero;
     }
 }

@@ -105,8 +105,8 @@
 .bulk-actions-bar {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 6px 8px;
+    gap: 8px;
+    padding: 10px 14px;
     background: color-mix(in srgb, var(--accent) 8%, transparent);
     border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
     border-radius: 8px;
@@ -122,25 +122,27 @@
 
 .bulk-actions-bar .bulk-count {
     font-weight: 600;
-    font-size: 11px;
+    font-size: 13px;
     color: var(--text-primary);
     white-space: nowrap;
 }
 
 .bulk-actions-divider {
     width: 1px;
-    height: 18px;
+    height: 24px;
     background: color-mix(in srgb, var(--accent) 30%, transparent);
-    margin: 0 4px;
+    margin: 0 6px;
 }
 
-/* Force bulk action buttons to exactly 30px height */
+/* Force bulk action buttons to exactly 34px height */
 .bulk-actions-bar .duck-btn {
-    height: 30px !important;
-    padding: 0 12px;
+    height: 34px !important;
+    padding: 0 16px;
+    font-size: 13px !important;
+    font-weight: 500;
 }
 .bulk-actions-bar .duck-btn-icon-only {
-    width: 30px !important;
+    width: 34px !important;
     padding: 0;
 }
 

@@ -8,6 +8,8 @@
     gap: 8px;
     cursor: pointer;
     user-select: none;
+    overflow: hidden;
+    width: 100%;
 }
 
 .duck-checkbox.is-disabled {
@@ -93,4 +95,8 @@
     font-size: 13px;
     color: var(--text-primary);
     line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
 }

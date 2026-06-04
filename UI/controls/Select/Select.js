@@ -1,113 +1,165 @@
 window.DuckControls = window.DuckControls || {};
 window.DuckControls.Select = {
-    create(options) {
+    create(initialOptions) {
         const wrap = document.createElement('div');
         wrap.className = 'filter-stacked';
-        if (options.width) wrap.style.minWidth = options.width;
-        
-        if (options.label) {
+        if (initialOptions.width) {
+            wrap.style.width = initialOptions.width;
+            wrap.style.minWidth = initialOptions.width;
+            wrap.style.maxWidth = initialOptions.width;
+        }
+
+        // ── Label + actions header ────────────────────────────────
+        if (initialOptions.label) {
             const head = document.createElement('div');
             head.className = 'filter-stacked-head';
-            const label = document.createElement('span');
-            label.className = 'ui-label-sm';
-            label.textContent = options.label;
-            head.appendChild(label);
-            
-            if (options.action) {
-                const actionBtn = document.createElement('span');
-                actionBtn.className = 'filter-stacked-create';
-                actionBtn.textContent = options.action.text;
-                actionBtn.addEventListener('click', options.action.onClick);
-                head.appendChild(actionBtn);
+            const labelEl = document.createElement('span');
+            labelEl.className = 'ui-label-sm';
+            labelEl.textContent = initialOptions.label;
+            head.appendChild(labelEl);
+
+            const actionsContainer = document.createElement('div');
+            actionsContainer.style.cssText = 'display:flex;align-items:center;gap:12px;';
+
+            const addAction = (act) => {
+                const btn = document.createElement('span');
+                btn.className = 'filter-stacked-create';
+                if (act.icon) {
+                    const icon = document.createElement('span');
+                    icon.className = 'material-symbols-outlined';
+                    icon.style.cssText = 'font-size:15px;vertical-align:middle;';
+                    icon.textContent = act.icon;
+                    if (window.DuckControls?.Tooltip) {
+                        window.DuckControls.Tooltip.create(icon, { text: act.text, position: 'top' });
+                    } else {
+                        icon.title = act.text;
+                    }
+                    btn.appendChild(icon);
+                } else {
+                    btn.textContent = act.text;
+                }
+                if (act.color) btn.style.color = act.color;
+                btn.addEventListener('click', act.onClick);
+                actionsContainer.appendChild(btn);
+            };
+
+            if (initialOptions.actions) {
+                initialOptions.actions.forEach(addAction);
+            } else if (initialOptions.action) {
+                addAction(initialOptions.action);
             }
+
+            if (actionsContainer.children.length > 0) head.appendChild(actionsContainer);
             wrap.appendChild(head);
         }
-        
-        let selectValue = options.value || '';
-        
+
+        // ── State ────────────────────────────────────────────────
+        let selectValue = initialOptions.value || '';
+        let _optionsArr = Array.isArray(initialOptions.options)
+            ? initialOptions.options.slice()
+            : [];
+
+        const getOptionsArr = () => _optionsArr;
+
+        // ── Trigger button ──────────────────────────────────────
         const triggerBtn = document.createElement('button');
         triggerBtn.className = 'input-field-sm duck-custom-select';
-        if (options.bgVariant === 'subtle') triggerBtn.classList.add('bg-subtle');
-        triggerBtn.style.width = '100%';
-        triggerBtn.style.display = 'flex';
-        triggerBtn.style.alignItems = 'center';
-        triggerBtn.style.justifyContent = 'space-between';
-        
+        if (initialOptions.bgVariant === 'subtle') triggerBtn.classList.add('bg-subtle');
+        triggerBtn.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;';
+
         const textSpan = document.createElement('span');
-        const selectedOpt = (options.options || []).find(o => o.value === selectValue);
-        textSpan.textContent = selectedOpt ? selectedOpt.label : (options.placeholder || 'Select...');
-        textSpan.style.overflow = 'hidden';
-        textSpan.style.textOverflow = 'ellipsis';
-        textSpan.style.whiteSpace = 'nowrap';
-        
+        const selectedOpt = getOptionsArr().find(o => o.value === selectValue);
+        textSpan.textContent = selectedOpt ? selectedOpt.label : (initialOptions.placeholder || 'Select...');
+        textSpan.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+
         const arrow = document.createElement('span');
         arrow.className = 'material-symbols-outlined duck-select-arrow-icon';
         arrow.textContent = 'expand_more';
-        arrow.style.fontSize = '18px';
-        arrow.style.color = 'var(--text-tertiary)';
-        arrow.style.transition = 'transform 0.2s';
-        
+        arrow.style.cssText = 'font-size:18px;color:var(--text-tertiary);transition:transform 0.2s;';
+
         triggerBtn.appendChild(textSpan);
         triggerBtn.appendChild(arrow);
-        
-        let optionsArr = options.options || [];
-        if (optionsArr.length === 0) {
-            optionsArr = [{ label: 'No records found', icon: 'inbox', isPlaceholder: true }];
-        }
-        
-        const contextItems = optionsArr.map(opt => ({
-            label: opt.label,
-            value: opt.value,
-            icon: opt.icon,
-            actions: opt.actions,
-            disabled: opt.isPlaceholder,
-            selected: selectValue === opt.value,
-            onClick: opt.isPlaceholder ? null : () => {
-                selectValue = opt.value;
-                textSpan.textContent = opt.label;
-                if (options.onChange) {
-                    // Simulate standard event object
-                    options.onChange({ target: { value: opt.value } });
-                }
+
+        // ── Build context menu items from current _optionsArr ───────
+        let _menuCtrl = null;
+        let _itemButtons = [];
+
+        const buildItems = () => {
+            if (getOptionsArr().length === 0) {
+                return [{ label: 'No records found', icon: 'inbox', disabled: true }];
             }
-        }));
-        
-        const menuCtrl = DuckControls.ContextMenu.create(triggerBtn, { items: contextItems });
-        
-        // Sync arrow and focus state with menu's active class
+            return getOptionsArr().map(opt => ({
+                label: opt.label,
+                value: opt.value,
+                icon: opt.icon,
+                disabled: !!opt.isPlaceholder,
+                selected: selectValue === opt.value,
+                onClick: opt.isPlaceholder ? null : () => {
+                    selectValue = opt.value;
+                    textSpan.textContent = opt.label;
+                    if (initialOptions.onChange) {
+                        initialOptions.onChange({ target: { value: opt.value } });
+                    }
+                    // Rebuild items to sync selected state
+                    if (_menuCtrl) {
+                        const items = buildItems();
+                        _menuCtrl.setItems(items);
+                    }
+                }
+            }));
+        };
+
+        _menuCtrl = DuckControls.ContextMenu.create(triggerBtn, {
+            items: buildItems(),
+            matchTriggerWidth: true
+        });
+        _itemButtons = _menuCtrl.itemButtons || [];
+
+        // Sync arrow rotation with menu open/close
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((m) => {
                 if (m.attributeName === 'class') {
-                    const isActive = menuCtrl.element.classList.contains('active');
+                    const isActive = _menuCtrl.element.classList.contains('active');
+                    arrow.style.transform = isActive ? 'rotate(180deg)' : 'rotate(0deg)';
                     if (isActive) {
-                        arrow.style.transform = 'rotate(180deg)';
                         triggerBtn.classList.add('focused');
-                        if (menuCtrl.itemButtons) {
-                            menuCtrl.itemButtons.forEach(ib => {
+                        if (_menuCtrl.itemButtons) {
+                            _menuCtrl.itemButtons.forEach(ib => {
                                 if (ib.item.value === selectValue) ib.btn.classList.add('selected');
                                 else ib.btn.classList.remove('selected');
                             });
                         }
                     } else {
-                        arrow.style.transform = 'rotate(0deg)';
                         triggerBtn.classList.remove('focused');
                     }
                 }
             });
         });
-        observer.observe(menuCtrl.element, { attributes: true });
-        
+        observer.observe(_menuCtrl.element, { attributes: true });
+
         wrap.appendChild(triggerBtn);
-        
+
         return {
             element: wrap,
             trigger: triggerBtn,
-            getValue: () => selectValue,
-            setValue: (val) => {
+
+            getValue() { return selectValue; },
+
+            setValue(val) {
                 selectValue = val;
-                const opt = (options.options || []).find(o => o.value === val);
-                if (opt) textSpan.textContent = opt.label;
-            }
+                const opt = getOptionsArr().find(o => o.value === val);
+                textSpan.textContent = opt ? opt.label : (initialOptions.placeholder || 'Select...');
+            },
+
+            /** Rebuild dropdown items when the options list changes (e.g. after CRUD) */
+            setOptions(newOptions) {
+                _optionsArr = Array.isArray(newOptions) ? newOptions.slice() : [];
+                if (_menuCtrl) {
+                    _menuCtrl.setItems(buildItems());
+                }
+            },
+
+            getOptions() { return getOptionsArr(); }
         };
     }
 };

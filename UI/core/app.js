@@ -42,14 +42,14 @@
             console.log('[DuckApp] Loading initial data in background...');
             try {
                 const [groups, tags, profiles] = await Promise.all([
-                    _duckBridge.call('group.list'),
-                    _duckBridge.call('tag.list'),
-                    _duckBridge.call('profile.list')
+                    DuckBridge.call('group.list'),
+                    DuckBridge.call('tag.list'),
+                    DuckBridge.call('profile.list')
                 ]);
                 DuckStore.merge({
-                    groups: groups?.data || groups || [],
-                    tags: tags?.data || tags || [],
-                    profiles: profiles?.data?.items || profiles || [],
+                    groups:   groups   || [],
+                    tags:     tags     || [],
+                    profiles: profiles?.Items || profiles || [],
                 });
                 console.log('[DuckApp] Initial data loaded:', {
                     groups: DuckStore.get('groups')?.length,

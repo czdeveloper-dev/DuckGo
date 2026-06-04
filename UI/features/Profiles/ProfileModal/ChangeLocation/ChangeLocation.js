@@ -80,6 +80,7 @@ window.ProfileModals.ChangeLocation = {
         const latCtrl = DuckControls.Input.create({
             label: 'Latitude',
             placeholder: 'e.g. 21.0285',
+            icon: 'my_location',
             onInput: () => onCoordChange()
         });
         latContainer.appendChild(latCtrl.element);
@@ -89,6 +90,7 @@ window.ProfileModals.ChangeLocation = {
         const lngCtrl = DuckControls.Input.create({
             label: 'Longitude',
             placeholder: 'e.g. 105.8542',
+            icon: 'explore',
             onInput: () => onCoordChange()
         });
         lngContainer.appendChild(lngCtrl.element);

@@ -4,7 +4,7 @@
 
 .duck-tooltip {
     position: absolute;
-    z-index: 9999;
+    z-index: 10500;
     padding: 6px 10px;
     background: var(--bg-inverse, #1e293b);
     color: var(--text-inverse, #ffffff);

@@ -1,0 +1,71 @@
+/* SpinNumber.css */
+
+.duck-spinnumber-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.duck-spinnumber-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.duck-spinnumber-container {
+    display: flex;
+    align-items: center;
+    background: var(--bg-base);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r);
+    overflow: hidden;
+    height: 36px;
+    transition: border-color var(--t);
+}
+
+.duck-spinnumber-container:focus-within {
+    border-color: var(--accent);
+}
+
+.duck-spinnumber-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 100%;
+    background: var(--bg-surface);
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background var(--t), color var(--t);
+}
+
+.duck-spinnumber-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.duck-spinnumber-btn .material-symbols-outlined {
+    font-size: 16px;
+}
+
+.duck-spinnumber-input {
+    flex: 1;
+    width: 50px;
+    height: 100%;
+    border: none;
+    border-left: 1px solid var(--border-default);
+    border-right: 1px solid var(--border-default);
+    background: transparent;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-primary);
+    outline: none;
+    -moz-appearance: textfield;
+}
+
+.duck-spinnumber-input::-webkit-outer-spin-button,
+.duck-spinnumber-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}

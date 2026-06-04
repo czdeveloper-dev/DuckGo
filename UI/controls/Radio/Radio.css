@@ -1,0 +1,78 @@
+/* Radio.css - Custom Radio Button Control */
+.duck-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.duck-radio-group.inline {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.duck-radio-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-primary);
+    user-select: none;
+}
+
+.duck-radio-label.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.duck-radio-input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.duck-radio-custom {
+    position: relative;
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-color: var(--bg-elevated);
+    border: 2px solid var(--border-default);
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.duck-radio-label:hover:not(.disabled) .duck-radio-custom {
+    border-color: var(--accent);
+}
+
+.duck-radio-input:focus-visible ~ .duck-radio-custom {
+    box-shadow: 0 0 0 3px var(--accent-glow);
+    border-color: var(--accent);
+}
+
+.duck-radio-input:checked ~ .duck-radio-custom {
+    border-color: var(--accent);
+    background-color: var(--accent);
+}
+
+.duck-radio-custom::after {
+    content: '';
+    position: absolute;
+    display: none;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: white;
+}
+
+.duck-radio-input:checked ~ .duck-radio-custom::after {
+    display: block;
+}

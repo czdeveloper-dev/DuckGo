@@ -109,15 +109,32 @@
                 }
 
                 if (this.options.buttons && Array.isArray(this.options.buttons)) {
+                    const leftWrap = document.createElement('div');
+                    leftWrap.style.cssText = 'display:flex; gap:8px; margin-right:auto;';
+                    const rightWrap = document.createElement('div');
+                    rightWrap.style.cssText = 'display:flex; gap:8px;';
+
                     this.options.buttons.forEach(btnDef => {
                         const btn = document.createElement('button');
                         btn.className = `duck-btn ${btnDef.class || 'duck-btn-surface'}`;
-                        btn.textContent = btnDef.text;
+                        if (btnDef.icon) {
+                            btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px; margin-right:4px;">${btnDef.icon}</span>${btnDef.text}`;
+                        } else {
+                            btn.textContent = btnDef.text;
+                        }
                         if (btnDef.onClick) {
                             btn.addEventListener('click', (e) => btnDef.onClick(e, this));
                         }
-                        footer.appendChild(btn);
+                        
+                        if (btnDef.position === 'left') {
+                            leftWrap.appendChild(btn);
+                        } else {
+                            rightWrap.appendChild(btn);
+                        }
                     });
+
+                    if (leftWrap.children.length > 0) footer.appendChild(leftWrap);
+                    if (rightWrap.children.length > 0) footer.appendChild(rightWrap);
                 }
                 
                 this.container.appendChild(footer);
@@ -207,21 +224,11 @@
                 const modal = new Modal({
                     title: options.title || 'Alert',
                     content: `<p>${message}</p>`,
-                    footer: `<button class="btn primary" id="modal-ok-btn">OK</button>`,
+                    buttons: [
+                        { text: 'OK', class: 'duck-btn-primary', onClick: (e, m) => { m.close(); resolve(); } }
+                    ],
                     closeOnOverlay: false,
-                    onOpen() {
-                        const btn = document.getElementById('modal-ok-btn');
-                        if (btn) {
-                            btn.addEventListener('click', () => {
-                                modal.close();
-                                resolve();
-                            });
-                        }
-                    },
-                    onClose() {
-                        modal.destroy();
-                        resolve();
-                    }
+                    onClose: () => resolve()
                 });
                 modal.open();
             });
@@ -231,26 +238,69 @@
             return new Promise((resolve) => {
                 const modal = new Modal({
                     title: options.title || 'Confirm',
-                    content: `<p>${message}</p>`,
-                    footer: `
-                        <button class="btn ghost" id="modal-cancel-btn">Cancel</button>
-                        <button class="btn primary" id="modal-confirm-btn">Confirm</button>
-                    `,
+                    content: `<p style="color: var(--text-primary); margin: 0;">${message}</p>`,
+                    buttons: [
+                        { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, m) => { m.close(); resolve(false); } },
+                        { text: 'Confirm', class: 'duck-btn-danger', onClick: (e, m) => { m.close(); resolve(true); } }
+                    ],
                     closeOnOverlay: false,
-                    onOpen() {
-                        document.getElementById('modal-cancel-btn')?.addEventListener('click', () => {
-                            modal.close();
-                            resolve(false);
-                        });
-                        document.getElementById('modal-confirm-btn')?.addEventListener('click', () => {
-                            modal.close();
-                            resolve(true);
-                        });
+                    onClose: () => resolve(false)
+                });
+                modal.open();
+            });
+        },
+
+        prompt(message, defaultValue = '', options = {}) {
+            return new Promise((resolve) => {
+                const inputWrap = document.createElement('div');
+                inputWrap.style.cssText = 'display:flex; flex-direction:column; gap:8px; margin-top:8px;';
+                
+                const label = document.createElement('div');
+                label.style.cssText = 'font-size:13px; color:var(--text-primary);';
+                label.textContent = message;
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.style.cssText = 'padding: 8px 12px; border: 1px solid var(--border-default); border-radius: 6px; font-size: 13px; outline: none; background: var(--bg-base); color: var(--text-primary); transition: border-color 0.2s; width: 100%; box-sizing: border-box;';
+                input.value = defaultValue;
+                
+                input.addEventListener('focus', () => input.style.borderColor = 'var(--accent)');
+                input.addEventListener('blur', () => input.style.borderColor = 'var(--border-default)');
+                
+                inputWrap.appendChild(label);
+                inputWrap.appendChild(input);
+
+                let resolved = false;
+
+                const modal = new Modal({
+                    title: options.title || 'Prompt',
+                    content: inputWrap,
+                    buttons: [
+                        { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, m) => { resolved = true; m.close(); resolve(null); } },
+                        { text: 'Save', class: 'duck-btn-primary', onClick: (e, m) => { resolved = true; m.close(); resolve(input.value); } }
+                    ],
+                    closeOnOverlay: false,
+                    onOpen: () => {
+                        // Focus on open
+                        setTimeout(() => {
+                            input.focus();
+                            input.select();
+                        }, 50);
                     },
-                    onClose() {
-                        modal.destroy();
+                    onClose: () => {
+                        if (!resolved) resolve(null);
                     }
                 });
+                
+                // Allow enter key
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        resolved = true;
+                        modal.close();
+                        resolve(input.value);
+                    }
+                });
+
                 modal.open();
             });
         }

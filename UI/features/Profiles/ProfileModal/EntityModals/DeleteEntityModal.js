@@ -1,0 +1,131 @@
+// DeleteEntityModal.js
+
+(function() {
+    'use strict';
+
+    window.ProfileModals = window.ProfileModals || {};
+
+    window.ProfileModals.DeleteEntity = {
+        _modal: null,
+
+        /**
+         * @param {string} type 'group' or 'tag'
+         * @param {Array<{label: string, value: any}>} availableItems 
+         * @param {function} onDelete callback with (selectedValues, deleteProfilesMode)
+         */
+        show(type, availableItems, onDelete) {
+            if (this._modal) {
+                this._modal.destroy();
+                this._modal = null;
+            }
+
+            const isGroup = type === 'group';
+            const entityName = isGroup ? 'Group' : 'Tag';
+
+            const modalBody = document.createElement('div');
+            modalBody.style.cssText = 'display:flex; flex-direction:column; gap:20px;';
+
+            // Warning Banner
+            const warningWrap = document.createElement('div');
+            warningWrap.style.cssText = 'background: color-mix(in srgb, var(--danger, #f44336) 5%, transparent); border: 1px solid color-mix(in srgb, var(--danger, #f44336) 20%, transparent); border-radius: 8px; padding: 16px; display: flex; align-items: flex-start; gap: 12px;';
+            
+            const warningIcon = document.createElement('span');
+            warningIcon.className = 'material-symbols-outlined';
+            warningIcon.textContent = 'warning';
+            warningIcon.style.cssText = 'color: var(--danger, #f44336); font-size: 22px;';
+            
+            const bannerContent = document.createElement('div');
+            bannerContent.style.cssText = 'display: flex; flex-direction: column; gap: 4px;';
+            
+            const warningTitle = document.createElement('div');
+            warningTitle.style.cssText = 'font-weight: 600; color: var(--danger, #f44336); font-size: 14px;';
+            warningTitle.textContent = `Delete ${entityName}(s)`;
+            
+            const warningDesc = document.createElement('div');
+            warningDesc.style.cssText = 'font-size: 13px; color: var(--text-secondary);';
+            if (isGroup) {
+                warningDesc.textContent = 'Deleting a group will affect all profiles currently assigned to it. Please select how you want to handle the profiles.';
+            } else {
+                warningDesc.textContent = 'Deleting a tag will only remove the tag from the system. It will NOT delete any profiles.';
+            }
+            
+            bannerContent.appendChild(warningTitle);
+            bannerContent.appendChild(warningDesc);
+            warningWrap.appendChild(warningIcon);
+            warningWrap.appendChild(bannerContent);
+            modalBody.appendChild(warningWrap);
+
+            // Select Dropdown
+            const selectWrap = document.createElement('div');
+            selectWrap.style.cssText = 'display:flex; flex-direction:column; gap:8px;';
+            const selectLabel = document.createElement('label');
+            selectLabel.className = 'ui-label';
+            selectLabel.textContent = `Select ${entityName}(s) to delete:`;
+            selectWrap.appendChild(selectLabel);
+
+            const multiSelect = window.DuckControls.MultiSelectComboBox.create({
+                options: availableItems,
+                placeholder: `Select ${entityName}(s)...`
+            });
+            selectWrap.appendChild(multiSelect.element);
+            modalBody.appendChild(selectWrap);
+
+            // Group Options (Radio Buttons)
+            let deleteProfilesMode = 'keep'; // 'keep' or 'delete'
+            if (isGroup) {
+                const radioWrap = document.createElement('div');
+                radioWrap.style.cssText = 'display:flex; flex-direction:column; gap:12px; margin-top: 8px;';
+                
+                const option1 = window.DuckControls.RadioGroup.create({
+                    name: 'deleteGroupMode',
+                    options: [
+                        { label: 'Keep Profiles (Only delete the Group)', value: 'keep' },
+                        { label: 'Delete Group AND all Profiles inside it', value: 'delete' }
+                    ],
+                    value: 'keep',
+                    onChange: (val) => {
+                        deleteProfilesMode = val;
+                    }
+                });
+                radioWrap.appendChild(option1.element);
+                modalBody.appendChild(radioWrap);
+            }
+
+            const footerWrap = document.createElement('div');
+            footerWrap.style.cssText = 'display:flex; justify-content:flex-end; gap:12px; width:100%;';
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'duck-btn duck-btn-surface';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.addEventListener('click', () => this._modal && this._modal.close());
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'duck-btn duck-btn-danger';
+            deleteBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px; margin-right:4px;">delete</span> Delete';
+            deleteBtn.addEventListener('click', () => {
+                const vals = multiSelect.getValues();
+                if (vals.length === 0) {
+                    if (window.DuckControls && DuckControls.Toast) DuckControls.Toast.error('Validation Error', `Please select at least one ${entityName} to delete.`);
+                    return;
+                }
+                if (onDelete) onDelete(vals, isGroup ? deleteProfilesMode : null);
+                if (this._modal) this._modal.close();
+            });
+
+            footerWrap.appendChild(cancelBtn);
+            footerWrap.appendChild(deleteBtn);
+
+            this._modal = window.DuckControls.Modal.create({
+                title: `Delete ${entityName}s`,
+                icon: 'delete',
+                content: modalBody,
+                footer: footerWrap,
+                size: 'md',
+                closeOnOverlay: true,
+                onClose: () => { this._modal = null; }
+            });
+
+            this._modal.open();
+        }
+    };
+})();

@@ -11,7 +11,7 @@
             this.options = {
                 text: options.text || '',
                 position: options.position || 'top',
-                offset: options.offset || 8,
+                offset: options.offset || 2,
                 delay: options.delay || 200,
                 ...options
             };

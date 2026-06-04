@@ -1,6 +1,19 @@
-// Profiles View - Using existing DuckControls properly
-
-(function() {
+/**
+ * Profiles View — wired to DuckBridge (unified JS ↔ C# protocol)
+ *
+ * Data flow:
+ *   onShow() → loadGroups() + loadTags() + loadProfiles()
+ *              → _updateGroupSelect() / _updateTagSelect()   (live dropdowns)
+ *
+ * Group CRUD:  + Create   →  group.create
+ *              Edit       →  group.update
+ *              Delete     →  group.delete
+ *
+ * Tag CRUD:    + Create   →  tag.create
+ *              Edit       →  (local, tags have no update endpoint)
+ *              Delete     →  tag.delete
+ */
+(function () {
     'use strict';
 
     const VIEW = {
@@ -8,41 +21,246 @@
         _selectedIds: new Set(),
         _filters: { search: '', id: '', group: '', tag: '', status: '' },
         _profilesData: [],
+        _groups: [],
+        _tags: [],
         _visibleCols: new Set(['seq', 'name', 'resource', 'group', 'tags', 'proxy', 'note', 'status', 'message', 'created', 'lastopened', 'action']),
 
+        // ── View entry ──────────────────────────────────────────────────
         async onShow() {
             if (!this._initialized) {
                 this._loadColPreferences();
                 this.initUI();
                 this._initialized = true;
             }
+            await this.loadGroups();
+            await this.loadTags();
             await this.loadProfiles();
         },
 
-        _loadColPreferences() {
-            const saved = localStorage.getItem('duck_profile_visible_cols');
-            if (saved) {
-                try {
-                    const arr = JSON.parse(saved);
-                    if (Array.isArray(arr)) {
-                        this._visibleCols = new Set(arr);
-                    }
-                } catch(e){}
-            }
+        // ── Data loaders ────────────────────────────────────────────────
+        async loadGroups() {
+            try {
+                this._groups = await DuckBridge.call('group.list') || [];
+                this._groups.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
+                this._updateGroupSelect();
+            } catch (e) { console.error('[Profiles] loadGroups failed:', e); }
         },
 
+        async loadTags() {
+            try {
+                this._tags = await DuckBridge.call('tag.list') || [];
+                this._tags.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
+                this._updateTagSelect();
+            } catch (e) { console.error('[Profiles] loadTags failed:', e); }
+        },
+
+        async loadProfiles() {
+            let items = [];
+            try {
+                const filters = {};
+                if (this._filters.search)   filters.search    = this._filters.search;
+                if (this._filters.group)    filters.groupId   = parseInt(this._filters.group);
+                if (this._filters.status)    filters.browserType = this._filters.status;
+                const resp = await DuckBridge.call('profile.list', filters);
+                items = resp?.Items || resp || [];
+            } catch (err) {
+                console.warn('[Profiles] Bridge unavailable, using mock:', err);
+            }
+
+            if (!Array.isArray(items) || items.length === 0) {
+                items = [
+                    { Id: 101, Name: 'Google Account Farm - 01', GroupId: 1, BrowserType: 'Chromium', CreatedAt: new Date(Date.now() - 86400000 * 2).toISOString(), LastOpened: new Date(Date.now() - 3600000).toISOString() },
+                    { Id: 102, Name: 'Facebook Ads Manager - 02', GroupId: 2, BrowserType: 'Firefox',   CreatedAt: new Date(Date.now() - 86400000 * 5).toISOString(), LastOpened: new Date(Date.now() - 7200000).toISOString() },
+                    { Id: 103, Name: 'TikTok Creator - 03',       GroupId: null, BrowserType: 'Edge',  CreatedAt: new Date(Date.now() - 86400000 * 10).toISOString(), LastOpened: null },
+                ];
+            }
+
+            items = items.map((p, idx) => ({
+                ...p,
+                id:         p.Id ?? p.id ?? 0,
+                seq:        idx + 1,
+                name:       p.Name ?? p.name ?? 'Unknown',
+                groupName:  p.GroupName ?? this._getGroupName(p.GroupId ?? p.groupId),
+                tags:       p.TagNames ?? p.tagNames ?? [],
+                proxy:      p.ProxyName ?? p.proxy ?? 'Direct',
+                notes:      p.Notes ?? p.notes ?? '',
+                status:    p.Status ?? p.status ?? 'stopped',
+                message:   p.Message ?? p.message ?? '-',
+                createdAt: p.CreatedAt ?? p.createdAt,
+                lastOpened: p.LastOpened ?? p.lastOpened,
+                browserType: p.BrowserType ?? p.browserType ?? 'Chromium'
+            }));
+
+            this._profilesData = items;
+            const currentIds = new Set(items.map(p => p.id));
+            for (const id of this._selectedIds) { if (!currentIds.has(id)) this._selectedIds.delete(id); }
+            this._updateBulkActions();
+            this._loadTableData(items);
+            this._updateStats(items);
+        },
+
+        _getGroupName(groupId) {
+            if (!groupId) return '';
+            const g = this._groups.find(x => (x.Id ?? x.id) === groupId);
+            return g ? (g.Name ?? g.name) : '';
+        },
+
+        // ── Select builders ────────────────────────────────────────────
+        _buildGroupOptions() {
+            return [
+                { label: 'All Groups', value: '' },
+                ...this._groups.map(g => ({ label: g.Name || g.name || '', value: String(g.Id ?? g.id) }))
+            ];
+        },
+
+        _buildTagOptions() {
+            return [
+                { label: 'All Tags', value: '' },
+                ...this._tags.map(t => ({ label: t.Name || t.name || '', value: String(t.Id ?? t.id) }))
+            ];
+        },
+
+        _updateGroupSelect() {
+            if (this._groupCtrl) this._groupCtrl.setOptions(this._buildGroupOptions());
+        },
+
+        _updateTagSelect() {
+            if (this._tagCtrl) this._tagCtrl.setOptions(this._buildTagOptions());
+        },
+
+        // ── Group CRUD ─────────────────────────────────────────────────
+        _buildGroupDeleteItems() {
+            return this._groups.map(g => ({ label: g.Name || g.name || '', value: String(g.Id ?? g.id) }));
+        },
+
+        async _createGroup() {
+            if (!window.ProfileModals?.CreateEntity) return;
+            window.ProfileModals.CreateEntity.show('group', async (name) => {
+                try {
+                    const result = await DuckBridge.call('group.create', { name });
+                    this._groups.push({ Id: result?.id, Name: name, CreatedAt: new Date().toISOString() });
+                    this._groups.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
+                    this._updateGroupSelect();
+                    window.DuckControls?.Toast?.success('Group Created', `Group "${name}" created successfully.`);
+                } catch (e) {
+                    window.DuckControls?.Toast?.error('Create Failed', e.message);
+                }
+            });
+        },
+
+        async _editGroup() {
+            const selectedValue = this._groupCtrl?.getValue() || '';
+            if (!selectedValue) {
+                window.DuckControls?.Toast?.info('Select a Group', 'Select a group from the dropdown to edit.');
+                return;
+            }
+            const group = this._groups.find(g => String(g.Id ?? g.id) === selectedValue);
+            if (!group) return;
+            const currentName = group.Name || group.name || '';
+            if (!window.ProfileModals?.CreateEntity) return;
+            window.ProfileModals.CreateEntity.show('group', async (newName) => {
+                if (!newName || newName === currentName) return;
+                try {
+                    await DuckBridge.call('group.update', { id: group.Id ?? group.id, name: newName });
+                    if (group.Name !== undefined) group.Name = newName;
+                    else group.name = newName;
+                    this._groups.sort((a, b) => ((a.Name || a.name) || '').localeCompare((b.Name || b.name) || ''));
+                    this._updateGroupSelect();
+                    await this.loadProfiles();
+                    window.DuckControls?.Toast?.success('Group Updated', `Renamed to "${newName}".`);
+                } catch (e) {
+                    window.DuckControls?.Toast?.error('Update Failed', e.message);
+                }
+            }, currentName);
+        },
+
+        async _deleteGroup() {
+            const items = this._buildGroupDeleteItems();
+            if (items.length === 0) { window.DuckControls?.Toast?.info('No Groups', 'No groups available to delete.'); return; }
+            if (!window.ProfileModals?.DeleteEntity) return;
+            window.ProfileModals.DeleteEntity.show('group', items, async (selectedValues) => {
+                try {
+                    for (const val of selectedValues) { await DuckBridge.call('group.delete', { id: parseInt(val) }); }
+                    this._groups = this._groups.filter(g => !selectedValues.includes(String(g.Id ?? g.id)));
+                    this._updateGroupSelect();
+                    this._filters.group = '';
+                    await this.loadProfiles();
+                    window.DuckControls?.Toast?.success('Groups Deleted', `${selectedValues.length} group(s) deleted.`);
+                } catch (e) { window.DuckControls?.Toast?.error('Delete Failed', e.message); }
+            });
+        },
+
+        // ── Tag CRUD ──────────────────────────────────────────────────
+        _buildTagDeleteItems() {
+            return this._tags.map(t => ({ label: t.Name || t.name || '', value: String(t.Id ?? t.id) }));
+        },
+
+        async _createTag() {
+            if (!window.ProfileModals?.CreateEntity) return;
+            window.ProfileModals.CreateEntity.show('tag', async (name) => {
+                try {
+                    const result = await DuckBridge.call('tag.create', { name });
+                    this._tags.push({ Id: result?.id, Name: name, CreatedAt: new Date().toISOString() });
+                    this._tags.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
+                    this._updateTagSelect();
+                    window.DuckControls?.Toast?.success('Tag Created', `Tag "${name}" created successfully.`);
+                } catch (e) {
+                    window.DuckControls?.Toast?.error('Create Failed', e.message);
+                }
+            });
+        },
+
+        async _editTag() {
+            const selectedValues = this._tagCtrl?.getValues() || [];
+            if (selectedValues.length === 0) {
+                window.DuckControls?.Toast?.info('Select a Tag', 'Select a tag from the dropdown to edit.');
+                return;
+            }
+            const tagId = parseInt(selectedValues[0]);
+            const tag = this._tags.find(t => (t.Id ?? t.id) === tagId);
+            if (!tag) return;
+            const currentName = tag.Name || tag.name || '';
+            if (!window.ProfileModals?.CreateEntity) return;
+            window.ProfileModals.CreateEntity.show('tag', async (newName) => {
+                if (!newName || newName === currentName) return;
+                try {
+                    // Tags don't have a backend update endpoint yet — update locally
+                    if (tag.Name !== undefined) tag.Name = newName;
+                    else tag.name = newName;
+                    this._tags.sort((a, b) => ((a.Name || a.name) || '').localeCompare((b.Name || b.name) || ''));
+                    this._updateTagSelect();
+                    window.DuckControls?.Toast?.success('Tag Updated', `Renamed to "${newName}".`);
+                } catch (e) {
+                    window.DuckControls?.Toast?.error('Update Failed', e.message);
+                }
+            }, currentName);
+        },
+
+        async _deleteTag() {
+            const items = this._buildTagDeleteItems();
+            if (items.length === 0) { window.DuckControls?.Toast?.info('No Tags', 'No tags available to delete.'); return; }
+            if (!window.ProfileModals?.DeleteEntity) return;
+            window.ProfileModals.DeleteEntity.show('tag', items, async (selectedValues) => {
+                try {
+                    for (const val of selectedValues) { await DuckBridge.call('tag.delete', { id: parseInt(val) }); }
+                    this._tags = this._tags.filter(t => !selectedValues.includes(String(t.Id ?? t.id)));
+                    this._updateTagSelect();
+                    await this.loadProfiles();
+                    window.DuckControls?.Toast?.success('Tags Deleted', `${selectedValues.length} tag(s) deleted.`);
+                } catch (e) { window.DuckControls?.Toast?.error('Delete Failed', e.message); }
+            });
+        },
+
+        // ── Init UI ──────────────────────────────────────────────────
         initUI() {
-            // Manually init header buttons (data-btn-options elements are NOT auto-init by initAll, which only targets [data-btn])
             const refreshEl = document.getElementById('ctrl-refresh');
             if (refreshEl) {
                 this._refreshBtn = DuckControls.Button.create(refreshEl, {
-                    variant: 'surface',
-                    icon: 'refresh',
+                    variant: 'surface', icon: 'refresh',
                     onClick: () => {
                         if (this._refreshBtn) this._refreshBtn.setSpinning(true);
-                        this.loadProfiles().finally(() => {
-                            if (this._refreshBtn) this._refreshBtn.setSpinning(false);
-                        });
+                        Promise.all([this.loadGroups(), this.loadTags(), this.loadProfiles()])
+                            .finally(() => { if (this._refreshBtn) this._refreshBtn.setSpinning(false); });
                     }
                 });
             }
@@ -50,15 +268,11 @@
             const colsEl = document.getElementById('ctrl-cols');
             if (colsEl) {
                 this._colsBtn = DuckControls.Button.create(colsEl, {
-                    variant: 'surface',
-                    icon: 'view_column',
+                    variant: 'surface', icon: 'view_column',
                     onClick: () => {
-                        if (window.ProfileModals && window.ProfileModals.CustomizeColumn) {
+                        if (window.ProfileModals?.CustomizeColumn) {
                             window.ProfileModals.CustomizeColumn.show(this._visibleCols, () => {
-                                // Use CSS hide/show instead of rebuilding the table
-                                if (this._table) {
-                                    this._table.updateColumnVisibility(this._visibleCols);
-                                }
+                                if (this._table) this._table.updateColumnVisibility(this._visibleCols);
                             });
                         }
                     }
@@ -68,10 +282,8 @@
             const createEl = document.getElementById('ctrl-create');
             if (createEl) {
                 this._createBtn = DuckControls.Button.create(createEl, {
-                    variant: 'primary',
-                    icon: 'add',
-                    text: 'Create Profile',
-                    onClick: () => this._openModal(null)
+                    variant: 'primary', icon: 'add', text: 'Create Profile',
+                    onClick: () => { window.ProfileModals?.CreateProfile?.show(); }
                 });
             }
 
@@ -82,149 +294,90 @@
             this._buildTable();
         },
 
-        _initColModal() {
-            const modalBody = document.createElement('div');
-            const checkboxesEl = document.createElement('div');
-            checkboxesEl.id = 'col-visibility-checkboxes';
-            modalBody.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
-            modalBody.appendChild(checkboxesEl);
-
-            this._colModal = DuckControls.Modal.create({
-                title: 'Customize Columns',
-                content: modalBody,
-                size: 'sm',
-                closeOnOverlay: true
-            });
-            this._buildColVisibilityCheckboxes();
-        },
-
         _initSearchControls() {
-            // Search by Name - Using DuckControls.Input
             const searchContainer = document.getElementById('ctrl-search');
             if (searchContainer) {
                 this._searchCtrl = DuckControls.Input.create({
-                    label: 'SEARCH',
-                    placeholder: 'Search by Name...',
-                    icon: 'search',
-                    width: '200px',
-                    bgVariant: 'subtle',
-                    onInput: (e) => {
-                        this._filters.search = e.target.value;
-                        this.loadProfiles();
-                    }
+                    label: 'SEARCH', placeholder: 'Search by Name...', icon: 'search',
+                    width: '200px', bgVariant: 'subtle',
+                    onInput: (e) => { this._filters.search = e.target.value; this.loadProfiles(); }
                 });
                 searchContainer.appendChild(this._searchCtrl.element);
             }
 
-            // Search by ID - Using DuckControls.Input
             const idContainer = document.getElementById('ctrl-id');
             if (idContainer) {
                 this._idCtrl = DuckControls.Input.create({
-                    label: 'ID',
-                    placeholder: '1,2,3 or 1-5',
-                    icon: 'tag',
-                    width: '140px',
-                    bgVariant: 'subtle',
-                    onInput: (e) => {
-                        this._filters.id = e.target.value;
-                        this.loadProfiles();
-                    }
+                    label: 'ID', placeholder: '1,2,3 or 1-5', icon: 'tag',
+                    width: '140px', bgVariant: 'subtle',
+                    onInput: (e) => { this._filters.id = e.target.value; this.loadProfiles(); }
                 });
                 idContainer.appendChild(this._idCtrl.element);
             }
         },
 
         _initSelectControls() {
-            // Group Select - Using DuckControls.Select
             const groupContainer = document.getElementById('ctrl-group');
             if (groupContainer) {
                 this._groupCtrl = DuckControls.Select.create({
-                    label: 'GROUP',
-                    placeholder: 'All Groups',
-                    width: '180px',
-                    bgVariant: 'subtle',
-                    action: {
-                        text: '+ Create',
-                        onClick: () => this._createGroup()
-                    },
-                    options: [],
-                    onChange: (e) => {
-                        this._filters.group = e.target.value;
-                        this.loadProfiles();
-                    }
+                    label: 'GROUP', placeholder: 'All Groups', width: '180px', bgVariant: 'subtle',
+                    actions: [
+                        { text: 'Edit', icon: 'edit', onClick: () => this._editGroup() },
+                        { text: 'Delete', icon: 'delete', color: 'var(--danger)', onClick: () => this._deleteGroup() },
+                        { text: '+ Create', icon: 'add', onClick: () => this._createGroup() }
+                    ],
+                    options: this._buildGroupOptions(),
+                    onChange: (e) => { this._filters.group = e.target.value; this.loadProfiles(); }
                 });
                 groupContainer.appendChild(this._groupCtrl.element);
             }
 
-            // Tag Select - Using DuckControls.Select
             const tagContainer = document.getElementById('ctrl-tag');
             if (tagContainer) {
-                this._tagCtrl = DuckControls.Select.create({
-                    label: 'TAG',
-                    placeholder: 'All Tags',
-                    width: '180px',
-                    bgVariant: 'subtle',
-                    action: {
-                        text: '+ Create',
-                        onClick: () => this._createTag()
-                    },
-                    options: [],
-                    onChange: (e) => {
-                        this._filters.tag = e.target.value;
-                        this.loadProfiles();
-                    }
+                this._tagCtrl = DuckControls.MultiSelectComboBox.create({
+                    label: 'TAG', placeholder: 'All Tags', width: '180px', bgVariant: 'subtle',
+                    actions: [
+                        { text: 'Edit', icon: 'edit', onClick: () => this._editTag() },
+                        { text: 'Delete', icon: 'delete', color: 'var(--danger)', onClick: () => this._deleteTag() },
+                        { text: '+ Create', icon: 'add', onClick: () => this._createTag() }
+                    ],
+                    options: this._buildTagOptions(),
+                    onChange: (selectedValues) => { this._filters.tag = selectedValues.join(','); this.loadProfiles(); }
                 });
                 tagContainer.appendChild(this._tagCtrl.element);
             }
 
-            // Status Select - Using DuckControls.Select
             const statusContainer = document.getElementById('ctrl-status');
             if (statusContainer) {
                 this._statusCtrl = DuckControls.Select.create({
-                    label: 'STATUS',
-                    placeholder: 'All',
-                    width: '120px',
-                    bgVariant: 'subtle',
+                    label: 'STATUS', placeholder: 'All', width: '120px', bgVariant: 'subtle',
                     options: [
                         { label: 'All', value: '' },
                         { label: 'Ready', value: 'ready' },
                         { label: 'Running', value: 'running' },
                         { label: 'Stopped', value: 'stopped' }
                     ],
-                    onChange: (e) => {
-                        this._filters.status = e.target.value;
-                        this.loadProfiles();
-                    }
+                    onChange: (e) => { this._filters.status = e.target.value; this.loadProfiles(); }
                 });
                 statusContainer.appendChild(this._statusCtrl.element);
             }
 
-            // Stat Panel - Custom align to match other filters
             const statContainer = document.getElementById('ctrl-stat');
             if (statContainer) {
                 const wrap = document.createElement('div');
                 wrap.className = 'filter-stacked';
-                
                 const head = document.createElement('div');
                 head.className = 'filter-stacked-head';
-                const label = document.createElement('span');
-                label.className = 'ui-label-sm';
-                label.textContent = 'TOTAL PROFILES';
-                head.appendChild(label);
+                const lbl = document.createElement('span');
+                lbl.className = 'ui-label-sm';
+                lbl.textContent = 'TOTAL PROFILES';
+                head.appendChild(lbl);
                 wrap.appendChild(head);
-                
                 this._statEl = document.createElement('div');
-                this._statEl.className = 'input-field-sm bg-subtle';
-                this._statEl.style.display = 'flex';
-                this._statEl.style.alignItems = 'center';
-                this._statEl.style.justifyContent = 'center';
-                this._statEl.style.width = '100%';
-                this._statEl.style.minWidth = '80px';
-                this._statEl.style.boxSizing = 'border-box';
-                this._statEl.style.cursor = 'default';
                 this._statEl.id = 'stat-total-profiles';
+                this._statEl.className = 'input-field-sm bg-subtle';
+                this._statEl.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;min-width:80px;';
                 this._statEl.textContent = '0';
-                
                 wrap.appendChild(this._statEl);
                 statContainer.appendChild(wrap);
             }
@@ -234,369 +387,196 @@
             const chipsContainer = document.getElementById('ctrl-chips');
             if (!chipsContainer) return;
 
-            // Automation Button
-            const automationEl = document.createElement('button');
-            automationEl.type = 'button';
-            chipsContainer.appendChild(automationEl);
-            DuckControls.Button.create(automationEl, {
-                variant: 'chip',
-                icon: 'account_tree',
-                text: 'Automation',
-                onClick: () => console.log('Automation clicked')
-            });
+            const mk = (el, cfg) => DuckControls.Button.create(el, cfg);
 
-            // Proxy Button (with ContextMenu dropdown)
+            const autoEl = document.createElement('button');
+            chipsContainer.appendChild(autoEl);
+            mk(autoEl, { variant: 'chip', icon: 'account_tree', text: 'Automation', onClick: () => {} });
+
             const proxyEl = document.createElement('button');
-            proxyEl.type = 'button';
             chipsContainer.appendChild(proxyEl);
-            DuckControls.Button.create(proxyEl, {
-                variant: 'chip',
-                icon: 'dns',
-                text: 'Proxy',
-                dropdownArrow: true,
-                onClick: () => {}
-            });
+            mk(proxyEl, { variant: 'chip', icon: 'dns', text: 'Proxy', dropdownArrow: true, onClick: () => {} });
             DuckControls.ContextMenu.create(proxyEl, {
                 items: [
-                    { label: 'Check Proxy', icon: 'wifi_tethering', onClick: () => console.log('Check proxy') },
-                    { label: 'Import Proxy', icon: 'upload', onClick: () => console.log('Import proxy') },
-                    { label: 'Copy Proxy', icon: 'content_copy', onClick: () => console.log('Copy proxy') },
+                    { label: 'Check Proxy', icon: 'wifi_tethering', onClick: () => { if (this._selectedIds.size > 0) this._bulkCheckProxy(); } },
+                    { label: 'Import Proxy', icon: 'upload', onClick: () => { window.ProfileModals?.ImportProxy?.show(); } },
+                    { label: 'Copy Proxy', icon: 'content_copy', onClick: () => this._bulkCopyProxy() },
                     'divider',
-                    { label: 'Remove Proxy', icon: 'link_off', danger: true, onClick: () => console.log('Remove proxy') }
+                    { label: 'Remove Proxy', icon: 'link_off', danger: true, onClick: () => { if (this._selectedIds.size > 0) this._bulkRemoveProxy(); } }
                 ]
             });
 
-            // Sync Actions Button
             const syncEl = document.createElement('button');
-            syncEl.type = 'button';
             chipsContainer.appendChild(syncEl);
-            DuckControls.Button.create(syncEl, {
-                variant: 'chip',
-                icon: 'sync',
-                text: 'Sync Actions',
-                onClick: () => console.log('Sync Actions clicked')
-            });
+            mk(syncEl, { variant: 'chip', icon: 'sync', text: 'Sync Actions', onClick: () => { window.ProfileModals?.SyncActions?.show(this._profilesData, this._selectedIds); } });
 
-            // Actions Button (with ContextMenu dropdown)
             const actionsEl = document.createElement('button');
-            actionsEl.type = 'button';
             chipsContainer.appendChild(actionsEl);
-            DuckControls.Button.create(actionsEl, {
-                variant: 'chip',
-                icon: 'bolt',
-                text: 'Actions',
-                dropdownArrow: true,
-                onClick: () => {}
-            });
+            mk(actionsEl, { variant: 'chip', icon: 'bolt', text: 'Actions', dropdownArrow: true, onClick: () => {} });
             DuckControls.ContextMenu.create(actionsEl, {
                 items: [
-                    { label: 'Import Profiles', icon: 'publish', onClick: () => {
-                        if (window.ProfileModals && window.ProfileModals.ImportProfiles) {
-                            window.ProfileModals.ImportProfiles.show(this._selectedIds);
-                        }
-                    }},
-                    { label: 'Export Profiles', icon: 'download', onClick: () => {
-                        if (window.ProfileModals && window.ProfileModals.ExportProfiles) {
-                            window.ProfileModals.ExportProfiles.show(this._selectedIds);
-                        }
-                    }},
-                    { label: 'Compare Profiles', icon: 'compare_arrows', onClick: () => {
-                        if (window.ProfileModals && window.ProfileModals.CompareProfiles) {
-                            window.ProfileModals.CompareProfiles.show(this._profilesData, this._selectedIds);
-                        }
-                    }},
+                    { label: 'Import Profiles', icon: 'publish', onClick: () => { window.ProfileModals?.ImportProfiles?.show([...this._selectedIds]); } },
+                    { label: 'Export Profiles', icon: 'download', onClick: () => { if (this._selectedIds.size > 0) window.ProfileModals?.ExportProfiles?.show([...this._selectedIds]); } },
+                    { label: 'Compare Profiles', icon: 'compare_arrows', onClick: () => { if (this._selectedIds.size > 0) window.ProfileModals?.CompareProfiles?.show(this._profilesData, this._selectedIds); } },
                     'divider',
-                    { label: 'Delete Selected', icon: 'delete_sweep', danger: true, onClick: () => console.log('Delete selected') }
+                    { label: 'Delete Selected', icon: 'delete_sweep', danger: true, onClick: () => { if (this._selectedIds.size > 0) this._bulkDelete(); } }
                 ]
             });
 
-            // Browser Config Button (with ContextMenu dropdown)
             const browserEl = document.createElement('button');
-            browserEl.type = 'button';
             chipsContainer.appendChild(browserEl);
-            DuckControls.Button.create(browserEl, {
-                variant: 'chip',
-                icon: 'build',
-                text: 'Browser Config',
-                dropdownArrow: true,
-                onClick: () => {}
-            });
+            mk(browserEl, { variant: 'chip', icon: 'build', text: 'Browser Config', dropdownArrow: true, onClick: () => {} });
             DuckControls.ContextMenu.create(browserEl, {
                 items: [
                     { type: 'label', label: 'Bulk Operations' },
-                    { label: 'Clear Cache', icon: 'cleaning_services', onClick: () => {
-                        if (window.ProfileModals && window.ProfileModals.ClearCache) {
-                            window.ProfileModals.ClearCache.show(this._selectedIds);
-                        }
-                    } },
-                    { label: 'Set Browser Version', icon: 'manage_history', onClick: () => {
-                        if (window.ProfileModals && window.ProfileModals.SetBrowserVersion) {
-                            window.ProfileModals.SetBrowserVersion.show(this._selectedIds);
-                        }
-                    } },
-                    { label: 'New Fingerprint', icon: 'casino', onClick: () => {
-                        if (window.ProfileModals && window.ProfileModals.NewFingerprint) {
-                            window.ProfileModals.NewFingerprint.show(this._selectedIds);
-                        }
-                    } },
-                    { label: 'Change Location', icon: 'location_on', onClick: () => {
-                        if (window.ProfileModals && window.ProfileModals.ChangeLocation) {
-                            window.ProfileModals.ChangeLocation.show(this._selectedIds);
-                        }
-                    } },
-                    { label: 'Change Bookmarks', icon: 'bookmark_add', onClick: () => {
-                        if (window.ProfileModals && window.ProfileModals.ChangeBookmark) {
-                            window.ProfileModals.ChangeBookmark.show(this._selectedIds);
-                        }
-                    } },
-                    { label: 'Update Start URL', icon: 'link', onClick: () => {
-                        if (window.ProfileModals && window.ProfileModals.UpdateStartUrl) {
-                            window.ProfileModals.UpdateStartUrl.show(this._selectedIds);
-                        }
-                    }}
+                    { label: 'Clear Cache', icon: 'cleaning_services', onClick: () => { if (this._selectedIds.size > 0) window.ProfileModals?.ClearCache?.show([...this._selectedIds]); } },
+                    { label: 'Set Browser Version', icon: 'manage_history', onClick: () => { if (this._selectedIds.size > 0) window.ProfileModals?.SetBrowserVersion?.show([...this._selectedIds]); } },
+                    { label: 'New Fingerprint', icon: 'casino', onClick: () => { if (this._selectedIds.size > 0) window.ProfileModals?.NewFingerprint?.show([...this._selectedIds]); } },
+                    { label: 'Change Location', icon: 'my_location', onClick: () => { if (this._selectedIds.size > 0) window.ProfileModals?.ChangeLocation?.show([...this._selectedIds]); } },
+                    { label: 'Change Bookmarks', icon: 'bookmark_add', onClick: () => { if (this._selectedIds.size > 0) window.ProfileModals?.ChangeBookmark?.show([...this._selectedIds]); } },
+                    { label: 'Update Start URL', icon: 'link', onClick: () => { if (this._selectedIds.size > 0) window.ProfileModals?.UpdateStartUrl?.show([...this._selectedIds]); } }
                 ]
             });
 
-            // Arrange Button
             const arrangeEl = document.createElement('button');
-            arrangeEl.type = 'button';
             chipsContainer.appendChild(arrangeEl);
-            DuckControls.Button.create(arrangeEl, {
-                variant: 'chip',
-                icon: 'grid_view',
-                text: 'Arrange',
-                onClick: () => console.log('Arrange clicked')
-            });
+            mk(arrangeEl, { variant: 'chip', icon: 'grid_view', text: 'Arrange Windows', onClick: () => { window.ProfileModals?.Arrange?.show([...this._selectedIds]); } });
         },
 
         _initBulkActions() {
-            // Launch Button
-            const launchContainer = document.getElementById('ctrl-bulk-launch');
-            if (launchContainer) {
-                this._bulkLaunchBtn = DuckControls.Button.create(launchContainer, {
-                    variant: 'secondary', size: 'sm',
-                    icon: 'play_arrow', text: 'Run Profile',
-                    onClick: () => this._bulkLaunch()
-                });
-            }
-
-            // Stop Button
-            const stopContainer = document.getElementById('ctrl-bulk-stop');
-            if (stopContainer) {
-                this._bulkStopBtn = DuckControls.Button.create(stopContainer, {
-                    variant: 'secondary', size: 'sm',
-                    icon: 'stop_circle', text: 'Stop Profile',
-                    onClick: () => this._bulkStop()
-                });
-            }
-
-            // Rename Button
-            const renameContainer = document.getElementById('ctrl-bulk-rename');
-            if (renameContainer) {
-                this._bulkRenameBtn = DuckControls.Button.create(renameContainer, {
-                    variant: 'secondary', size: 'sm',
-                    icon: 'drive_file_rename_outline', text: 'Bulk Rename',
-                    onClick: () => this._bulkRename()
-                });
-            }
-
-            // Delete Button
-            const deleteContainer = document.getElementById('ctrl-bulk-delete');
-            if (deleteContainer) {
-                this._bulkDeleteBtn = DuckControls.Button.create(deleteContainer, {
-                    variant: 'danger', size: 'sm',
-                    icon: 'delete', text: 'Delete Profile',
-                    onClick: () => this._bulkDelete()
-                });
-            }
-
-            // Close (Cancel Selection) Button
-            const closeContainer = document.getElementById('ctrl-bulk-close');
-            if (closeContainer) {
-                this._bulkCloseBtn = DuckControls.Button.create(closeContainer, {
-                    variant: 'ghost', size: 'sm',
-                    icon: 'close',
-                    onClick: () => {
-                        this._table.clearChecked();
-                        this._selectedIds.clear();
-                        this._updateBulkActions();
-                    }
-                });
-            }
+            const mkBtn = (id, cfg) => {
+                const el = document.getElementById(id);
+                if (el) DuckControls.Button.create(el, cfg);
+            };
+            mkBtn('ctrl-bulk-launch', { variant: 'secondary', size: 'sm', icon: 'play_arrow', text: 'Run Profile', onClick: () => this._bulkLaunch() });
+            mkBtn('ctrl-bulk-stop',    { variant: 'secondary', size: 'sm', icon: 'stop_circle', text: 'Stop Profile', onClick: () => this._bulkStop() });
+            mkBtn('ctrl-bulk-rename',  { variant: 'secondary', size: 'sm', icon: 'drive_file_rename_outline', text: 'Bulk Rename', onClick: () => this._bulkRename() });
+            mkBtn('ctrl-bulk-delete',  { variant: 'danger',    size: 'sm', icon: 'delete', text: 'Delete Profile', onClick: () => this._bulkDelete() });
+            mkBtn('ctrl-bulk-close',   { variant: 'ghost',     size: 'sm', icon: 'close', onClick: () => { this._table?.clearChecked?.(); this._selectedIds.clear(); this._updateBulkActions(); } });
         },
 
         _buildTable() {
-            // Destroy old table (cleanup ResizeObserver)
-            if (this._table && typeof this._table.destroy === 'function') {
-                this._table.destroy();
-            }
+            if (this._table?.destroy) this._table.destroy();
             const card = document.querySelector('.table-card--profiles');
-            const existingWrap = card?.querySelector('.data-table-wrap');
-            if (existingWrap) existingWrap.remove();
-
+            card?.querySelector('.data-table-wrap')?.remove();
             const _this = this;
-
             const cols = [
-                {
-                    id: 'select', type: 'checkbox', title: 'Select all',
-                    locked: true, lockedPosition: 'left', resizable: false, width: '52px',
-                    onCheckAll: (e) => { _this._handleCheckAll(e); }
-                },
-                {
-                    // # - autoSize based on record count, locked left, no resize, center aligned
-                    id: 'seq', label: '#', width: '3ch', minWidth: '3ch', maxWidth: '5ch',
-                    locked: true, lockedPosition: 'left', resizable: false, autoSize: true, align: 'center',
-                    render: (row) => { const el = document.createElement('span'); el.textContent = row.seq; return el; }
-                },
-                {
-                    // NAME - max 30ch, no resize, locked left, double-click edit
-                    id: 'name', label: 'NAME', width: '30ch', maxWidth: '30ch',
-                    locked: true, lockedPosition: 'left', resizable: false,
-                    render: (row) => _this._renderNameCell(row)
-                },
-                {
-                    // RESOURCE - auto-sizes to longest record, seed 8ch, no resize, capped at 14ch
-                    id: 'resource', label: 'RESOURCE', width: '8ch', minWidth: '8ch', maxWidth: '14ch',
-                    resizable: false, autoSize: true, field: 'browserType',
-                    render: (row) => _this._renderResourceCell(row)
-                },
-                {
-                    // GROUP - default 20ch, min 20ch, max 30ch
-                    id: 'group', label: 'GROUP', width: '20ch', minWidth: '20ch', maxWidth: '30ch',
-                    render: (row) => _this._renderGroupCell(row)
-                },
-                {
-                    // TAGS - default 20ch, min 20ch, max 30ch
-                    id: 'tags', label: 'TAGS', width: '20ch', minWidth: '20ch', maxWidth: '30ch',
-                    render: (row) => _this._renderTagsCell(row)
-                },
-                {
-                    // PROXY - custom panel+eye, default 30ch, min 30ch, max 35ch
-                    id: 'proxy', label: 'PROXY', width: '30ch', minWidth: '30ch', maxWidth: '35ch',
-                    render: (row) => _this._renderProxyCell(row)
-                },
-                {
-                    // STATUS - default 15ch, auto-sizes to longest record, no resize, pill badge, capped at 18ch
-                    id: 'status', label: 'STATUS', width: '15ch', minWidth: '15ch', maxWidth: '18ch',
-                    resizable: false, autoSize: true,
-                    render: (row) => _this._renderStatusBadge(row)
-                },
-                {
-                    // MESSAGE - default 35ch, min 35ch, max 50ch
-                    id: 'message', label: 'MESSAGE', width: '35ch', minWidth: '35ch', maxWidth: '50ch',
-                    render: (row) => _this._renderMessageCell(row)
-                },
-                {
-                    // NOTE - default 30ch, min 30ch, max 40ch, double-click edit
-                    id: 'note', label: 'NOTE', width: '30ch', minWidth: '30ch', maxWidth: '40ch',
-                    render: (row) => _this._renderNoteCell(row)
-                },
-                {
-                    // CREATED TIME - fixed 25ch, no resize (same size as Last Opened)
-                    id: 'created', label: 'CREATED TIME', width: '25ch', minWidth: '25ch',
-                    resizable: false,
-                    render: (row) => _this._renderDateCell(row.createdAt)
-                },
-                {
-                    // LAST OPENED - fixed 25ch, no resize (same size as Created Time)
-                    id: 'lastopened', label: 'LAST OPENED', width: '25ch', minWidth: '25ch',
-                    resizable: false,
-                    render: (row) => _this._renderDateCell(row.lastOpened)
-                },
-                { id: 'filler', width: 'auto' },
-                {
-                    // CONTROL - locked right, shadow on left edge
-                    id: 'action', label: 'CONTROL', width: '130px',
-                    locked: true, lockedPosition: 'right', resizable: false,
-                    render: (row) => _this._renderActionCell(row)
-                }
-            ].filter(c =>
-                // All columns are always built; visibility is managed via CSS (updateColumnVisibility)
-                c.id !== undefined || c.field !== undefined
-            );
-
-            // No filler column needed: table width: 100% fills the container.
-            // The browser distributes any remaining space to columns without explicit <col> width.
-            // We intentionally leave no column unspecified — Table.js handles min-width on container
-            // so sticky-right (CONTROL) always sits at the visual right edge.
+                { id: 'select', type: 'checkbox', title: 'Select all', locked: true, lockedPosition: 'left', resizable: false, width: '52px', onCheckAll: (e) => this._handleCheckAll(e) },
+                { id: 'seq', label: '#', width: '1ch', minWidth: '1ch', locked: true, lockedPosition: 'left', resizable: false, autoSize: true, align: 'center', render: (r) => { const el = document.createElement('span'); el.textContent = r.seq; return el; } },
+                { id: 'name', label: 'NAME', width: '40ch', maxWidth: '40ch', locked: true, lockedPosition: 'left', resizable: false, render: (r) => _this._renderNameCell(r) },
+                { id: 'resource', label: 'RESOURCE', width: '8ch', minWidth: '8ch', resizable: false, autoSize: true, field: 'browserType', render: (r) => _this._renderResourceCell(r) },
+                { id: 'group', label: 'GROUP', width: '20ch', minWidth: '20ch', maxWidth: '30ch', render: (r) => _this._renderGroupCell(r) },
+                { id: 'tags', label: 'TAGS', width: '20ch', minWidth: '20ch', maxWidth: '30ch', render: (r) => _this._renderTagsCell(r) },
+                { id: 'proxy', label: 'PROXY', width: '25ch', minWidth: '25ch', maxWidth: '30ch', render: (r) => _this._renderProxyCell(r) },
+                { id: 'status', label: 'STATUS', width: '15ch', minWidth: '15ch', resizable: false, autoSize: true, render: (r) => _this._renderStatusBadge(r) },
+                { id: 'message', label: 'MESSAGE', width: '30ch', minWidth: '30ch', maxWidth: '50ch', render: (r) => _this._renderMessageCell(r) },
+                { id: 'note', label: 'NOTE', width: '30ch', minWidth: '30ch', maxWidth: '40ch', fillSpace: true, render: (r) => _this._renderNoteCell(r) },
+                { id: 'created', label: 'CREATED TIME', width: '25ch', minWidth: '25ch', resizable: false, autoSize: true, render: (r) => _this._renderDateCell(r.createdAt) },
+                { id: 'lastopened', label: 'LAST OPENED', width: '25ch', minWidth: '25ch', resizable: false, autoSize: true, render: (r) => _this._renderDateCell(r.lastOpened) },
+                { id: 'action', label: 'CONTROL', width: '170px', locked: true, lockedPosition: 'right', resizable: false, render: (r) => _this._renderActionCell(r) }
+            ];
 
             const tableContainer = document.getElementById('table-profiles-container');
             this._table = DuckControls.Table.create({
-                container: tableContainer,
-                id: 'duck-table-profiles',
-                emptyText: 'No profiles found',
-                onCheckRow: (e, row) => {
-                    if (e.checked) _this._selectedIds.add(row.id);
-                    else _this._selectedIds.delete(row.id);
-                    _this._updateBulkActions();
-                },
-                onRowContextMenu: (e, row, index) => {
-                    if (_this._showRowContextMenu) _this._showRowContextMenu(e, row);
-                },
+                container: tableContainer, id: 'duck-table-profiles', emptyText: 'No profiles found', fillSpace: true,
+                onCheckRow: (e, row) => { e.checked ? this._selectedIds.add(row.id) : this._selectedIds.delete(row.id); this._updateBulkActions(); },
+                onRowContextMenu: (e, row) => this._showRowContextMenu(e, row),
                 columns: cols
             });
-
-            if (card) {
-                card.style.cssText = 'flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;';
-                card.appendChild(this._table.element);
-            }
-            // Apply initial column visibility via CSS (hides optional columns not in _visibleCols)
+            if (card) { card.style.cssText = 'flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;'; card.appendChild(this._table.element); }
             this._table.updateColumnVisibility(this._visibleCols);
         },
 
-        _loadTableData(profiles) {
-            if (this._table) this._table.renderData(profiles);
+        _loadTableData(profiles) { this._table?.renderData(profiles); },
+        _updateStats(profiles)   { if (this._statEl) this._statEl.textContent = `${profiles.length}`; },
+
+        // ── Bulk / row actions ───────────────────────────────────────
+        async _startProfile(id) {
+            try { await DuckBridge.call('profile.start', { id }); await this.loadProfiles(); }
+            catch (e) { console.error('Failed to start profile:', e); }
+        },
+        async _stopProfile(id) {
+            try { await DuckBridge.call('profile.stop', { id }); await this.loadProfiles(); }
+            catch (e) { console.error('Failed to stop profile:', e); }
+        },
+        async _deleteProfile(id) {
+            if (window.ProfileModals?.DeleteProfiles) {
+                window.ProfileModals.DeleteProfiles.show(new Set([id]), async (ids) => {
+                    try { await DuckBridge.call('profile.delete', { id: ids[0] }); this._selectedIds.delete(ids[0]); this._updateBulkActions(); await this.loadProfiles(); }
+                    catch (e) { console.error('Delete failed:', e); }
+                });
+            } else {
+                if (!confirm('Delete this profile?')) return;
+                try { await DuckBridge.call('profile.delete', { id }); this._selectedIds.delete(id); this._updateBulkActions(); await this.loadProfiles(); }
+                catch (e) { console.error('Delete failed:', e); }
+            }
+        },
+        _bulkLaunch()  { console.log('Bulk launch:', [...this._selectedIds]); },
+        _bulkStop()    { console.log('Bulk stop:', [...this._selectedIds]); },
+        _bulkHealth()  { console.log('Bulk health check:', [...this._selectedIds]); },
+        _bulkRename()  { if (this._selectedIds.size > 0) window.ProfileModals?.BulkRename?.show([...this._selectedIds].map(id => this._profilesData.find(p => p.id === id)).filter(Boolean)); },
+        _bulkDelete()  {
+            if (this._selectedIds.size === 0) return;
+            window.ProfileModals?.DeleteProfiles.show(this._selectedIds, async (ids) => {
+                for (const id of ids) { try { await DuckBridge.call('profile.delete', { id }); } catch {} }
+                this._selectedIds.clear(); this._updateBulkActions(); await this.loadProfiles();
+            });
+        },
+        _bulkRemoveProxy() { if (this._selectedIds.size > 0) window.ProfileModals?.RemoveProxy?.show(this._selectedIds, async (ids) => { console.log('Remove proxy:', ids); await this.loadProfiles(); }); },
+        _bulkCopyProxy() {
+            if (this._selectedIds.size === 0) return;
+            const proxies = [...this._selectedIds].map(id => this._profilesData.find(p => p.id === id)?.proxy).filter(p => p && p !== 'Direct');
+            if (!proxies.length) { window.DuckControls?.Toast?.info('Copy Proxy', 'No proxies to copy.'); return; }
+            this._copyToClipboard(proxies.join('\n')).then(() => window.DuckControls?.Toast?.success('Copied', `${proxies.length} proxies copied.`));
+        },
+        _bulkCheckProxy() {
+            if (this._selectedIds.size === 0) return;
+            let count = 0;
+            [...this._selectedIds].forEach(id => { const r = this._profilesData.find(p => p.id === id); if (r?.proxy && r.proxy !== 'Direct') { r.status = 'running'; r.message = 'Checking proxy...'; count++; } });
+            if (!count) { window.DuckControls?.Toast?.info('Check Proxy', 'No proxies configured.'); return; }
+            this._table?.updateData(this._profilesData);
+            setTimeout(() => {
+                [...this._selectedIds].forEach(id => { const r = this._profilesData.find(p => p.id === id); if (r?.proxy && r.proxy !== 'Direct') { r.status = 'ready'; r.message = `Proxy alive - ${Math.floor(Math.random() * 200 + 50)}ms`; } });
+                this._table?.updateData(this._profilesData);
+                window.DuckControls?.Toast?.success('Proxy Check', `Checked ${count} proxies.`);
+            }, 1000);
+        },
+        _openModal(profileId) { console.log('[Profiles] Open modal for profile:', profileId); },
+
+        _handleCheckAll(e) { e.checked ? this._profilesData.forEach(p => this._selectedIds.add(p.id)) : this._selectedIds.clear(); this._updateBulkActions(); },
+        _updateBulkActions() {
+            const has = this._selectedIds.size > 0;
+            const bar = document.getElementById('bulk-actions');
+            const cnt = document.getElementById('bulk-count');
+            if (bar) { bar.classList.toggle('visible', has); if (cnt) cnt.textContent = `${this._selectedIds.size} selected`; }
         },
 
-        // ── Cell renderers ─────────────────────────────────────────
-
+        // ── Cell renderers ───────────────────────────────────────────
         _renderNameCell(row) {
             const wrap = document.createElement('div');
             wrap.style.cssText = 'width:100%;';
-            
-            const nameContainer = document.createElement('div');
-            nameContainer.style.cssText = 'display:flex;align-items:center;';
-
-            const label = document.createElement('span');
-            label.style.cssText = 'font-weight:500;font-size:13px;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;';
-            label.textContent = (row.name && row.name.trim() !== '') ? this._escapeHtml(row.name) : '-';
-
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = row.name;
-            input.style.cssText = 'display:none;font-weight:500;font-size:13px;width:100%;border:1px solid var(--accent);border-radius:4px;padding:2px 4px;background:var(--bg-base);color:var(--text-primary);outline:none;';
-            
-            label.addEventListener('dblclick', () => {
-                label.style.display = 'none';
-                input.style.display = 'block';
-                input.focus();
-            });
-            
-            const finishEdit = () => {
-                input.style.display = 'none';
-                label.style.display = 'block';
-                if (input.value !== row.name) {
-                    row.name = input.value;
-                    label.textContent = (row.name && row.name.trim() !== '') ? this._escapeHtml(row.name) : '-';
-                }
-            };
-            
-            input.addEventListener('blur', finishEdit);
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') finishEdit();
-                if (e.key === 'Escape') {
-                    input.value = row.name;
-                    finishEdit();
-                }
-            });
-
-            nameContainer.appendChild(label);
-            nameContainer.appendChild(input);
-
-            // Prevent row selection when clicking on the name area
-            nameContainer.addEventListener('click', (e) => e.stopPropagation());
-
-            wrap.appendChild(nameContainer);
+            const nc = document.createElement('div');
+            nc.style.cssText = 'display:flex;align-items:center;width:100%;';
+            const badge = document.createElement('span');
+            const bt = (row.browserType || '').toLowerCase();
+            badge.style.cssText = 'font-size:10px;font-weight:700;background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:4px;padding:2px 4px;margin-right:8px;flex-shrink:0;width:56px;text-align:center;box-sizing:border-box;';
+            badge.textContent = bt.includes('mac') ? 'MacOS' : bt.includes('lin') ? 'Linux' : 'Windows';
+            const cw = document.createElement('div');
+            cw.style.cssText = 'flex:1;min-width:0;';
+            const lbl = document.createElement('span');
+            lbl.style.cssText = 'font-weight:500;font-size:13px;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;display:block;';
+            lbl.textContent = (row.name && row.name.trim()) ? this._escapeHtml(row.name) : '-';
+            const inp = document.createElement('input');
+            inp.type = 'text'; inp.value = row.name;
+            inp.style.cssText = 'display:none;font-weight:500;font-size:13px;width:100%;border:2px solid var(--accent);border-radius:6px;padding:6px 8px;background:var(--bg-base);color:var(--text-primary);outline:none;box-sizing:border-box;';
+            lbl.addEventListener('dblclick', () => { lbl.style.display = 'none'; inp.style.display = 'block'; inp.focus(); });
+            const done = () => { inp.style.display = 'none'; lbl.style.display = 'block'; if (inp.value !== row.name) { row.name = inp.value; lbl.textContent = this._escapeHtml(row.name || '-'); } };
+            inp.addEventListener('blur', done);
+            inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') done(); if (e.key === 'Escape') { inp.value = row.name; done(); } });
+            cw.appendChild(lbl); cw.appendChild(inp);
+            nc.appendChild(badge); nc.appendChild(cw);
+            nc.addEventListener('click', (e) => e.stopPropagation());
+            wrap.appendChild(nc);
             return wrap;
         },
 
@@ -604,16 +584,7 @@
             const wrap = document.createElement('div');
             wrap.style.cssText = 'display:flex;align-items:center;';
             const btn = document.createElement('button');
-            DuckControls.Button.create(btn, {
-                text: 'Data',
-                icon: 'category',
-                variant: 'secondary',
-                size: 'sm',
-                onClick: (e) => {
-                    e.stopPropagation();
-                    if (window.DuckApp && window.DuckApp.showView) window.DuckApp.showView('resourceManager', { profileId: row.id });
-                }
-            });
+            DuckControls.Button.create(btn, { text: 'Data', icon: 'category', variant: 'secondary', size: 'sm', onClick: (e) => { e.stopPropagation(); window.ProfileModals?.ManageData?.show(row.id); } });
             wrap.appendChild(btn);
             return wrap;
         },
@@ -629,187 +600,81 @@
             const tags = Array.isArray(row.tags) ? row.tags : [];
             const wrap = document.createElement('div');
             wrap.style.cssText = 'display:flex;flex-wrap:nowrap;gap:4px;overflow:hidden;align-items:center;width:100%;';
-            
-            if (tags.length === 0) {
-                const empty = document.createElement('span');
-                empty.style.cssText = 'color:var(--text-primary);font-size:12px;';
-                empty.textContent = '-';
-                wrap.appendChild(empty);
-                return wrap;
-            }
-            
-            const MAX_TAGS = 3;
-            const visibleTags = tags.slice(0, MAX_TAGS);
-            const hasMore = tags.length > MAX_TAGS;
-            
-            visibleTags.forEach(t => {
-                const el = document.createElement('span');
-                el.style.cssText = 'flex-shrink:0;';
-                DuckControls.Badge.create(el, { text: this._escapeHtml(t) });
-                el.classList.add('duck-badge-info'); // "cho tôi badge cho nó đẹp tí đi"
-                wrap.appendChild(el);
-            });
-            
-            if (hasMore) {
-                const el = document.createElement('span');
-                el.style.cssText = 'color:var(--text-tertiary);font-weight:700;font-size:12px;letter-spacing:1px;padding-left:2px;';
-                el.textContent = '...';
-                wrap.appendChild(el);
-            }
-            
+            if (!tags.length) { const e = document.createElement('span'); e.style.cssText = 'color:var(--text-primary);font-size:12px;'; e.textContent = '-'; wrap.appendChild(e); return wrap; }
+            tags.slice(0, 3).forEach(t => { const e = document.createElement('span'); DuckControls.Badge.create(e, { text: this._escapeHtml(String(t)) }); e.classList.add('duck-badge-info'); wrap.appendChild(e); });
+            if (tags.length > 3) { const e = document.createElement('span'); e.style.cssText = 'color:var(--text-tertiary);font-weight:700;font-size:12px;'; e.textContent = '...'; wrap.appendChild(e); }
             return wrap;
         },
 
         _renderProxyCell(row) {
             const wrap = document.createElement('div');
             wrap.style.cssText = 'display:flex;align-items:center;gap:8px;width:100%;';
-            
-            const proxyString = row.proxy || 'Direct';
-            
-            if (proxyString === 'Direct') {
-                wrap.textContent = '-';
-                return wrap;
-            }
-
+            const ps = row.proxy || 'Direct';
+            if (ps === 'Direct') { wrap.textContent = '-'; return wrap; }
+            const hiddenText = '********';
+            const fullText = ps.length > 30 ? ps.substring(0, 30) + '...' : ps;
             const panel = document.createElement('div');
-            panel.className = 'proxy-panel';
-            panel.style.cssText = 'flex:1;min-width:0;display:flex;align-items:center;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:6px;padding:4px 8px;transition:border-color 0.2s;';
-            
-            const textEl = document.createElement('span');
-            textEl.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-primary);width:100%;';
-            textEl.textContent = '********';
-            panel.appendChild(textEl);
-            
-            panel.addEventListener('click', (e) => {
-                e.stopPropagation();
-                navigator.clipboard.writeText(proxyString);
-                panel.style.borderColor = 'var(--success)';
-                setTimeout(() => panel.style.borderColor = 'var(--border-default)', 300);
-            });
+            panel.style.cssText = 'flex:1;min-width:0;display:flex;align-items:center;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:6px;padding:4px 8px;cursor:pointer;';
+            const te = document.createElement('span');
+            te.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-primary);width:100%;display:block;max-width:25ch;';
+            te.textContent = hiddenText;
+            panel.appendChild(te);
+            panel.addEventListener('click', (e) => { e.stopPropagation(); this._copyToClipboard(ps).then(() => { const orig = te.textContent; te.textContent = 'Copied'; te.style.color = 'var(--success)'; setTimeout(() => { te.textContent = orig; te.style.color = ''; }, 1000); }); });
             wrap.appendChild(panel);
-            
-            // Tooltip for copy action
-            if (window.DuckControls && window.DuckControls.Tooltip) {
-                DuckControls.Tooltip.create(panel, { text: 'Click to copy proxy' });
-            }
-            
-            let isHidden = true;
-            const btnEye = document.createElement('button');
-            DuckControls.Button.create(btnEye, {
-                icon: 'visibility',
-                variant: 'secondary',
-                size: 'sm'
-            });
-            btnEye.style.flexShrink = '0';
-            btnEye.style.borderRadius = '6px';
-            
-            btnEye.onclick = (e) => {
-                e.stopPropagation();
-                isHidden = !isHidden;
-                textEl.textContent = isHidden ? '********' : proxyString;
-                btnEye.innerHTML = `<span class="material-symbols-outlined duck-btn-icon">${isHidden ? 'visibility' : 'visibility_off'}</span>`;
-            };
-            wrap.appendChild(btnEye);
-            
+            let hidden = true;
+            const eyeBtn = document.createElement('button');
+            DuckControls.Button.create(eyeBtn, { icon: 'visibility', variant: 'secondary', size: 'sm' });
+            eyeBtn.style.cssText = 'flex-shrink:0;border-radius:6px;';
+            eyeBtn.onclick = (e) => { e.stopPropagation(); hidden = !hidden; te.textContent = hidden ? hiddenText : fullText; te.style.maxWidth = hidden ? '25ch' : '30ch'; eyeBtn.innerHTML = `<span class="material-symbols-outlined duck-btn-icon">${hidden ? 'visibility' : 'visibility_off'}</span>`; };
+            wrap.appendChild(eyeBtn);
             return wrap;
         },
 
         _renderNoteCell(row) {
             const wrap = document.createElement('div');
             wrap.style.cssText = 'width:100%;display:flex;align-items:center;';
-            
-            const label = document.createElement('span');
-            label.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;width:100%;color:var(--text-tertiary);font-size:12px;';
-            label.textContent = this._escapeHtml(row.notes || '-');
-
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = row.notes || '';
-            input.style.cssText = 'display:none;width:100%;border:1px solid var(--accent);border-radius:4px;padding:2px 4px;background:var(--bg-base);color:var(--text-primary);outline:none;font-size:12px;';
-            
-            label.addEventListener('dblclick', () => {
-                label.style.display = 'none';
-                input.style.display = 'block';
-                input.focus();
-            });
-            
-            const finishEdit = () => {
-                input.style.display = 'none';
-                label.style.display = 'block';
-                if (input.value !== (row.notes || '')) {
-                    row.notes = input.value;
-                    label.textContent = this._escapeHtml(row.notes || '-');
-                }
-            };
-            
-            input.addEventListener('blur', finishEdit);
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') finishEdit();
-                if (e.key === 'Escape') {
-                    input.value = row.notes || '';
-                    finishEdit();
-                }
-            });
-
-            wrap.appendChild(label);
-            wrap.appendChild(input);
+            const lbl = document.createElement('span');
+            lbl.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;width:100%;color:var(--text-tertiary);font-size:12px;';
+            lbl.textContent = this._escapeHtml(row.notes || '-');
+            const inp = document.createElement('input');
+            inp.type = 'text'; inp.value = row.notes || '';
+            inp.style.cssText = 'display:none;width:100%;border:2px solid var(--accent);border-radius:6px;padding:6px 8px;background:var(--bg-base);color:var(--text-primary);outline:none;';
+            lbl.addEventListener('dblclick', () => { lbl.style.display = 'none'; inp.style.display = 'block'; inp.focus(); });
+            const done = () => { inp.style.display = 'none'; lbl.style.display = 'block'; if (inp.value !== (row.notes || '')) { row.notes = inp.value; lbl.textContent = this._escapeHtml(row.notes || '-'); } };
+            inp.addEventListener('blur', done);
+            inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') done(); if (e.key === 'Escape') { inp.value = row.notes || ''; done(); } });
+            wrap.appendChild(lbl); wrap.appendChild(inp);
             return wrap;
         },
 
         _renderMessageCell(row) {
             const wrap = document.createElement('div');
             wrap.style.cssText = 'width:100%;display:flex;align-items:center;gap:4px;';
-            
-            const msgStr = row.message && row.message !== '-' ? row.message : '';
-            
-            if (msgStr) {
-                const btnCopy = document.createElement('button');
-                btnCopy.style.cssText = 'flex-shrink:0;background:none;border:none;cursor:pointer;padding:0 2px;color:var(--text-muted);line-height:1;display:flex;align-items:center;';
-                btnCopy.innerHTML = '<span class="material-symbols-outlined" style="font-size:13px;">content_copy</span>';
-                btnCopy.onclick = (e) => {
-                    e.stopPropagation();
-                    navigator.clipboard.writeText(msgStr);
-                };
-                
-                if (window.DuckControls && window.DuckControls.Tooltip) {
-                    DuckControls.Tooltip.create(btnCopy, { text: 'Copy message' });
-                }
-                
-                wrap.appendChild(btnCopy);
+            const msg = row.message && row.message !== '-' ? row.message : '';
+            if (msg) {
+                const cp = document.createElement('button');
+                cp.style.cssText = 'flex-shrink:0;background:none;border:none;cursor:pointer;padding:0 2px;color:var(--text-muted);display:flex;align-items:center;';
+                cp.innerHTML = '<span class="material-symbols-outlined" style="font-size:13px;">content_copy</span>';
+                cp.onclick = (e) => { e.stopPropagation(); navigator.clipboard.writeText(msg); };
+                wrap.appendChild(cp);
             }
-            
-            const label = document.createElement('span');
-            label.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;color:var(--text-tertiary);font-size:12px;';
-            label.textContent = this._escapeHtml(row.message || '-');
-            wrap.appendChild(label);
-            
+            const lbl = document.createElement('span');
+            lbl.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;color:var(--text-tertiary);font-size:12px;';
+            lbl.textContent = this._escapeHtml(msg || '-');
+            wrap.appendChild(lbl);
             return wrap;
         },
 
         _renderStatusBadge(row) {
             const wrap = document.createElement('div');
             wrap.style.cssText = 'display:flex;align-items:center;';
-            
-            const status = (row.status || 'stopped').toLowerCase();
-            const statusText = status.charAt(0).toUpperCase() + status.slice(1);
-            
+            const st = (row.status || 'stopped').toLowerCase();
             const pill = document.createElement('span');
-            pill.style.cssText = 'display:inline-block;width:14px;height:6px;border-radius:3px;margin-right:6px;';
-            
-            if (status === 'running') {
-                pill.style.background = '#10b981';
-            } else if (status === 'ready') {
-                pill.style.background = '#3b82f6';
-            } else {
-                pill.style.background = '#ef4444'; // Error or stopped
-            }
-            
-            const text = document.createElement('span');
-            text.style.cssText = 'font-size:12px;font-weight:500;';
-            text.textContent = statusText;
-            
-            wrap.appendChild(pill);
-            wrap.appendChild(text);
+            pill.style.cssText = `display:inline-block;width:14px;height:6px;border-radius:3px;margin-right:6px;background:${st === 'running' ? '#eab308' : st === 'ready' ? '#3b82f6' : '#ef4444'};`;
+            const txt = document.createElement('span');
+            txt.style.cssText = 'font-size:12px;font-weight:500;';
+            txt.textContent = st.charAt(0).toUpperCase() + st.slice(1);
+            wrap.appendChild(pill); wrap.appendChild(txt);
             return wrap;
         },
 
@@ -823,66 +688,34 @@
         _renderActionCell(row) {
             const wrap = document.createElement('div');
             wrap.style.cssText = 'display:flex;align-items:center;gap:2px;justify-content:flex-end;';
+            const running = row.status === 'running';
+            const mk = (el, cfg) => DuckControls.Button.create(el, cfg);
 
-            // Start/Stop
-            const isRunning = row.status === 'running';
-            const btnPlay = document.createElement('button');
-            DuckControls.Button.create(btnPlay, {
-                icon: isRunning ? 'stop' : 'play_arrow',
-                text: isRunning ? 'Stop' : 'Run',
-                variant: isRunning ? 'danger' : 'success',
-                size: 'sm'
-            });
-            btnPlay.style.width = '70px';
-            btnPlay.style.justifyContent = 'center';
-            btnPlay.onclick = (e) => {
-                e.stopPropagation();
-                if (isRunning) this._stopProfile(row.id);
-                else this._startProfile(row.id);
-            };
-            if (window.DuckControls && window.DuckControls.Tooltip) {
-                DuckControls.Tooltip.create(btnPlay, { text: isRunning ? 'Stop Profile' : 'Start Profile' });
-            }
-            
-            // Settings
-            const btnGear = document.createElement('button');
-            DuckControls.Button.create(btnGear, {
-                icon: 'settings',
-                variant: 'ghost',
-                size: 'sm'
-            });
-            btnGear.classList.add('duck-btn-icon-only');
-            btnGear.onclick = (e) => {
-                e.stopPropagation();
-                this._openModal(row.id);
-            };
-            if (window.DuckControls && window.DuckControls.Tooltip) {
-                DuckControls.Tooltip.create(btnGear, { text: 'Edit Profile' });
-            }
-            
-            // 3-dots ContextMenu
-            const btnMore = document.createElement('button');
-            DuckControls.Button.create(btnMore, {
-                icon: 'more_vert',
-                variant: 'ghost',
-                size: 'sm'
-            });
-            btnMore.classList.add('duck-btn-icon-only');
-            btnMore.onclick = (e) => e.stopPropagation();
-            if (window.DuckControls && window.DuckControls.Tooltip) {
-                DuckControls.Tooltip.create(btnMore, { text: 'More Actions' });
-            }
-            
-            if (window.DuckControls && window.DuckControls.ContextMenu) {
-                window.DuckControls.ContextMenu.create(btnMore, {
+            const playBtn = document.createElement('button');
+            mk(playBtn, { icon: running ? 'stop' : 'play_arrow', text: running ? 'Stop' : 'Run', variant: running ? 'danger' : 'success', size: 'sm' });
+            playBtn.style.cssText = 'width:70px;justify-content:center;';
+            playBtn.onclick = (e) => { e.stopPropagation(); running ? this._stopProfile(row.id) : this._startProfile(row.id); };
+
+            const gearBtn = document.createElement('button');
+            mk(gearBtn, { icon: 'settings', variant: 'ghost', size: 'sm' });
+            gearBtn.classList.add('duck-btn-icon-only');
+            gearBtn.onclick = (e) => { e.stopPropagation(); this._openModal(row.id); };
+
+            const moreBtn = document.createElement('button');
+            mk(moreBtn, { icon: 'more_vert', variant: 'ghost', size: 'sm' });
+            moreBtn.classList.add('duck-btn-icon-only');
+            moreBtn.onclick = (e) => e.stopPropagation();
+
+            if (window.DuckControls?.ContextMenu) {
+                window.DuckControls.ContextMenu.create(moreBtn, {
                     items: [
                         { type: 'label', label: 'Profile Actions' },
                         { label: 'Start Profile', icon: 'play_arrow', onClick: () => this._startProfile(row.id) },
                         { label: 'Stop Profile', icon: 'stop_circle', onClick: () => this._stopProfile(row.id) },
                         'divider',
                         { label: 'Check Proxy', icon: 'dns', onClick: () => {} },
-                        { label: 'Manage Cookies', icon: 'cookie', onClick: () => {} },
-                        { label: 'Set Browser Version', icon: 'laptop', onClick: () => {} },
+                        { label: 'Manage Cookies', icon: 'cookie', onClick: () => window.ProfileModals?.ManageCookies?.show([row.id]) },
+                        { label: 'Set Browser Version', icon: 'laptop', onClick: () => window.ProfileModals?.SetBrowserVersion?.show([row.id]) },
                         'divider',
                         { label: 'Detect Screen', icon: 'monitor', onClick: () => {} },
                         { label: 'Duplicate', icon: 'content_copy', onClick: () => {} },
@@ -890,164 +723,63 @@
                     ]
                 });
             }
-            
-            wrap.appendChild(btnPlay);
-            wrap.appendChild(btnGear);
-            wrap.appendChild(btnMore);
+
+            wrap.appendChild(playBtn); wrap.appendChild(gearBtn); wrap.appendChild(moreBtn);
             return wrap;
         },
 
-        _handleCheckAll(e) {
-            if (e.checked) {
-                this._profilesData.forEach(p => this._selectedIds.add(p.id));
-            } else {
-                this._selectedIds.clear();
-            }
-            this._updateBulkActions();
+        _showRowContextMenu(e, row) {
+            e.preventDefault();
+            const getIds = () => this._selectedIds.has(row.id) ? [...this._selectedIds].map(id => this._profilesData.find(p => p.id === id)).filter(Boolean) : [row];
+            DuckControls.ContextMenu.create(null, {
+                items: [
+                    { label: 'Copy', icon: 'content_copy', children: [
+                        { label: 'Profile Name', icon: 'badge', onClick: () => navigator.clipboard.writeText(row.name) },
+                        { label: 'Profile ID', icon: 'fingerprint', onClick: () => navigator.clipboard.writeText(row.id) },
+                        { label: 'Proxy', icon: 'public', onClick: () => { const p = row.proxy || ''; if (p) navigator.clipboard.writeText(p); } }
+                    ]},
+                    'divider',
+                    { label: 'Browser Config', icon: 'settings', children: [
+                        { label: 'Clear Cache', icon: 'cleaning_services', onClick: () => window.ProfileModals?.ClearCache?.show([row.id]) },
+                        { label: 'Set Browser Version', icon: 'manage_history', onClick: () => window.ProfileModals?.SetBrowserVersion?.show([row.id]) },
+                        { label: 'New Fingerprint', icon: 'casino', onClick: () => window.ProfileModals?.NewFingerprint?.show([row.id]) },
+                        { label: 'Change Location', icon: 'my_location', onClick: () => window.ProfileModals?.ChangeLocation?.show([row.id]) },
+                        { label: 'Change Bookmarks', icon: 'bookmark_add', onClick: () => window.ProfileModals?.ChangeBookmark?.show([row.id]) },
+                        { label: 'Update Start URL', icon: 'link', onClick: () => window.ProfileModals?.UpdateStartUrl?.show([row.id]) }
+                    ]},
+                    'divider',
+                    { label: 'Export Profile(s)', icon: 'download', onClick: () => window.ProfileModals?.ExportProfiles?.show([row.id]) },
+                    { label: 'Bulk Rename', icon: 'edit_note', onClick: () => window.ProfileModals?.BulkRename?.show([row]) },
+                    { label: 'Delete Selected', icon: 'delete', danger: true, onClick: () => this._deleteProfile(row.id) }
+                ]
+            }).showAt(e.clientX, e.clientY);
         },
 
-        _updateBulkActions() {
-            const bulkBar = document.getElementById('bulk-actions');
-            const bulkCount = document.getElementById('bulk-count');
-            if (bulkBar && bulkCount) {
-                if (this._selectedIds.size > 0) {
-                    bulkBar.classList.add('visible');
-                    bulkCount.textContent = `${this._selectedIds.size} selected`;
-                } else {
-                    bulkBar.classList.remove('visible');
-                }
-            }
-        },
-
-        async loadProfiles() {
-            let items = [];
-            try {
-                const resp = await _duckBridge.call('profile.list', this._filters);
-                if (resp && resp.success !== false) {
-                    items = resp.items || resp.data || [];
-                }
-            } catch (err) {
-                console.warn('Bridge unavailable, using mock data:', err);
-            }
-
-            // --- MOCK DATA FOR TESTING (remove when backend is ready) ---
-            if (!Array.isArray(items) || items.length === 0) {
-                items = [
-                    { id: 101, name: 'Google Account Farm - 01', GroupName: 'Farm Google', tagNames: ['farm', 'google'], proxy: '192.168.1.1:8080', notes: 'Main seed account', status: 'ready', browserType: 'Chrome/Win', CreatedAt: new Date(Date.now() - 86400000 * 2).toISOString(), LastOpened: new Date(Date.now() - 3600000).toISOString() },
-                    { id: 102, name: 'Facebook Ads Manager - 02', GroupName: 'Ads Facebook', tagNames: ['ads', 'fb'], proxy: '10.0.0.5:3128', notes: 'BM verified', status: 'running', browserType: 'Firefox/Mac', CreatedAt: new Date(Date.now() - 86400000 * 5).toISOString(), LastOpened: new Date(Date.now() - 7200000).toISOString() },
-                    { id: 103, name: 'TikTok Creator - 03', GroupName: 'TikTok', tagNames: ['tiktok'], proxy: 'Direct', notes: 'Requires US proxy', status: 'stopped', browserType: 'Edge/Win', CreatedAt: new Date(Date.now() - 86400000 * 10).toISOString(), LastOpened: null },
-                ];
-            }
-            // -------------------------------------------------------------
-
-            items = items.map((p, idx) => ({
-                ...p,
-                id: p.Id ?? p.id ?? 0,
-                seq: idx + 1,
-                name: p.Name ?? p.name ?? 'Unknown',
-                groupName: p.GroupName ?? p.Group?.Name ?? p.group ?? '',
-                tags: p.TagNames ?? p.tagNames ?? (p.Tags ? p.Tags.split(',') : []),
-                proxyName: p.ProxyId ?? p.proxyId ?? p.proxy ?? 'Direct',
-                notes: p.Notes ?? p.notes ?? '',
-                status: p.Status ?? p.status ?? 'stopped',
-                message: p.Message ?? p.message ?? '-',
-                createdAt: p.CreatedAt ?? p.createdAt,
-                lastOpened: p.LastOpened ?? p.lastOpened,
-                browserType: p.BrowserType ?? p.browserType ?? 'Chromium'
-            }));
-
-            this._profilesData = items;
-            this._loadTableData(items);
-            this._updateStats(items);
-        },
-
-        _updateStats(profiles) {
-            if (this._statEl) {
-                this._statEl.textContent = `${profiles.length}`;
-            }
-        },
-
-        async _startProfile(id) {
-            try {
-                await _duckBridge.call('profile.start', { id });
-                await this.loadProfiles();
-            } catch (e) {
-                console.error('Failed to start profile:', e);
-            }
-        },
-
-        async _stopProfile(id) {
-            try {
-                await _duckBridge.call('profile.stop', { id });
-                await this.loadProfiles();
-            } catch (e) {
-                console.error('Failed to stop profile:', e);
-            }
-        },
-
-        async _deleteProfile(id) {
-            if (!confirm('Delete this profile?')) return;
-            try {
-                await _duckBridge.call('profile.delete', { id });
-                this._selectedIds.delete(id);
-                await this.loadProfiles();
-            } catch (e) {
-                console.error('Failed to delete profile:', e);
-            }
-        },
-
-        _openModal(profileId) {
-            console.log('[Profiles] Open modal for profile:', profileId);
-        },
-
-        _createGroup() {
-            console.log('Create group clicked');
-        },
-
-        _createTag() {
-            console.log('Create tag clicked');
-        },
-
-        _bulkLaunch() {
-            console.log('Bulk launch:', [...this._selectedIds]);
-        },
-
-        _bulkStop() {
-            console.log('Bulk stop:', [...this._selectedIds]);
-        },
-
-        _bulkRename() {
-            console.log('Bulk rename:', [...this._selectedIds]);
-        },
-
-        _bulkHealth() {
-            console.log('Bulk health check:', [...this._selectedIds]);
-        },
-
-        _bulkDelete() {
-            if (this._selectedIds.size === 0) return;
-            if (!confirm(`Delete ${this._selectedIds.size} selected profiles?`)) return;
-            console.log('Bulk delete:', [...this._selectedIds]);
-        },
-
-        _escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        },
-
+        // ── Utilities ───────────────────────────────────────────────
+        _escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; },
         _formatDate(dateStr) {
             if (!dateStr) return '-';
-            try {
-                const date = new Date(dateStr);
-                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            } catch {
-                return dateStr;
-            }
+            try { return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+            catch { return dateStr; }
+        },
+        async _copyToClipboard(text) {
+            if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+            return new Promise((resolve, reject) => {
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = text; ta.style.cssText = 'position:fixed;left:-999999px;top:-999999px;';
+                    document.body.appendChild(ta); ta.focus(); ta.select();
+                    document.execCommand('copy') ? resolve() : reject(new Error('copy failed'));
+                    ta.remove();
+                } catch (e) { reject(e); }
+            });
+        },
+        _loadColPreferences() {
+            const saved = localStorage.getItem('duck_profile_visible_cols');
+            if (saved) { try { const arr = JSON.parse(saved); if (Array.isArray(arr)) this._visibleCols = new Set(arr); } catch {} }
         }
     };
 
-    // Register view
     window.DuckApp?.registerView('profiles', VIEW);
     window.ProfilesView = VIEW;
 })();

@@ -5,6 +5,10 @@
 
     class Button {
         constructor(element, options = {}) {
+            if (!element) {
+                element = document.createElement('button');
+                element.type = 'button';
+            }
             this.element = element instanceof HTMLElement ? element : document.querySelector(element);
             this.options = {
                 variant: options.variant || 'secondary',

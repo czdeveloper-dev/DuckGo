@@ -1,0 +1,47 @@
+.duck-toggle-group {
+    display: flex;
+    align-items: center;
+    background: var(--bg-subtle, #f4f6f8);
+    border: 1px solid var(--border-default, #d4ddf1);
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+    width: fit-content;
+}
+
+.duck-toggle-group-btn {
+    background: transparent;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary, #64748b);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    white-space: nowrap;
+}
+
+.duck-toggle-group-btn:hover {
+    color: var(--text-primary, #1e293b);
+}
+
+.duck-toggle-group-btn.active {
+    background: #fff;
+    color: var(--accent, #5a73d8);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    font-weight: 600;
+}
+
+/* Full width modifier */
+.duck-toggle-group.full-width {
+    width: 100%;
+}
+
+.duck-toggle-group.full-width .duck-toggle-group-btn {
+    flex: 1;
+}

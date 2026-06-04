@@ -5,6 +5,10 @@
 
     class Checkbox {
         constructor(element, options = {}) {
+            if (!element) {
+                element = document.createElement('label');
+                element.className = 'duck-checkbox-wrap'; // just to make sure it's valid
+            }
             this.element = element instanceof HTMLElement ? element : document.querySelector(element);
             this.options = {
                 checked: options.checked || false,

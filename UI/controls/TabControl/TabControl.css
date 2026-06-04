@@ -1,0 +1,151 @@
+/* TabControl.css */
+
+.duck-tabcontrol {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: var(--bg-base);
+}
+
+.duck-tabcontrol-sidebar {
+    width: 180px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-default);
+    background: var(--bg-surface);
+}
+
+.duck-tabcontrol-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.duck-tabcontrol-item {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.duck-tabcontrol-item:hover {
+    background: color-mix(in srgb, var(--accent) 5%, transparent);
+    color: var(--text-primary);
+}
+
+.duck-tabcontrol-item.active {
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.duck-tabcontrol-item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.duck-tabcontrol-item-delete {
+    font-size: 16px;
+    color: var(--text-tertiary);
+    display: none;
+    cursor: pointer;
+}
+
+.duck-tabcontrol-item:hover .duck-tabcontrol-item-delete {
+    display: block;
+}
+
+.duck-tabcontrol-item-delete:hover {
+    color: var(--danger);
+}
+
+.duck-tabcontrol-footer {
+    padding: 12px;
+    border-top: 1px solid var(--border-default);
+}
+
+.duck-tabcontrol-create-btn {
+    width: 100%;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px dashed var(--border-strong);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.duck-tabcontrol-create-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+.duck-tabcontrol-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-base);
+}
+
+.duck-tabcontrol-pane {
+    display: none;
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.duck-tabcontrol-pane.active {
+    display: block;
+}
+
+.duck-tabcontrol-horizontal {
+    flex-direction: column;
+}
+.duck-tabcontrol-horizontal .duck-tabcontrol-sidebar {
+    width: 100%;
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid var(--border-default);
+}
+.duck-tabcontrol-horizontal .duck-tabcontrol-list {
+    flex-direction: row;
+    padding: 0 16px;
+    gap: 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+.duck-tabcontrol-horizontal .duck-tabcontrol-item {
+    border-radius: 0;
+    border-bottom: 2px solid transparent;
+    padding: 12px 4px;
+}
+.duck-tabcontrol-horizontal .duck-tabcontrol-item.active {
+    background: transparent;
+    border-bottom-color: var(--accent);
+}
+.duck-tabcontrol-horizontal .duck-tabcontrol-item:hover {
+    background: transparent;
+    color: var(--text-primary);
+}
+

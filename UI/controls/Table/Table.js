@@ -81,11 +81,14 @@ window.DuckControls.Table = {
         }
 
         // ── Find filler index ────────────────────────────────────────
-        // Filler = the one column (id='filler', or width='auto'/'%')
-        // that absorbs all remaining horizontal space.
-        const fillerIdx = options.columns.findIndex(c =>
-            c.id === 'filler' || c.width === 'auto' || String(c.width || '').endsWith('%')
-        );
+        // Filler = the one column that absorbs all remaining horizontal space.
+        let fillerIdx = -1;
+        for (let i = 0; i < options.columns.length; i++) {
+            if (options.columns[i].fillSpace) {
+                fillerIdx = i;
+                break;
+            }
+        }
 
         // colWidths[i] = current pixel width (0 = filler/auto, set after measurement)
         const colWidths = options.columns.map((col, idx) => {
@@ -243,18 +246,20 @@ window.DuckControls.Table = {
         function applyColumnWidths() {
             let totalFixed = 0;
             cols.forEach((colEl, idx) => {
-                if (idx === fillerIdx) {
-                    colEl.style.width = ''; // filler absorbs remaining space
-                    return;
-                }
                 const col = options.columns[idx];
                 const colId = col.id || col.field || 'unknown';
                 if (_hiddenColIds.has(colId)) {
-                    // Hidden columns: collapse <col> to 0 so table-layout:fixed doesn't reserve space
+                    // Hidden columns: hide <col> so it doesn't break table-layout mapping
+                    colEl.style.display = 'none';
                     colEl.style.width = '0';
-                } else if (colWidths[idx] > 0) {
-                    colEl.style.width = `${colWidths[idx]}px`;
-                    totalFixed += colWidths[idx];
+                } else {
+                    colEl.style.display = '';
+                    if (idx === fillerIdx) {
+                        colEl.style.width = ''; // filler absorbs remaining space
+                    } else if (colWidths[idx] > 0) {
+                        colEl.style.width = `${colWidths[idx]}px`;
+                        totalFixed += colWidths[idx];
+                    }
                 }
             });
             if (totalFixed > 0) {
@@ -390,9 +395,9 @@ window.DuckControls.Table = {
             // ── Right-sticky: compute offsets ────────────────────────
             let rightPx = 0;
             let firstRightIdx = -1;
-            for (let i = options.columns.length - 1; i >= 0; i--) {
+            for (let i = 0; i < options.columns.length; i++) {
                 const col = options.columns[i];
-                if (col.locked && col.lockedPosition === 'right') {
+                if (col.locked && col.lockedPosition === 'right' && !_hiddenColIds.has(col.id || col.field || 'unknown')) {
                     firstRightIdx = i;
                     break;
                 }
@@ -611,15 +616,13 @@ window.DuckControls.Table = {
             },
             // updateColumnVisibility(visibleColIds: Set<string>)
             // Shows/hides optional columns via CSS without rebuilding the table.
-            // Always-visible columns (select, seq, name, resource, status, message, action, filler)
-            // are never hidden regardless of visibleColIds.
             updateColumnVisibility(visibleColIds) {
-                const alwaysVisible = new Set(['select', 'seq', 'name', 'resource', 'status', 'message', 'action', 'filler']);
                 _hiddenColIds.clear();
                 let css = '';
                 options.columns.forEach((col) => {
                     const colId = col.id || col.field || 'unknown';
-                    if (alwaysVisible.has(colId)) return;
+                    // Never hide locked columns, filler, or those marked alwaysVisible
+                    if (col.alwaysVisible || col.locked || colId === 'filler') return;
                     if (!visibleColIds.has(colId)) {
                         _hiddenColIds.add(colId);
                         css += `#${tableId} th.data-col-${colId}, #${tableId} td.data-col-${colId} { display: none !important; }\n`;

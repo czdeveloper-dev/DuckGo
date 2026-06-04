@@ -17,20 +17,26 @@ window.ProfileModals.CompareProfiles = {
         topBar.style.cssText = 'display:flex;gap:12px;align-items:flex-end;';
         
         const sel1Wrap = document.createElement('div');
-        sel1Wrap.style.flex = '1';
+        sel1Wrap.style.cssText = 'flex: 1; min-width: 0; overflow: hidden;';
         const sel2Wrap = document.createElement('div');
-        sel2Wrap.style.flex = '1';
+        sel2Wrap.style.cssText = 'flex: 1; min-width: 0; overflow: hidden;';
         
         // Populate options from allProfiles
-        const opts = allProfiles.map(p => ({ label: p.name, value: String(p.id) }));
+        const opts = [
+            { label: 'Select Profile...', value: '' },
+            ...allProfiles.map(p => ({ label: p.name, value: String(p.id) }))
+        ];
         
-        let val1 = opts[0]?.value || '';
-        let val2 = opts.length > 1 ? opts[1].value : val1;
+        let val1 = '';
+        let val2 = '';
         
-        // Try to preset from selectedIds
-        const selectedArr = Array.from(selectedIds);
-        if (selectedArr.length >= 1) val1 = String(selectedArr[0]);
-        if (selectedArr.length >= 2) val2 = String(selectedArr[1]);
+        // Try to preset from selectedIds if requested by UI, but default is empty
+        // The user explicitly requested: "mặc định chúng không chọn profile nào cả"
+        // so we'll leave it empty even if selectedIds exist, or maybe use selectedIds if explicitly passed?
+        // Let's use selectedIds if they checked the boxes, otherwise empty.
+        // Wait, "Compare Profiles mặc định chúng không chọn profile nào cả, để người dùng tự chọn"
+        // I will strictly default to empty.
+
         
         const cb1 = window.DuckControls.ComboBox.create({
             label: 'Profile 1',
@@ -65,27 +71,22 @@ window.ProfileModals.CompareProfiles = {
         
         // 2. COMPARISON TABLE
         const tableWrap = document.createElement('div');
-        tableWrap.style.cssText = 'border: 1px solid var(--border-default); border-radius: var(--r-md); overflow: hidden; display: none;';
+        tableWrap.style.cssText = 'border: 1px solid var(--border-default); border-radius: var(--r-md); overflow: hidden; display: block;';
         modalBody.appendChild(tableWrap);
         
         const doCompare = () => {
-            const p1 = allProfiles.find(p => String(p.id) === val1);
-            const p2 = allProfiles.find(p => String(p.id) === val2);
-            if (!p1 || !p2) {
-                alert('Please select two valid profiles to compare.');
-                return;
-            }
-            
-            tableWrap.style.display = 'block';
+            const p1 = allProfiles.find(p => String(p.id) === val1) || { name: '-', _empty: true };
+            const p2 = allProfiles.find(p => String(p.id) === val2) || { name: '-', _empty: true };
+
             
             // Render table
             let html = `
-                <table style="width:100%;border-collapse:collapse;text-align:left;font-size:13px;">
+                <table style="width:100%;border-collapse:collapse;text-align:left;font-size:13px;table-layout:fixed;">
                     <thead>
                         <tr style="background:var(--bg-subtle);border-bottom:1px solid var(--border-default);">
-                            <th style="padding:10px 16px;width:30%;">Feature</th>
-                            <th style="padding:10px 16px;width:35%;border-left:1px solid var(--border-muted);color:var(--accent);">${escapeHtml(p1.name)}</th>
-                            <th style="padding:10px 16px;width:35%;border-left:1px solid var(--border-muted);color:var(--accent);">${escapeHtml(p2.name)}</th>
+                            <th style="padding:10px 16px;width:30%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Feature</th>
+                            <th style="padding:10px 16px;width:35%;border-left:1px solid var(--border-muted);color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(p1.name)}">${escapeHtml(p1.name)}</th>
+                            <th style="padding:10px 16px;width:35%;border-left:1px solid var(--border-muted);color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(p2.name)}">${escapeHtml(p2.name)}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -109,19 +110,24 @@ window.ProfileModals.CompareProfiles = {
                 let v2 = p2.fingerprint?.[f.key] || p2[f.key];
                 
                 // Fallbacks if data is missing
-                if (v1 === undefined) {
+                if (p1._empty) {
+                    v1 = '-';
+                } else if (v1 === undefined) {
                     if (['browserType', 'platform'].includes(f.key)) v1 = p1[f.key] || 'Chrome/Win';
                     else if (f.key === 'browserVersion') v1 = '114.0.0.0';
                     else v1 = 'Noise';
                 }
-                if (v2 === undefined) {
+                
+                if (p2._empty) {
+                    v2 = '-';
+                } else if (v2 === undefined) {
                     if (['browserType', 'platform'].includes(f.key)) v2 = p2[f.key] || 'Chrome/Win';
                     else if (f.key === 'browserVersion') v2 = '114.0.0.0';
                     else v2 = 'Noise';
                 }
                 
                 // Add some artificial differences if the profiles are different and we have missing data
-                if (val1 !== val2) {
+                if (val1 && val2 && val1 !== val2 && !p1._empty && !p2._empty) {
                     if (f.key === 'clientRects') v2 = 'Real';
                     if (f.key === 'webrtc') v1 = 'Altered';
                     if (f.key === 'canvas') v2 = 'Off';
@@ -132,9 +138,9 @@ window.ProfileModals.CompareProfiles = {
                 
                 html += `
                     <tr style="border-bottom:1px solid var(--border-muted);background:${rowBg};">
-                        <td style="padding:10px 16px;font-weight:600;color:var(--text-secondary);">${f.label}</td>
-                        <td style="padding:10px 16px;border-left:1px solid var(--border-muted);">${escapeHtml(v1)}</td>
-                        <td style="padding:10px 16px;border-left:1px solid var(--border-muted);">${escapeHtml(v2)}</td>
+                        <td style="padding:10px 16px;font-weight:600;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${f.label}">${f.label}</td>
+                        <td style="padding:10px 16px;border-left:1px solid var(--border-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(v1)}">${escapeHtml(v1)}</td>
+                        <td style="padding:10px 16px;border-left:1px solid var(--border-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(v2)}">${escapeHtml(v2)}</td>
                     </tr>
                 `;
             });
@@ -164,9 +170,9 @@ window.ProfileModals.CompareProfiles = {
 
         this._modal.open();
 
-        // Auto compare if 2 different selected initially
-        if (val1 && val2 && val1 !== val2) {
-            doCompare();
-        }
+        this._modal.open();
+        
+        // Initial render
+        doCompare();
     }
 };

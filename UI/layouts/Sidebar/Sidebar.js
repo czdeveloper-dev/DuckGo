@@ -104,23 +104,16 @@
         },
 
         _toggleTheme() {
-            const btn = document.getElementById('btn-theme-toggle');
-            if (btn) btn.classList.add('animating');
-
-            setTimeout(() => {
-                const isDark = document.body.getAttribute('data-theme') === 'dark';
-                if (isDark) {
-                    document.body.removeAttribute('data-theme');
-                    try { localStorage.setItem('theme', 'light'); } catch (e) {}
-                    this._updateThemeIcon('light');
-                } else {
-                    document.body.setAttribute('data-theme', 'dark');
-                    try { localStorage.setItem('theme', 'dark'); } catch (e) {}
-                    this._updateThemeIcon('dark');
-                }
-
-                if (btn) btn.classList.remove('animating');
-            }, 150); // Swap icon halfway through animation
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            if (isDark) {
+                document.body.removeAttribute('data-theme');
+                try { localStorage.setItem('theme', 'light'); } catch (e) {}
+                this._updateThemeIcon('light');
+            } else {
+                document.body.setAttribute('data-theme', 'dark');
+                try { localStorage.setItem('theme', 'dark'); } catch (e) {}
+                this._updateThemeIcon('dark');
+            }
         },
 
         /**

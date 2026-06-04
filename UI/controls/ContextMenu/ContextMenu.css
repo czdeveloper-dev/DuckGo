@@ -4,12 +4,16 @@
     background: var(--bg-surface);
     border: 1px solid var(--border-default);
     border-radius: 8px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-md); /* slightly stronger shadow */
     min-width: 150px;
     padding: 6px;
     display: none;
     flex-direction: column;
     gap: 2px;
+}
+
+.duck-context-menu .duck-context-menu {
+    z-index: 10051; /* Submenu is higher */
 }
 
 .duck-context-menu.active {
