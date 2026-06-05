@@ -58,6 +58,7 @@ window.ProfileModals.ImportProfiles = {
         });
 
         this._modal = DuckControls.Modal.create({
+            defaultEnter: true,
             title: 'Import Profiles',
             icon: 'publish',
             content: modalBody,

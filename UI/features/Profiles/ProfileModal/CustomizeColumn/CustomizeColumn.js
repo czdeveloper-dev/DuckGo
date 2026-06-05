@@ -51,6 +51,7 @@ window.ProfileModals.CustomizeColumn = {
         });
 
         this._modal = window.DuckControls.Modal.create({
+            defaultEnter: true,
             title: 'Customize Columns',
             content: modalBody,
             size: 'sm',

@@ -6,6 +6,9 @@
     padding: 4px;
     border: 1px solid var(--border-default, #e0e0e0);
     box-sizing: border-box;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 36px;
 }
 
 .duck-chip-select .duck-chip {

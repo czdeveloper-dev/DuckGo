@@ -184,6 +184,7 @@ window.ProfileModals.Arrange = {
         footerWrap.appendChild(arrangeBtn);
 
         this._modal = window.DuckControls.Modal.create({
+            defaultEnter: true,
             title: 'Arrange Windows',
             subtitle: 'Arrange selected profiles dynamically across your monitors.',
             icon: 'grid_view',

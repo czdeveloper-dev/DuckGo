@@ -24,6 +24,7 @@
             // Create menu element
             this.menu = document.createElement('div');
             this.menu.className = 'duck-dropdown-menu';
+            this.menu.style.display = 'none';
             this.menu.setAttribute('role', 'listbox');
 
             if (this.options.items && Array.isArray(this.options.items)) {
@@ -177,22 +178,32 @@
                 widthVal = parseInt(this.options.width) || 200;
             }
 
-            let top = rect.bottom + 4;
             let left = rect.left;
-
-            // Check if menu would go off screen
             if (left + widthVal > window.innerWidth) {
                 left = window.innerWidth - widthVal - 8;
             }
 
-            if (top + 200 > window.innerHeight) {
-                top = rect.top - 4;
-                this.menu.classList.add('duck-dropdown-up');
-            } else {
-                this.menu.classList.remove('duck-dropdown-up');
+            const spaceBelow = window.innerHeight - rect.bottom - 8;
+            const spaceAbove = rect.top - 8;
+            
+            let isUp = false;
+            let maxHeight = 300;
+
+            if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+                isUp = true;
             }
 
-            this.menu.style.top = `${top}px`;
+            if (isUp) {
+                this.menu.style.top = `${rect.top - 4}px`;
+                this.menu.classList.add('duck-dropdown-up');
+                maxHeight = Math.min(300, spaceAbove);
+            } else {
+                this.menu.style.top = `${rect.bottom + 4}px`;
+                this.menu.classList.remove('duck-dropdown-up');
+                maxHeight = Math.min(300, spaceBelow);
+            }
+
+            this.menu.style.maxHeight = `${maxHeight}px`;
             this.menu.style.left = `${left}px`;
             
             if (this.options.width === '100%' || this.options.matchTriggerWidth) {
@@ -230,10 +241,21 @@
         }
 
         open() {
+            if (this.isOpen || this.options.disabled) return;
+            
+            // Do not open if trigger is not visible (e.g., hidden tab or off-dom)
+            if (this.trigger) {
+                const rect = this.trigger.getBoundingClientRect();
+                if (rect.width === 0 && rect.height === 0) return;
+            }
+
             this.isOpen = true;
-            this._positionMenu();
-            this.menu.classList.add('duck-dropdown-open');
-            this.trigger.classList.add('duck-dropdown-active');
+            this.menu.style.display = 'block';
+            requestAnimationFrame(() => {
+                this._positionMenu();
+                this.menu.classList.add('duck-dropdown-open');
+                this.trigger.classList.add('duck-dropdown-active');
+            });
             window.dispatchEvent(new CustomEvent('duck-popup-opened', { detail: { source: this } }));
         }
 
@@ -241,6 +263,11 @@
             this.isOpen = false;
             this.menu.classList.remove('duck-dropdown-open');
             this.trigger.classList.remove('duck-dropdown-active');
+            setTimeout(() => {
+                if (!this.isOpen && this.menu) {
+                    this.menu.style.display = 'none';
+                }
+            }, 200);
         }
 
         _selectItem(item) {

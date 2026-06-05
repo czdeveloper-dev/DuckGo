@@ -71,6 +71,7 @@ window.ProfileModals.ExportProfiles = {
             // Needs slight delay to let modal render buttons
             setTimeout(updateValidation, 50);
         this._modal = DuckControls.Modal.create({
+            defaultEnter: true,
             title: 'Export Profiles',
             subtitle: `<span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Exporting profiles`,
             icon: 'download',

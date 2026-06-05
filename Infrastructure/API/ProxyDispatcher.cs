@@ -57,10 +57,18 @@ public class ProxyDispatcher : IDispatcher
 
     private async Task<(bool, string?, JsonElement?)> CheckAsync(JsonElement? payload)
     {
-        var id = payload?.GetProperty("id").GetInt32();
-        if (!id.HasValue) return (false, "Missing id", null);
-        var status = await _service.CheckProxyAsync(id.Value);
-        return (true, null, WrapInElement(new { status }));
+        if (!payload.HasValue) return (false, "Missing payload", null);
+
+        if (payload.Value.TryGetProperty("id", out var idProp) && idProp.ValueKind != JsonValueKind.Null)
+        {
+            var status = await _service.CheckProxyAsync(idProp.GetInt32());
+            return (true, null, WrapInElement(new { status }));
+        }
+
+        var req = ParsePayload<Models.DTOs.ProxyCheckRequest>(payload);
+        if (req == null) return (false, "Invalid payload", null);
+        var directStatus = await _service.CheckProxyAsync(req);
+        return (true, null, WrapInElement(new { status = directStatus }));
     }
 
     private static JsonElement WrapInElement<T>(T obj)
@@ -72,7 +80,11 @@ public class ProxyDispatcher : IDispatcher
     private static T? ParsePayload<T>(JsonElement? payload) where T : class
     {
         if (!payload.HasValue) return null;
-        try { return JsonSerializer.Deserialize<T>(payload.Value.GetRawText()); }
+        try
+        {
+            return JsonSerializer.Deserialize<T>(payload.Value.GetRawText(),
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
         catch { return null; }
     }
 }

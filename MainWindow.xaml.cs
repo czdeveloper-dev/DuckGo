@@ -47,14 +47,18 @@ public partial class MainWindow : Window
         _groupService   = new GroupService(groupRepo);
         _tagService     = new TagService(tagRepo);
         _proxyService   = new ProxyService(proxyRepo);
+        var fingerprintSvc = new FingerprintService();
+        var browserVersionSvc = new BrowserVersionService();
         _profileService = new ProfileService(
             profileRepo, groupRepo, tagRepo, proxyRepo,
-            new ProfileFolderService(), new ConfigBuilder());
+            new ProfileFolderService(), new ConfigBuilder(), fingerprintSvc);
 
         // ── Unified dispatcher ───────────────────────────────────────────
         _dispatcher = new MessageDispatcher(new IDispatcher[]
         {
-            new ProfileDispatcher(_profileService!),
+            new BrowserDispatcher(browserVersionSvc),
+            new FingerprintDispatcher(fingerprintSvc),   // must be before ProfileDispatcher
+            new ProfileDispatcher(_profileService!, fingerprintSvc),
             new GroupDispatcher(_groupService!),
             new TagDispatcher(_tagService!),
             new ProxyDispatcher(_proxyService!),

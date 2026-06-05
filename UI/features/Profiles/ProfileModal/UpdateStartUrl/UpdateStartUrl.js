@@ -76,6 +76,7 @@ window.ProfileModals.UpdateStartUrl = {
         updateVisibility();
 
         this._modal = DuckControls.Modal.create({
+            defaultEnter: true,
             title: 'Update Start URL',
             subtitle: `<span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Applied to ${count} selected profiles`,
             icon: 'link',

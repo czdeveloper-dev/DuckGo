@@ -1,0 +1,44 @@
+/* ============================================================
+   SettingRow.css - Setting Row Control Styles
+   ============================================================ */
+
+.duck-setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding: 4px 0;
+}
+
+.duck-setting-row-top {
+    align-items: flex-start;
+}
+
+.duck-setting-row-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.duck-setting-row-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.duck-setting-row-desc {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.duck-setting-row-control {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+/* Allow control to grow if fullWidth is specified via props */
+.duck-setting-row-control-full {
+    flex: 1;
+    max-width: 50%;
+}

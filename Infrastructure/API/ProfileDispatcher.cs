@@ -5,10 +5,15 @@ namespace DuckGo.Infrastructure.API;
 public class ProfileDispatcher : IDispatcher
 {
     private readonly Services.ProfileService _service;
+    private readonly Services.FingerprintService _fingerprintService;
 
     public string Domain => "profile";
 
-    public ProfileDispatcher(Services.ProfileService service) => _service = service;
+    public ProfileDispatcher(Services.ProfileService service, Services.FingerprintService fingerprintService)
+    {
+        _service = service;
+        _fingerprintService = fingerprintService;
+    }
 
     public bool CanHandle(string action) => action.StartsWith("profile.");
 
@@ -22,6 +27,7 @@ public class ProfileDispatcher : IDispatcher
             "profile.update" => await UpdateAsync(payload),
             "profile.delete" => await DeleteAsync(payload),
             "profile.duplicate" => await DuplicateAsync(payload),
+            "profile.getFingerprintTemplate" => await GetFingerprintTemplateAsync(),
             _ => (false, $"Unknown action: {action}", null)
         };
     }
@@ -29,17 +35,21 @@ public class ProfileDispatcher : IDispatcher
     private async Task<(bool, string?, JsonElement?)> ListAsync(JsonElement? payload)
     {
         string? search = null, browserType = null;
-        int? groupId = null;
+        int? id = null, groupId = null;
+        List<int>? tagIds = null;
 
         if (payload.HasValue)
         {
             var p = payload.Value;
             if (p.TryGetProperty("search", out var s)) search = s.GetString();
+            if (p.TryGetProperty("id", out var i)) id = i.ValueKind == JsonValueKind.Null ? null : i.GetInt32();
             if (p.TryGetProperty("groupId", out var g)) groupId = g.ValueKind == JsonValueKind.Null ? null : g.GetInt32();
             if (p.TryGetProperty("browserType", out var b)) browserType = b.GetString();
+            if (p.TryGetProperty("tagIds", out var t) && t.ValueKind == JsonValueKind.Array)
+                tagIds = t.EnumerateArray().Select(e => e.GetInt32()).ToList();
         }
 
-        var result = await _service.GetProfilesAsync(search, groupId, null, browserType);
+        var result = await _service.GetProfilesAsync(search, id, groupId, tagIds, browserType);
         return (true, null, WrapInElement(result));
     }
 
@@ -84,6 +94,12 @@ public class ProfileDispatcher : IDispatcher
         return (true, null, WrapInElement(result));
     }
 
+    private async Task<(bool, string?, JsonElement?)> GetFingerprintTemplateAsync()
+    {
+        var tmpl = await _fingerprintService.GetTemplatesAsync();
+        return (true, null, WrapInElement(tmpl));
+    }
+
     private static JsonElement WrapInElement<T>(T obj)
     {
         var json = JsonSerializer.Serialize(obj);
@@ -93,7 +109,11 @@ public class ProfileDispatcher : IDispatcher
     private static T? ParsePayload<T>(JsonElement? payload) where T : class
     {
         if (!payload.HasValue) return null;
-        try { return JsonSerializer.Deserialize<T>(payload.Value.GetRawText()); }
+        try
+        {
+            return JsonSerializer.Deserialize<T>(payload.Value.GetRawText(),
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
         catch { return null; }
     }
 }

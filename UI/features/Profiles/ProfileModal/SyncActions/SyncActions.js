@@ -338,6 +338,7 @@ window.ProfileModals.SyncActions = {
         footerWrap.appendChild(startBtn);
 
         this._modal = window.DuckControls.Modal.create({
+            defaultEnter: true,
             title: 'Synchronize Actions',
             subtitle: 'Arrange windows and synchronize mouse/keyboard events across multiple profiles.',
             icon: 'sync',

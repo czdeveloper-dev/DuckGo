@@ -15,6 +15,8 @@ public class GroupService
 
     public async Task<ProfileGroup> CreateGroupAsync(GroupCreateRequest req)
     {
+        if (await _repo.ExistsByNameAsync(req.Name))
+            throw new InvalidOperationException($"A group with the name \"{req.Name}\" already exists.");
         var group = new ProfileGroup { Name = req.Name, CreatedAt = DateTime.Now };
         var id = await _repo.CreateAsync(group);
         group.Id = id;
@@ -25,6 +27,8 @@ public class GroupService
     {
         var existing = await _repo.GetByIdAsync(req.Id);
         if (existing == null) throw new InvalidOperationException($"Group {req.Id} not found");
+        if (await _repo.ExistsByNameAsync(req.Name, req.Id))
+            throw new InvalidOperationException($"A group with the name \"{req.Name}\" already exists.");
         existing.Name = req.Name;
         await _repo.UpdateAsync(existing);
     }

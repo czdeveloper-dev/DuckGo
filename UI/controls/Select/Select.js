@@ -70,7 +70,7 @@ window.DuckControls.Select = {
         const textSpan = document.createElement('span');
         const selectedOpt = getOptionsArr().find(o => o.value === selectValue);
         textSpan.textContent = selectedOpt ? selectedOpt.label : (initialOptions.label || initialOptions.placeholder || 'Select...');
-        textSpan.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+        textSpan.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-align:left;font-size:13px;color:var(--text-primary);';
 
         const arrow = document.createElement('span');
         arrow.className = 'material-symbols-outlined duck-select-arrow-icon';
@@ -93,50 +93,38 @@ window.DuckControls.Select = {
                 value: opt.value,
                 icon: opt.icon,
                 actions: opt.actions,
-                disabled: !!opt.isPlaceholder,
-                selected: selectValue === opt.value,
-                onClick: opt.isPlaceholder ? null : () => {
-                    selectValue = opt.value;
-                    textSpan.textContent = opt.label;
-                    if (initialOptions.onChange) {
-                        initialOptions.onChange({ target: { value: opt.value } });
-                    }
-                    // Rebuild items to sync selected state
-                    if (_menuCtrl) {
-                        const items = buildItems();
-                        _menuCtrl.setItems(items);
-                    }
-                }
+                disabled: !!opt.isPlaceholder
             }));
         };
 
-        _menuCtrl = DuckControls.ContextMenu.create(triggerBtn, {
+        _menuCtrl = DuckControls.Dropdown.create(triggerBtn, {
+            value: selectValue,
             items: buildItems(),
-            matchTriggerWidth: true
+            matchTriggerWidth: true,
+            onChange: (item) => {
+                selectValue = item.value;
+                textSpan.textContent = item.label;
+                if (initialOptions.onChange) {
+                    initialOptions.onChange({ target: { value: item.value } });
+                }
+            }
         });
-        _itemButtons = _menuCtrl.itemButtons || [];
 
         // Sync arrow rotation with menu open/close
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((m) => {
                 if (m.attributeName === 'class') {
-                    const isActive = _menuCtrl.element.classList.contains('active');
+                    const isActive = _menuCtrl.menu.classList.contains('duck-dropdown-open');
                     arrow.style.transform = isActive ? 'rotate(180deg)' : 'rotate(0deg)';
                     if (isActive) {
                         triggerBtn.classList.add('focused');
-                        if (_menuCtrl.itemButtons) {
-                            _menuCtrl.itemButtons.forEach(ib => {
-                                if (ib.item.value === selectValue) ib.btn.classList.add('selected');
-                                else ib.btn.classList.remove('selected');
-                            });
-                        }
                     } else {
                         triggerBtn.classList.remove('focused');
                     }
                 }
             });
         });
-        observer.observe(_menuCtrl.element, { attributes: true });
+        observer.observe(_menuCtrl.menu, { attributes: true });
 
         wrap.appendChild(triggerBtn);
 
@@ -150,6 +138,7 @@ window.DuckControls.Select = {
                 selectValue = val;
                 const opt = getOptionsArr().find(o => o.value === val);
                 textSpan.textContent = opt ? opt.label : (initialOptions.label || initialOptions.placeholder || 'Select...');
+                if (_menuCtrl) _menuCtrl.setSelectedValue(val);
             },
 
             /** Rebuild dropdown items when the options list changes (e.g. after CRUD) */
@@ -157,6 +146,11 @@ window.DuckControls.Select = {
                 _optionsArr = Array.isArray(newOptions) ? newOptions.slice() : [];
                 if (_menuCtrl) {
                     _menuCtrl.setItems(buildItems());
+                }
+                // Sync display text to current value (may differ after options change)
+                if (selectValue) {
+                    const opt = getOptionsArr().find(o => o.value === selectValue);
+                    textSpan.textContent = opt ? opt.label : (initialOptions.label || initialOptions.placeholder || 'Select...');
                 }
             },
 

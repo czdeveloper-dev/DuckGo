@@ -122,6 +122,9 @@
                         } else {
                             btn.textContent = btnDef.text;
                         }
+                        if (btnDef.isDefault) {
+                            btn.setAttribute('data-duck-default', 'true');
+                        }
                         if (btnDef.onClick) {
                             btn.addEventListener('click', (e) => btnDef.onClick(e, this));
                         }
@@ -157,6 +160,22 @@
             if (e.key === 'Escape' && this.isOpen) {
                 if (this.options.closeOnEscape !== false) {
                     this.close();
+                }
+            } else if (e.key === 'Enter' && this.isOpen) {
+                if (!this.options.defaultEnter) return;
+
+                const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+                if (activeTag === 'textarea' || activeTag === 'button') return;
+
+                let defaultBtn = this.container.querySelector('[data-duck-default="true"]');
+                if (!defaultBtn) {
+                    defaultBtn = this.container.querySelector('.duck-btn-primary');
+                }
+
+                if (defaultBtn && !defaultBtn.disabled) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    defaultBtn.click();
                 }
             }
         }
@@ -204,6 +223,47 @@
             }
         }
 
+        setLoading(isLoading, content = 'Loading...') {
+            if (isLoading) {
+                if (!this._loaderOverlay) {
+                    this._loaderOverlay = document.createElement('div');
+                    this._loaderOverlay.className = 'duck-modal-blur-loader';
+                    
+                    this._loaderSpinner = document.createElement('div');
+                    this._loaderSpinner.className = 'spinner';
+                    
+                    this._loaderText = document.createElement('div');
+                    this._loaderText.className = 'duck-modal-blur-text';
+                    
+                    this._loaderOverlay.appendChild(this._loaderSpinner);
+                    this._loaderOverlay.appendChild(this._loaderText);
+                    this.container.appendChild(this._loaderOverlay);
+                }
+                
+                if (typeof content === 'string') {
+                    if (content.trim().startsWith('<')) {
+                        this._loaderSpinner.style.display = 'none';
+                        this._loaderText.innerHTML = content;
+                    } else {
+                        this._loaderSpinner.style.display = '';
+                        this._loaderText.textContent = content;
+                    }
+                } else if (content instanceof HTMLElement) {
+                    this._loaderSpinner.style.display = 'none';
+                    this._loaderText.innerHTML = '';
+                    this._loaderText.appendChild(content);
+                }
+                
+                requestAnimationFrame(() => {
+                    this._loaderOverlay.classList.add('active');
+                });
+            } else {
+                if (this._loaderOverlay) {
+                    this._loaderOverlay.classList.remove('active');
+                }
+            }
+        }
+
         destroy() {
             document.removeEventListener('keydown', this._boundHandleKeydown);
             if (this.overlay.parentNode) {
@@ -226,9 +286,10 @@
                     title: options.title || 'Alert',
                     content: `<p>${message}</p>`,
                     buttons: [
-                        { text: 'OK', class: 'duck-btn-primary', onClick: (e, m) => { m.close(); resolve(); } }
+                        { text: 'OK', class: 'duck-btn-primary', isDefault: true, onClick: (e, m) => { m.close(); resolve(); } }
                     ],
                     closeOnOverlay: false,
+                    defaultEnter: true,
                     onClose: () => resolve()
                 });
                 modal.open();
@@ -242,9 +303,10 @@
                     content: `<p style="color: var(--text-primary); margin: 0;">${message}</p>`,
                     buttons: [
                         { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, m) => { m.close(); resolve(false); } },
-                        { text: 'Confirm', class: 'duck-btn-danger', onClick: (e, m) => { m.close(); resolve(true); } }
+                        { text: 'Confirm', class: 'duck-btn-danger', isDefault: true, onClick: (e, m) => { m.close(); resolve(true); } }
                     ],
                     closeOnOverlay: false,
+                    defaultEnter: true,
                     onClose: () => resolve(false)
                 });
                 modal.open();
@@ -278,9 +340,10 @@
                     content: inputWrap,
                     buttons: [
                         { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, m) => { resolved = true; m.close(); resolve(null); } },
-                        { text: 'Save', class: 'duck-btn-primary', onClick: (e, m) => { resolved = true; m.close(); resolve(input.value); } }
+                        { text: 'Save', class: 'duck-btn-primary', isDefault: true, onClick: (e, m) => { resolved = true; m.close(); resolve(input.value); } }
                     ],
                     closeOnOverlay: false,
+                    defaultEnter: true,
                     onOpen: () => {
                         // Focus on open
                         setTimeout(() => {

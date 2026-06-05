@@ -23,7 +23,7 @@ public class ConfigBuilder
             {
                 ProfileID = profile.Id.ToString(),
                 ProfileName = profile.Name,
-                StartURL = ""
+                StartURL = cfg.Profile?.StartURL ?? ""
             },
             System = cfg.System,
             Fingerprint = cfg.Fingerprint,

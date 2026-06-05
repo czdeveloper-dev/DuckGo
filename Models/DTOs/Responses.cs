@@ -36,6 +36,7 @@ public class ProfileListItem
     public int? ProxyId { get; set; }
     public string? ProxyName { get; set; }
     public string BrowserType { get; set; } = "Chromium";
+    public string BrowserVersion { get; set; } = "";
     public string Notes { get; set; } = "";
     public string Status { get; set; } = "stopped";
     public DateTime CreatedAt { get; set; }

@@ -10,6 +10,7 @@ public class Profile
     public string Tags { get; set; } = "[]";
     public int? ProxyId { get; set; }
     public string BrowserType { get; set; } = "Chromium";
+    public string BrowserVersion { get; set; } = "";
     public string ProfileData { get; set; } = "{}";
     public string Notes { get; set; } = "";
     public DateTime CreatedAt { get; set; } = DateTime.Now;

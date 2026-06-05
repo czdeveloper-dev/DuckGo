@@ -280,14 +280,11 @@ window.DuckControls.ContextMenu = {
             /** Replace menu items with a new array (used by Select.setOptions). */
             setItems(newItems) {
                 itemButtons.length = 0;
-                // Remove all child nodes from root menu
                 while (rootMenu.firstChild) {
                     rootMenu.removeChild(rootMenu.firstChild);
                 }
-                // Re-render with new items
                 const depth = parseInt(rootMenu.style.zIndex) - 10050 || 0;
                 const rendered = renderMenu(newItems, depth);
-                // Move rendered children into the existing rootMenu
                 while (rendered.firstChild) {
                     rootMenu.appendChild(rendered.firstChild);
                 }

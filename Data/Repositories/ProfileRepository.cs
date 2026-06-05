@@ -9,7 +9,7 @@ public class ProfileRepository : IProfileRepository
 
     public ProfileRepository(DatabaseService db) => _db = db;
 
-    public async Task<List<Profile>> GetAllAsync(string? search = null, int? groupId = null, List<int>? tagIds = null, string? browserType = null)
+    public async Task<List<Profile>> GetAllAsync(string? search = null, int? id = null, int? groupId = null, List<int>? tagIds = null, string? browserType = null)
     {
         await using var conn = _db.GetConnection();
         await conn.OpenAsync();
@@ -24,6 +24,11 @@ public class ProfileRepository : IProfileRepository
             WHERE 1=1";
         var args = new List<(string name, object value)>();
 
+        if (id.HasValue)
+        {
+            sql += " AND p.Id = @id";
+            args.Add(("id", id.Value));
+        }
         if (!string.IsNullOrWhiteSpace(search))
         {
             sql += " AND p.Name LIKE @search";
@@ -38,6 +43,14 @@ public class ProfileRepository : IProfileRepository
         {
             sql += " AND p.BrowserType = @browserType";
             args.Add(("browserType", browserType));
+        }
+
+        if (tagIds != null && tagIds.Count > 0)
+        {
+            var tagClauses = string.Join(" OR ", tagIds.Select((_, i) => $"(p.Tags LIKE @tag{i} ESCAPE '\\')"));
+            sql += $" AND ({tagClauses})";
+            for (var i = 0; i < tagIds.Count; i++)
+                args.Add(($"tag{i}", $"%{tagIds[i]}%"));
         }
 
         sql += " ORDER BY p.CreatedAt DESC";
@@ -77,14 +90,15 @@ public class ProfileRepository : IProfileRepository
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            INSERT INTO Profiles (Name, GroupId, Tags, ProxyId, BrowserType, ProfileData, Notes, CreatedAt)
-            VALUES (@name, @groupId, @tags, @proxyId, @browserType, @profileData, @notes, @createdAt);
+            INSERT INTO Profiles (Name, GroupId, Tags, ProxyId, BrowserType, BrowserVersion, ProfileData, Notes, CreatedAt)
+            VALUES (@name, @groupId, @tags, @proxyId, @browserType, @browserVersion, @profileData, @notes, @createdAt);
             SELECT last_insert_rowid();";
         cmd.Parameters.AddWithValue("@name", profile.Name);
         cmd.Parameters.AddWithValue("@groupId", profile.GroupId.HasValue ? profile.GroupId.Value : DBNull.Value);
         cmd.Parameters.AddWithValue("@tags", profile.Tags);
         cmd.Parameters.AddWithValue("@proxyId", profile.ProxyId.HasValue ? profile.ProxyId.Value : DBNull.Value);
         cmd.Parameters.AddWithValue("@browserType", profile.BrowserType);
+        cmd.Parameters.AddWithValue("@browserVersion", string.IsNullOrWhiteSpace(profile.BrowserVersion) ? DBNull.Value : profile.BrowserVersion);
         cmd.Parameters.AddWithValue("@profileData", profile.ProfileData);
         cmd.Parameters.AddWithValue("@notes", profile.Notes);
         cmd.Parameters.AddWithValue("@createdAt", profile.CreatedAt.ToString("o"));
@@ -101,6 +115,7 @@ public class ProfileRepository : IProfileRepository
             UPDATE Profiles SET
                 Name = @name, GroupId = @groupId, Tags = @tags,
                 ProxyId = @proxyId, BrowserType = @browserType,
+                BrowserVersion = @browserVersion,
                 ProfileData = @profileData, Notes = @notes
             WHERE Id = @id";
         cmd.Parameters.AddWithValue("@id", profile.Id);
@@ -109,6 +124,7 @@ public class ProfileRepository : IProfileRepository
         cmd.Parameters.AddWithValue("@tags", profile.Tags);
         cmd.Parameters.AddWithValue("@proxyId", profile.ProxyId.HasValue ? profile.ProxyId.Value : DBNull.Value);
         cmd.Parameters.AddWithValue("@browserType", profile.BrowserType);
+        cmd.Parameters.AddWithValue("@browserVersion", string.IsNullOrWhiteSpace(profile.BrowserVersion) ? DBNull.Value : profile.BrowserVersion);
         cmd.Parameters.AddWithValue("@profileData", profile.ProfileData);
         cmd.Parameters.AddWithValue("@notes", profile.Notes);
         await cmd.ExecuteNonQueryAsync();
@@ -175,6 +191,7 @@ public class ProfileRepository : IProfileRepository
             TagIds = tagIds,
             ProxyId = reader.IsDBNull(reader.GetOrdinal("ProxyId")) ? null : reader.GetInt32(reader.GetOrdinal("ProxyId")),
             BrowserType = reader.GetString(reader.GetOrdinal("BrowserType")),
+            BrowserVersion = reader.IsDBNull(reader.GetOrdinal("BrowserVersion")) ? "" : reader.GetString(reader.GetOrdinal("BrowserVersion")),
             ProfileData = reader.IsDBNull(reader.GetOrdinal("ProfileData")) ? "{}" : reader.GetString(reader.GetOrdinal("ProfileData")),
             Notes = reader.IsDBNull(reader.GetOrdinal("Notes")) ? "" : reader.GetString(reader.GetOrdinal("Notes")),
             CreatedAt = reader.IsDBNull(reader.GetOrdinal("CreatedAt")) ? DateTime.Now : DateTime.Parse(reader.GetString(reader.GetOrdinal("CreatedAt"))),

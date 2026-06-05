@@ -47,6 +47,25 @@ public class GroupRepository : IGroupRepository
         };
     }
 
+    public async Task<bool> ExistsByNameAsync(string name, int? excludeId = null)
+    {
+        await using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        if (excludeId.HasValue)
+        {
+            cmd.CommandText = "SELECT COUNT(*) FROM Groups WHERE LOWER(Name) = LOWER(@name) AND Id != @excludeId";
+            cmd.Parameters.AddWithValue("@excludeId", excludeId.Value);
+        }
+        else
+        {
+            cmd.CommandText = "SELECT COUNT(*) FROM Groups WHERE LOWER(Name) = LOWER(@name)";
+        }
+        cmd.Parameters.AddWithValue("@name", name);
+        var count = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        return count > 0;
+    }
+
     public async Task<int> CreateAsync(ProfileGroup group)
     {
         await using var conn = _db.GetConnection();

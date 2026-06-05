@@ -11,6 +11,7 @@ public static class AppConfig
     public static string DatabasePath => Path.Combine(DatabaseDir, "duckgo.db");
     public static string ProfilesDir => Path.Combine(BaseDir, "Profiles");
     public static string BrowserDir => Path.Combine(BaseDir, "Browser");
+    public static string BrowserVersionsConfigUrl => "https://example.com/browser_versions.json";
     public static string UpdatesDir => Path.Combine(BaseDir, "Updates");
 
     public const string PipeName = "DuckBrowser_Control";

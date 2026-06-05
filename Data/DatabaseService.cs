@@ -42,12 +42,15 @@ public class DatabaseService : IDisposable
                 Tags TEXT DEFAULT '[]',
                 ProxyId INTEGER,
                 BrowserType TEXT DEFAULT 'Chromium',
+                BrowserVersion TEXT DEFAULT '',
                 ProfileData TEXT DEFAULT '{}',
                 Notes TEXT DEFAULT '',
                 CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
                 LastOpened TEXT,
                 FOREIGN KEY (GroupId) REFERENCES Groups(Id) ON DELETE SET NULL
             )");
+
+        await EnsureColumnExistsAsync(conn, "Profiles", "BrowserVersion", "ALTER TABLE Profiles ADD COLUMN BrowserVersion TEXT DEFAULT ''");
 
         await RunNonQueryAsync(conn, @"
             CREATE TABLE IF NOT EXISTS Proxies (
@@ -68,6 +71,22 @@ public class DatabaseService : IDisposable
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = sql;
         await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureColumnExistsAsync(SqliteConnection conn, string tableName, string columnName, string alterSql)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"PRAGMA table_info({tableName})";
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            if (string.Equals(reader.GetString(reader.GetOrdinal("name")), columnName, StringComparison.OrdinalIgnoreCase))
+                return;
+        }
+
+        await reader.DisposeAsync();
+        await RunNonQueryAsync(conn, alterSql);
     }
 
     public void Dispose() { }

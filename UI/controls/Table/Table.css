@@ -254,3 +254,15 @@ tr.profile-running:hover {
     font-size: 12px;
     color: var(--text-tertiary);
 }
+
+/* Empty State Overrides */
+.data-table-wrap.is-empty table {
+    min-width: 0 !important;
+}
+.data-table-wrap.is-empty tbody tr:hover {
+    background: transparent !important;
+    --row-bg: transparent !important;
+}
+.data-table-wrap.is-empty tbody tr {
+    cursor: default;
+}

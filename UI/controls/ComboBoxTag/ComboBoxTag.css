@@ -1,0 +1,74 @@
+/* ComboBoxTag.css */
+
+.duck-comboboxtag-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.duck-comboboxtag-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.duck-comboboxtag-container {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r);
+    min-height: 40px;
+    align-items: center;
+    cursor: text;
+    transition: border-color var(--t), box-shadow var(--t);
+}
+
+.duck-comboboxtag-container.focused {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.15);
+}
+
+.duck-comboboxtag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+.duck-comboboxtag-remove {
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--text-tertiary);
+    transition: color 0.2s;
+}
+
+.duck-comboboxtag-remove:hover {
+    color: var(--danger, #e74c3c);
+}
+
+.duck-comboboxtag-input {
+    flex: 1;
+    min-width: 80px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+    padding: 4px 0;
+}
+
+.duck-comboboxtag-input::placeholder {
+    color: var(--text-tertiary);
+}

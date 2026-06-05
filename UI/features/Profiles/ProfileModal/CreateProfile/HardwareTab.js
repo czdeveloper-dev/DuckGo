@@ -5,204 +5,223 @@
     window.ProfileModals.CreateProfile = window.ProfileModals.CreateProfile || {};
 
     window.ProfileModals.CreateProfile.HardwareTab = {
+        _currentOsBlock: null,
+
         render() {
             const container = document.createElement('div');
-            container.style.cssText = 'display: flex; flex-direction: column; gap: 32px; width: 100%;';
+            container.style.cssText = 'display: flex; flex-direction: column; gap: 24px; width: 100%;';
 
             const header = document.createElement('div');
-            header.innerHTML = `
-                <h2 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px;">Hardware Setup</h2>
-                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">Spoof hardware concurrency, memory, display, graphics (WebGL, Canvas), and environment plugins.</div>
-            `;
+            const h2 = document.createElement('h2');
+            h2.style.cssText = 'margin: 0 0 8px 0; font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px;';
+            h2.textContent = 'Hardware Setup';
+            const subtitle = document.createElement('div');
+            subtitle.style.cssText = 'font-size: 13px; color: var(--text-secondary); line-height: 1.5;';
+            subtitle.textContent = 'Spoof hardware concurrency, memory, display, graphics (WebGL, Canvas), and environment plugins.';
+            header.appendChild(h2);
+            header.appendChild(subtitle);
             container.appendChild(header);
 
-            // --- CPU & Memory ---
             const cpuSec = document.createElement('div');
-            cpuSec.style.cssText = 'display: flex; flex-direction: column; gap: 20px;';
-            const cpuTitle = document.createElement('div');
-            cpuTitle.style.cssText = 'font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 4px;';
-            cpuTitle.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px; color: var(--accent);">memory</span> CPU & Memory`;
-            cpuSec.appendChild(cpuTitle);
+            cpuSec.style.cssText = 'display: flex; flex-direction: column; gap: 16px;';
 
-            const cpuRow = document.createElement('div');
-            cpuRow.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr; gap: 20px;';
-            
-            const cpuSelect = window.DuckControls.Select.create({
-                label: 'Hardware Concurrency',
-                options: [{ label: '8 Cores', value: '8' }, { label: '16 Cores', value: '16' }]
+            this.cpuToggle = window.DuckControls.ToggleGroup.create({
+                options: [
+                    { label: 'Real', value: 'real' },
+                    { label: 'Random', value: 'random' },
+                    { label: 'Custom', value: 'custom' }
+                ],
+                value: 'random'
             });
-            const memSelect = window.DuckControls.Select.create({
-                label: 'Device Memory',
-                options: [{ label: '8 GB', value: '8' }, { label: '16 GB', value: '16' }]
+
+            const hwTierWrap = document.createElement('div');
+            hwTierWrap.style.cssText = 'display: none; flex-direction: column; gap: 8px; margin-top: 4px; padding: 16px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 8px;';
+            const hwTierLabel = document.createElement('div');
+            hwTierLabel.style.cssText = 'font-size: 12px; font-weight: 600; color: var(--text-secondary); padding-left: 2px;';
+            hwTierLabel.textContent = 'Select Hardware Tier (Cores / RAM)';
+            hwTierWrap.appendChild(hwTierLabel);
+
+            this.cpuChipSelect = window.DuckControls.ComboBox.create({
+                placeholder: 'Search hardware tier...',
+                options: [{ label: 'Loading...', value: '' }]
             });
-            cpuRow.appendChild(cpuSelect.element);
-            cpuRow.appendChild(memSelect.element);
-            cpuSec.appendChild(cpuRow);
-            container.appendChild(cpuSec);
+            this.cpuChipSelect.element.style.width = '100%';
+            hwTierWrap.appendChild(this.cpuChipSelect.element);
 
-            // Divider
-            const divider1 = document.createElement('div');
-            divider1.style.cssText = 'height: 1px; background: var(--border-default); margin: 8px 0;';
-            container.appendChild(divider1);
+            cpuSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Hardware Configuration', desc: 'Spoof CPU cores and device memory', control: this.cpuToggle.element, alignTop: false }).element);
+            cpuSec.appendChild(hwTierWrap);
 
-            // --- Display & Graphics ---
+            this.cpuToggle.element.addEventListener('click', () => {
+                hwTierWrap.style.display = this.cpuToggle.getValue() === 'custom' ? 'flex' : 'none';
+            });
+
+            container.appendChild(window.DuckControls.Card.create({ title: 'CPU & Memory', icon: 'memory', desc: 'Configure core and memory footprint', content: cpuSec }).element);
+
             const gfxSec = document.createElement('div');
-            gfxSec.style.cssText = 'display: flex; flex-direction: column; gap: 20px;';
-            const gfxTitle = document.createElement('div');
-            gfxTitle.style.cssText = 'font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 4px;';
-            gfxTitle.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px; color: var(--accent);">monitor</span> Display & Graphics`;
-            gfxSec.appendChild(gfxTitle);
+            gfxSec.style.cssText = 'display: flex; flex-direction: column; gap: 16px;';
 
-            // Screen Resolution
-            const resRow = document.createElement('div');
-            resRow.style.cssText = 'display: grid; grid-template-columns: 200px 1fr; align-items: start; gap: 20px;';
-            const resLabelWrap = document.createElement('div');
-            resLabelWrap.innerHTML = '<div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Screen Resolution</div><div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Monitor width, height & depth</div>';
-            
-            const resWrap = document.createElement('div');
-            resWrap.style.cssText = 'display: flex; flex-direction: column; gap: 12px;';
-            const resToggle = window.DuckControls.ToggleGroup.create({
-                options: [{ label: 'Real', value: 'real' }, { label: 'Random', value: 'random' }, { label: 'Custom', value: 'custom' }],
-                value: 'real',
-                onChange: (val) => {
-                    resCustomBox.style.display = val === 'custom' ? 'flex' : 'none';
-                }
+            this.resToggle = window.DuckControls.ToggleGroup.create({
+                options: [
+                    { label: 'Real', value: 'real' },
+                    { label: 'Random', value: 'random' },
+                    { label: 'Custom', value: 'custom' }
+                ],
+                value: 'random'
             });
-            resWrap.appendChild(resToggle.element);
-            
-            const resCustomBox = document.createElement('div');
-            resCustomBox.style.cssText = 'display: none; justify-content: center; align-items: center; gap: 32px; background: var(--bg-surface); padding: 24px; border-radius: 8px; border: 1px solid var(--border-default); margin-top: 16px; width: 100%; box-sizing: border-box;';
-            
-            const wSelect = window.DuckControls.Select.create({
-                label: 'Width (px)',
-                options: [{value: '1920', label: '1920'}, {value: '2560', label: '2560'}, {value: '1366', label: '1366'}, {value: '1280', label: '1280'}],
-                value: '1920',
-                width: '120px'
+
+            const resChipWrap = document.createElement('div');
+            resChipWrap.style.cssText = 'display: none; flex-direction: column; gap: 8px; margin-top: 4px; padding: 16px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 8px;';
+            const resChipLabel = document.createElement('div');
+            resChipLabel.style.cssText = 'font-size: 12px; font-weight: 600; color: var(--text-secondary); padding-left: 2px;';
+            resChipLabel.textContent = 'Select Resolution Preset';
+            resChipWrap.appendChild(resChipLabel);
+
+            this.resChipSelect = window.DuckControls.ComboBox.create({
+                placeholder: 'Search resolution...',
+                options: [{ label: 'Loading...', value: '' }]
             });
-            const hSelect = window.DuckControls.Select.create({
-                label: 'Height (px)',
-                options: [{value: '1080', label: '1080'}, {value: '1440', label: '1440'}, {value: '768', label: '768'}, {value: '720', label: '720'}],
-                value: '1080',
-                width: '120px'
+            this.resChipSelect.element.style.width = '100%';
+            resChipWrap.appendChild(this.resChipSelect.element);
+
+            gfxSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Screen Resolution', desc: 'Spoof display width, height and pixel ratio', control: this.resToggle.element, alignTop: false }).element);
+            gfxSec.appendChild(resChipWrap);
+
+            this.resToggle.element.addEventListener('click', () => {
+                resChipWrap.style.display = this.resToggle.getValue() === 'custom' ? 'flex' : 'none';
             });
-            const dSelect = window.DuckControls.Select.create({
-                label: 'Color Depth',
-                options: [{value: '24', label: '24-bit'}, {value: '32', label: '32-bit'}, {value: '16', label: '16-bit'}],
-                value: '24',
-                width: '120px'
-            });
-            resCustomBox.appendChild(wSelect.element);
-            resCustomBox.appendChild(hSelect.element);
-            resCustomBox.appendChild(dSelect.element);
 
-            resRow.appendChild(resLabelWrap);
-            resRow.appendChild(resWrap);
-            gfxSec.appendChild(resRow);
-            gfxSec.appendChild(resCustomBox);
+            container.appendChild(window.DuckControls.Card.create({ title: 'Display & Graphics', icon: 'monitor', desc: 'Screen resolutions and monitor configs', content: gfxSec }).element);
 
-            // Canvas
-            const canvasRow = document.createElement('div');
-            canvasRow.style.cssText = 'display: grid; grid-template-columns: 200px 1fr; align-items: center; gap: 20px; margin-top: 10px;';
-            const canvasLabelWrap = document.createElement('div');
-            canvasLabelWrap.innerHTML = '<div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Canvas Spoofing</div><div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Add noise to Canvas API</div>';
-            const canvasToggle = window.DuckControls.ToggleGroup.create({
-                options: [{ label: 'Noise', value: 'noise' }, { label: 'Block', value: 'block' }, { label: 'Off', value: 'off' }],
-                value: 'noise'
-            });
-            canvasRow.appendChild(canvasLabelWrap);
-            canvasRow.appendChild(canvasToggle.element);
-            gfxSec.appendChild(canvasRow);
+            const emuSec = document.createElement('div');
+            emuSec.style.cssText = 'display: flex; flex-direction: column; gap: 20px;';
 
-            // WebGL Image
-            const webglImgRow = document.createElement('div');
-            webglImgRow.style.cssText = 'display: grid; grid-template-columns: 200px 1fr; align-items: center; gap: 20px; margin-top: 10px;';
-            const webglImgLabelWrap = document.createElement('div');
-            webglImgLabelWrap.innerHTML = '<div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">WebGL Image Data</div><div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Add noise to WebGL</div>';
-            const webglImgToggle = window.DuckControls.ToggleGroup.create({
-                options: [{ label: 'Noise', value: 'noise' }, { label: 'Block', value: 'block' }, { label: 'Off', value: 'off' }],
-                value: 'noise'
-            });
-            webglImgRow.appendChild(webglImgLabelWrap);
-            webglImgRow.appendChild(webglImgToggle.element);
-            gfxSec.appendChild(webglImgRow);
-
-            // WebGL Metadata
-            const webglMetaRow = document.createElement('div');
-            webglMetaRow.style.cssText = 'display: grid; grid-template-columns: 200px 1fr; align-items: start; gap: 20px; margin-top: 10px;';
-            const webglMetaLabelWrap = document.createElement('div');
-            webglMetaLabelWrap.innerHTML = '<div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">WebGL Metadata</div><div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Vendor and Renderer</div>';
-            
-            const webglMetaWrap = document.createElement('div');
-            webglMetaWrap.style.cssText = 'display: flex; flex-direction: column; gap: 12px;';
-            const webglMetaToggle = window.DuckControls.ToggleGroup.create({
-                options: [{ label: 'Real', value: 'real' }, { label: 'Random', value: 'random' }, { label: 'Custom', value: 'custom' }],
-                value: 'random',
-                onChange: (val) => {
-                    webglCustomBox.style.display = val === 'custom' ? 'flex' : 'none';
-                }
-            });
-            webglMetaWrap.appendChild(webglMetaToggle.element);
-            
-            const webglCustomBox = document.createElement('div');
-            webglCustomBox.style.cssText = 'display: none; justify-content: center; align-items: center; gap: 32px; background: var(--bg-surface); padding: 24px; border-radius: 8px; border: 1px solid var(--border-default); margin-top: 16px; width: 100%; box-sizing: border-box;';
-            
-            const vendorSelect = window.DuckControls.Select.create({
-                label: 'Unmasked Vendor',
-                placeholder: 'Select vendor...',
-                options: [{ label: 'Google Inc. (Apple)', value: 'apple' }, { label: 'Google Inc. (NVIDIA)', value: 'nvidia' }, { label: 'Google Inc. (Intel)', value: 'intel' }],
-                value: 'apple',
-                width: '180px'
-            });
-            webglCustomBox.appendChild(vendorSelect.element);
-
-            // Renderer Input + Random Button
-            const rendererRow = document.createElement('div');
-            rendererRow.style.cssText = 'display: flex; gap: 12px; align-items: flex-end; width: 460px;';
-            const rendererIn = window.DuckControls.Input.create({ label: 'Unmasked Renderer', placeholder: 'ANGLE (Apple, Apple M1 Pro, OpenGL 4.1)' });
-            rendererIn.element.style.flex = '1';
-            const rndBtn = window.DuckControls.Button.create(null, { icon: 'shuffle', variant: 'surface' });
-            rndBtn.element.title = 'Generate random renderer';
-            rendererRow.appendChild(rendererIn.element);
-            rendererRow.appendChild(rndBtn.element);
-
-            webglCustomBox.appendChild(rendererRow);
-
-            webglMetaRow.appendChild(webglMetaLabelWrap);
-            webglMetaRow.appendChild(webglMetaWrap);
-            gfxSec.appendChild(webglMetaRow);
-            gfxSec.appendChild(webglCustomBox);
-
-            container.appendChild(gfxSec);
-
-            // Divider
-            const divider2 = document.createElement('div');
-            divider2.style.cssText = 'height: 1px; background: var(--border-default); margin: 8px 0;';
-            container.appendChild(divider2);
-
-            // --- Environment ---
-            const envSec = document.createElement('div');
-            envSec.style.cssText = 'display: flex; flex-direction: column; gap: 20px;';
-            const envTitle = document.createElement('div');
-            envTitle.style.cssText = 'font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 4px;';
-            envTitle.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px; color: var(--accent);">extension</span> Environment & Plugins`;
-            envSec.appendChild(envTitle);
-
-            // Plugins
-            const pluginsRow = document.createElement('div');
-            pluginsRow.style.cssText = 'display: grid; grid-template-columns: 200px 1fr; align-items: center; gap: 20px;';
-            const pluginsLabelWrap = document.createElement('div');
-            pluginsLabelWrap.innerHTML = '<div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Browser Plugins</div><div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Spoof plugin list</div>';
-            const pluginsToggle = window.DuckControls.ToggleGroup.create({
+            this.canvasToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Noise', value: 'noise' }, { label: 'Real', value: 'real' }],
                 value: 'noise'
             });
-            pluginsRow.appendChild(pluginsLabelWrap);
-            pluginsRow.appendChild(pluginsToggle.element);
-            envSec.appendChild(pluginsRow);
+            emuSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Canvas API', desc: 'Add noise to canvas fingerprints', control: this.canvasToggle.element, alignTop: false }).element);
 
-            container.appendChild(envSec);
+            this.webglImgToggle = window.DuckControls.ToggleGroup.create({
+                options: [{ label: 'Noise', value: 'noise' }, { label: 'Real', value: 'real' }],
+                value: 'noise'
+            });
+            emuSec.appendChild(window.DuckControls.SettingRow.create({ title: 'WebGL Image', desc: 'Add noise to WebGL renderings', control: this.webglImgToggle.element, alignTop: false }).element);
+
+            this.webglMetaToggle = window.DuckControls.ToggleGroup.create({
+                options: [{ label: 'Real', value: 'real' }, { label: 'Random', value: 'random' }, { label: 'Custom', value: 'custom' }],
+                value: 'random'
+            });
+            emuSec.appendChild(window.DuckControls.SettingRow.create({ title: 'WebGL Metadata', desc: 'Spoof GPU vendor and renderer strings', control: this.webglMetaToggle.element, alignTop: false }).element);
+
+            const webglCustomBox = document.createElement('div');
+            webglCustomBox.style.cssText = 'display: none; flex-direction: column; gap: 16px; background: var(--bg-surface); padding: 20px; border-radius: 8px; border: 1px solid var(--border-default);';
+
+            this._webglVendorSelect = window.DuckControls.Select.create({
+                label: 'Vendor',
+                placeholder: 'Select vendor...',
+                options: [{ label: 'Loading...', value: '' }],
+                width: '100%'
+            });
+            webglCustomBox.appendChild(this._webglVendorSelect.element);
+
+            this._rendererSelect = window.DuckControls.Select.create({
+                label: 'Renderer',
+                placeholder: 'Select renderer...',
+                options: [{ label: 'Loading...', value: '' }],
+                width: '100%'
+            });
+            webglCustomBox.appendChild(this._rendererSelect.element);
+
+            this.webglMetaToggle.element.addEventListener('click', () => {
+                webglCustomBox.style.display = this.webglMetaToggle.getValue() === 'custom' ? 'flex' : 'none';
+            });
+            emuSec.appendChild(webglCustomBox);
+
+            this.pluginsToggle = window.DuckControls.ToggleGroup.create({
+                options: [{ label: 'Noise', value: 'noise' }, { label: 'Real', value: 'real' }],
+                value: 'noise'
+            });
+            emuSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Browser Plugins', desc: 'Spoof standard browser plugin list', control: this.pluginsToggle.element, alignTop: false }).element);
+
+            container.appendChild(window.DuckControls.Card.create({ title: 'Hardware Emulation', icon: 'developer_board', desc: 'Advanced WebGL and graphics overrides', content: emuSec }).element);
 
             return container;
+        },
+
+        _randomizeTier() {
+            const tiers = this._currentOsBlock?.HardwareTiers || [];
+            if (!tiers.length) return;
+            const tier = tiers[Math.floor(Math.random() * tiers.length)];
+            if (this.cpuChipSelect) this.cpuChipSelect.setValue(`${tier.Concurrency}-${tier.Memory}`);
+            return tier;
+        },
+
+        _randomizeResolution() {
+            const presets = this._currentOsBlock?.ScreenPresets || [];
+            if (!presets.length) return;
+            const p = presets[Math.floor(Math.random() * presets.length)];
+            if (this.resChipSelect) this.resChipSelect.setValue(`${p.Width}x${p.Height}x${p.PixelRatio}`);
+            return p;
+        },
+
+        _randomizeWebGL() {
+            const osBlock = this._currentOsBlock;
+            if (!osBlock?.WebGL?.VendorGPUs) return;
+            const vendors = Object.keys(osBlock.WebGL.VendorGPUs);
+            if (!vendors.length) return;
+            const vendor = vendors[Math.floor(Math.random() * vendors.length)];
+            const renderers = osBlock.WebGL.VendorGPUs[vendor];
+            const renderer = renderers[Math.floor(Math.random() * renderers.length)];
+            if (this._webglVendorSelect) this._webglVendorSelect.setValue(vendor);
+            if (this._rendererSelect) this._rendererSelect.setValue(renderer);
+            return { vendor, renderer };
+        },
+
+        _setOsBlock(block) {
+            this._currentOsBlock = block;
+        },
+
+        getValues() {
+            const cpuMode = this.cpuToggle ? this.cpuToggle.getValue() : 'random';
+            const resMode = this.resToggle ? this.resToggle.getValue() : 'random';
+            const webglMode = this.webglMetaToggle ? this.webglMetaToggle.getValue() : 'random';
+
+            let concurrency = null, deviceMemory = null;
+            if (cpuMode === 'custom' && this.cpuChipSelect) {
+                const key = this.cpuChipSelect.getValue() || '';
+                const parts = key.split('-');
+                concurrency = parseInt(parts[0], 10) || null;
+                deviceMemory = parseInt(parts[1], 10) || null;
+            }
+
+            let screenWidth = null, screenHeight = null, screenPixelRatio = null, screenPreset = null;
+            if (resMode === 'custom' && this.resChipSelect) {
+                const val = this.resChipSelect.getValue() || '';
+                const parts = val.split('x');
+                if (parts.length === 3) {
+                    screenWidth = parseInt(parts[0], 10) || null;
+                    screenHeight = parseInt(parts[1], 10) || null;
+                    screenPixelRatio = parseFloat(parts[2]) || null;
+                    screenPreset = val;
+                }
+            }
+
+            return {
+                concurrency,
+                deviceMemory,
+                cpuMode,
+                screenWidth,
+                screenHeight,
+                screenPixelRatio,
+                screenPreset,
+                screenMode: resMode,
+                canvasMode: this.canvasToggle ? this.canvasToggle.getValue() : 'noise',
+                webglImageMode: this.webglImgToggle ? this.webglImgToggle.getValue() : 'noise',
+                webglMode,
+                webglVendor: webglMode === 'custom' && this._webglVendorSelect ? this._webglVendorSelect.getValue() : null,
+                webglRenderer: webglMode === 'custom' && this._rendererSelect ? this._rendererSelect.getValue() : null,
+                pluginsMode: this.pluginsToggle ? this.pluginsToggle.getValue() : 'noise',
+            };
         }
     };
 })();

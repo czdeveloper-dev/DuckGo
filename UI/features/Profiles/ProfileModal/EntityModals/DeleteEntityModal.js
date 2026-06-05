@@ -116,6 +116,7 @@
             footerWrap.appendChild(deleteBtn);
 
             this._modal = window.DuckControls.Modal.create({
+            defaultEnter: true,
                 title: `Delete ${entityName}s`,
                 icon: 'delete',
                 content: modalBody,

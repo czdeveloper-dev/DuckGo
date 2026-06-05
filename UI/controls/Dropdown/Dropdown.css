@@ -27,6 +27,7 @@
     transition: opacity var(--t), transform var(--t), visibility var(--t);
     max-height: 300px;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .duck-dropdown-menu.duck-dropdown-open {
@@ -37,11 +38,11 @@
 
 /* Dropdown up variant */
 .duck-dropdown-menu.duck-dropdown-up {
-    transform: translateY(4px);
+    transform: translateY(calc(-100% + 4px));
 }
 
 .duck-dropdown-menu.duck-dropdown-up.duck-dropdown-open {
-    transform: translateY(0);
+    transform: translateY(-100%);
 }
 
 /* Dropdown item */
@@ -141,3 +142,5 @@
     background: var(--border-default);
     border-radius: 2px;
 }
+
+.duck-dropdown-menu { display: none; }

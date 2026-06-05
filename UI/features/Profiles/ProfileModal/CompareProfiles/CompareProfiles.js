@@ -156,6 +156,7 @@ window.ProfileModals.CompareProfiles = {
         }
         
         this._modal = window.DuckControls.Modal.create({
+            defaultEnter: true,
             title: 'Compare Profiles',
             subtitle: 'Analyze fingerprint differences between profiles',
             icon: 'compare_arrows',

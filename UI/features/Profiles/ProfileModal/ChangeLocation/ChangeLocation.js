@@ -199,6 +199,7 @@ window.ProfileModals.ChangeLocation = {
         });
 
         this._modal = DuckControls.Modal.create({
+            defaultEnter: true,
             title: 'Change Profile Location',
             subtitle: `<span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Applied to ${count} selected profiles`,
             icon: 'location_on',

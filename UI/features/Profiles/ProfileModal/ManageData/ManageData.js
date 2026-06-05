@@ -64,6 +64,7 @@
             this._refreshTabs();
 
             this._modal = window.DuckControls.Modal.create({
+            defaultEnter: true,
                 title: 'Data Resource Manager',
                 subtitle: 'Manage and structure data resources associated with this profile.',
                 icon: 'database',
@@ -122,6 +123,7 @@
             ];
 
             const cfgModal = window.DuckControls.Modal.create({
+            defaultEnter: true,
                 title: isEdit ? 'Edit Table Config' : 'Create New Table',
                 icon: isEdit ? 'edit' : 'add_box',
                 content: content,

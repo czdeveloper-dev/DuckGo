@@ -10,6 +10,7 @@ window.ProfileModals.DeleteProfiles = {
         const title = isSingle ? 'Delete Profile' : 'Delete Selected Profiles';
         
         DuckControls.Modal.create({
+            defaultEnter: true,
             title: title,
             subtitle: `<span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Selected: ${count} profile${count > 1 ? 's' : ''}`,
             icon: 'delete',

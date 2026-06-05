@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Bogus;
 using DuckGo.Data.Repositories;
 using DuckGo.Models.Configs;
 using DuckGo.Models.DTOs;
@@ -14,6 +15,7 @@ public class ProfileService
     private readonly IProxyRepository _proxyRepo;
     private readonly ProfileFolderService _folderService;
     private readonly ConfigBuilder _configBuilder;
+    private readonly FingerprintService _fingerprintSvc;
 
     public ProfileService(
         IProfileRepository profileRepo,
@@ -21,7 +23,8 @@ public class ProfileService
         ITagRepository tagRepo,
         IProxyRepository proxyRepo,
         ProfileFolderService folderService,
-        ConfigBuilder configBuilder)
+        ConfigBuilder configBuilder,
+        FingerprintService fingerprintSvc)
     {
         _profileRepo = profileRepo;
         _groupRepo = groupRepo;
@@ -29,15 +32,17 @@ public class ProfileService
         _proxyRepo = proxyRepo;
         _folderService = folderService;
         _configBuilder = configBuilder;
+        _fingerprintSvc = fingerprintSvc;
     }
 
     public async Task<ProfileListResponse> GetProfilesAsync(
         string? search = null,
+        int? id = null,
         int? groupId = null,
         List<int>? tagIds = null,
         string? browserType = null)
     {
-        var profiles = await _profileRepo.GetAllAsync(search, groupId, tagIds, browserType);
+        var profiles = await _profileRepo.GetAllAsync(search, id, groupId, tagIds, browserType);
         var allTags = await _tagRepo.GetAllAsync();
         var tagDict = allTags.ToDictionary(t => t.Id, t => t.Name);
 
@@ -56,6 +61,7 @@ public class ProfileService
                 ProxyId = p.ProxyId,
                 ProxyName = p.ProxyName,
                 BrowserType = p.BrowserType,
+                BrowserVersion = p.BrowserVersion,
                 Notes = p.Notes,
                 Status = p.Status,
                 CreatedAt = p.CreatedAt,
@@ -94,20 +100,52 @@ public class ProfileService
 
     public async Task<ProfileListItem> CreateProfileAsync(ProfileCreateRequest req)
     {
+        var normalizedProxyId = NormalizeProxyId(req.ProxyId, req.Fingerprint?.Proxy);
+        var normalizedName = EnsureProfileName(req.Name);
+        var normalizedReq = req with { Name = normalizedName, ProxyId = normalizedProxyId };
+        string profileData;
+        if (!string.IsNullOrWhiteSpace(normalizedReq.ProfileData))
+        {
+            profileData = normalizedReq.ProfileData;
+        }
+        else
+        {
+            var cfg = await _fingerprintSvc.GenerateAsync(
+                platform: normalizedReq.Fingerprint?.Platform,
+                browserType: normalizedReq.BrowserType,
+                osModelName: normalizedReq.Fingerprint?.OSModel,
+                screenWidth: normalizedReq.Fingerprint?.ScreenWidth,
+                screenHeight: normalizedReq.Fingerprint?.ScreenHeight,
+                pixelRatio: normalizedReq.Fingerprint?.ScreenPixelRatio,
+                timezone: normalizedReq.Fingerprint?.Timezone,
+                languages: normalizedReq.Fingerprint?.Languages,
+                webglVendor: normalizedReq.Fingerprint?.WebGLVendor,
+                webglRenderer: normalizedReq.Fingerprint?.WebGLRenderer
+            );
+
+            ApplyFingerprintOverrides(cfg, normalizedReq);
+            profileData = JsonSerializer.Serialize(cfg, new JsonSerializerOptions { WriteIndented = false });
+        }
+
         var profile = new Profile
         {
-            Name = req.Name,
-            GroupId = req.GroupId,
-            Tags = JsonSerializer.Serialize(req.TagIds ?? new List<int>()),
-            ProxyId = req.ProxyId,
-            BrowserType = req.BrowserType,
-            ProfileData = req.ProfileData,
-            Notes = req.Notes ?? "",
+            Name = normalizedReq.Name,
+            GroupId = normalizedReq.GroupId,
+            Tags = JsonSerializer.Serialize(normalizedReq.TagIds ?? new List<int>()),
+            ProxyId = normalizedReq.ProxyId,
+            BrowserType = normalizedReq.BrowserType,
+            BrowserVersion = normalizedReq.Fingerprint?.BrowserVersion ?? "",
+            ProfileData = profileData,
+            Notes = normalizedReq.Notes ?? "",
             CreatedAt = DateTime.Now
         };
 
         var id = await _profileRepo.CreateAsync(profile);
         profile.Id = id;
+
+        var hydrated = HydrateProfileMetadata(profile.ProfileData, profile, normalizedReq.StartUrl);
+        profile.ProfileData = JsonSerializer.Serialize(hydrated, new JsonSerializerOptions { WriteIndented = false });
+        await _profileRepo.UpdateAsync(profile);
 
         _folderService.CreateProfileFolder(id);
         var configJson = _configBuilder.BuildConfigJson(profile);
@@ -126,6 +164,7 @@ public class ProfileService
         existing.Tags = JsonSerializer.Serialize(req.TagIds ?? new List<int>());
         existing.ProxyId = req.ProxyId;
         existing.BrowserType = req.BrowserType;
+        existing.BrowserVersion = TryDeserialize(req.ProfileData, () => JsonSerializer.Deserialize<ProfileDataConfig>(req.ProfileData))?.System?.BrowserVersion ?? existing.BrowserVersion;
         existing.ProfileData = req.ProfileData;
         existing.Notes = req.Notes ?? "";
 
@@ -182,6 +221,163 @@ public class ProfileService
 
     public async Task UpdateLastOpenedAsync(int id)
         => await _profileRepo.UpdateLastOpenedAsync(id);
+
+    private static void ApplyFingerprintOverrides(ProfileDataConfig cfg, ProfileCreateRequest req)
+    {
+        cfg.Profile ??= new ProfileMetadataConfig();
+        cfg.System ??= SystemConfig.Default;
+        cfg.Fingerprint ??= FingerprintConfig.Default;
+        cfg.Location ??= new LocationConfig();
+        cfg.Network ??= new NetworkConfig();
+        cfg.Security ??= new SecurityConfig();
+        cfg.Cookies ??= new CookiesImportConfig();
+
+        cfg.Profile.ProfileName = req.Name;
+        cfg.Profile.StartURL = req.StartUrl?.Trim() ?? "";
+
+        var fp = req.Fingerprint;
+        if (fp == null)
+        {
+            cfg.Cookies.FileName = req.CookiesFileName;
+            cfg.Cookies.RawData = req.CookiesData;
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(fp.Language)) cfg.System.Language = fp.Language;
+        if (!string.IsNullOrWhiteSpace(fp.UserAgent)) cfg.System.UserAgent = fp.UserAgent;
+        if (!string.IsNullOrWhiteSpace(fp.BrowserVersion)) cfg.System.BrowserVersion = fp.BrowserVersion;
+        if (!string.IsNullOrWhiteSpace(fp.AcceptLanguage)) cfg.System.AcceptLanguage = fp.AcceptLanguage;
+        else if (fp.Languages?.Count > 0) cfg.System.AcceptLanguage = string.Join(",", fp.Languages);
+
+        if (fp.HardwareConcurrency.HasValue) cfg.System.HardwareConcurrency = fp.HardwareConcurrency.Value;
+        if (fp.DeviceMemory.HasValue) cfg.System.DeviceMemory = fp.DeviceMemory.Value;
+        if (fp.ScreenWidth.HasValue) cfg.System.Screen.Width = fp.ScreenWidth.Value;
+        if (fp.ScreenHeight.HasValue) cfg.System.Screen.Height = fp.ScreenHeight.Value;
+        if (fp.ScreenPixelRatio.HasValue) cfg.System.Screen.PixelRatio = fp.ScreenPixelRatio.Value;
+
+        if (!string.IsNullOrWhiteSpace(fp.LocationMode)) cfg.Location.Mode = NormalizeMode(fp.LocationMode);
+        if (fp.Latitude.HasValue) cfg.Location.Latitude = fp.Latitude.Value;
+        if (fp.Longitude.HasValue) cfg.Location.Longitude = fp.Longitude.Value;
+        if (fp.Accuracy.HasValue) cfg.Location.Accuracy = fp.Accuracy.Value;
+
+        if (!string.IsNullOrWhiteSpace(fp.WebGLMode)) cfg.Fingerprint.WebGL.Mode = NormalizeMode(fp.WebGLMode);
+        if (!string.IsNullOrWhiteSpace(fp.WebGLVendor)) cfg.Fingerprint.WebGL.Vendor = fp.WebGLVendor;
+        if (!string.IsNullOrWhiteSpace(fp.WebGLRenderer)) cfg.Fingerprint.WebGL.Renderer = fp.WebGLRenderer;
+        if (!string.IsNullOrWhiteSpace(fp.CanvasMode)) cfg.Fingerprint.Canvas.Mode = NormalizeMode(fp.CanvasMode);
+        if (!string.IsNullOrWhiteSpace(fp.ClientRectsMode)) cfg.Fingerprint.ClientRects.Mode = NormalizeMode(fp.ClientRectsMode);
+        if (!string.IsNullOrWhiteSpace(fp.MediaDevicesMode)) cfg.Fingerprint.MediaDevices.Mode = NormalizeMode(fp.MediaDevicesMode);
+        if (!string.IsNullOrWhiteSpace(fp.PluginsMode))
+        {
+            // no dedicated mode field exists, keep plugin data and store intent in DoNotTrack-free area not available
+        }
+        if (fp.Fonts?.Count > 0) cfg.Fingerprint.Fonts = fp.Fonts;
+
+        if (fp.Proxy is { Mode: not null } proxy)
+        {
+            var proxyMode = proxy.Mode.Trim().ToLowerInvariant();
+            if (proxyMode == "custom" && !string.IsNullOrWhiteSpace(proxy.Host))
+            {
+                cfg.Network.Proxy = new ProxyConfig
+                {
+                    Mode = "custom",
+                    SavedProxyId = null,
+                    Type = NormalizeProxyType(proxy.Type),
+                    Host = proxy.Host ?? "",
+                    Port = proxy.Port ?? 0,
+                    Username = proxy.Username ?? "",
+                    Password = proxy.Password ?? ""
+                };
+            }
+            else if (proxyMode == "saved" && proxy.SavedProxyId.HasValue)
+            {
+                cfg.Network.Proxy = new ProxyConfig
+                {
+                    Mode = "saved",
+                    SavedProxyId = proxy.SavedProxyId,
+                    Type = NormalizeProxyType(proxy.Type),
+                    Host = "",
+                    Port = 0,
+                    Username = "",
+                    Password = ""
+                };
+            }
+            else
+            {
+                cfg.Network.Proxy = null;
+            }
+        }
+        else
+        {
+            cfg.Network.Proxy = null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(fp.PortBlockMode)) cfg.Security.PortBlockMode = fp.PortBlockMode;
+        cfg.Security.PortBlockList = fp.PortBlockList ?? new List<string>();
+
+        cfg.Cookies.FileName = req.CookiesFileName;
+        cfg.Cookies.RawData = req.CookiesData;
+    }
+
+    private static ProfileDataConfig HydrateProfileMetadata(string profileData, Profile profile, string? startUrl)
+    {
+        var cfg = TryDeserialize(profileData, () => JsonSerializer.Deserialize<ProfileDataConfig>(profileData)) ?? ProfileDataConfig.Default;
+        cfg.Profile ??= new ProfileMetadataConfig();
+        cfg.Profile.ProfileID = profile.Id.ToString();
+        cfg.Profile.ProfileName = profile.Name;
+        cfg.Profile.StartURL = startUrl?.Trim() ?? cfg.Profile.StartURL ?? "";
+        return cfg;
+    }
+
+    private static string NormalizeMode(string mode)
+    {
+        return mode switch
+        {
+            "real" => "Real",
+            "noise" => "Noise",
+            "custom" => "Custom",
+            _ => mode
+        };
+    }
+
+    private static string EnsureProfileName(string? name)
+    {
+        if (!string.IsNullOrWhiteSpace(name)) return name.Trim();
+
+        var faker = new Faker();
+        var left = faker.Hacker.Adjective();
+        var right = faker.Hacker.Noun();
+        var suffix = faker.Random.Number(100, 9999);
+        return $"{char.ToUpperInvariant(left[0])}{left[1..]} {char.ToUpperInvariant(right[0])}{right[1..]} {suffix}";
+    }
+
+    private static int? NormalizeProxyId(int? requestProxyId, ProfileProxyOptions? proxy)
+    {
+        if (proxy == null) return requestProxyId;
+
+        var mode = (proxy.Mode ?? "").Trim().ToLowerInvariant();
+        if (mode == "saved") return proxy.SavedProxyId ?? requestProxyId;
+        if (mode == "custom" || mode == "none") return null;
+
+        return requestProxyId;
+    }
+
+    private static string NormalizeProxyType(string? type)
+    {
+        return (type ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "https" => "https",
+            "socks4" => "socks4",
+            "socks5" => "socks5",
+            _ => "http"
+        };
+    }
+
+    private static string ExtractPart(string? auth, int index)
+    {
+        if (string.IsNullOrWhiteSpace(auth) || !auth.Contains(':')) return "";
+        var parts = auth.Split(':');
+        return parts.Length > index ? parts[index] : "";
+    }
 
     private static T? TryDeserialize<T>(string json, Func<T?> deserializer) where T : class
     {

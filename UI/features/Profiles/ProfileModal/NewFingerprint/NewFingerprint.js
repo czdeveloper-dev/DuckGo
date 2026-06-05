@@ -6,6 +6,7 @@ window.ProfileModals.NewFingerprint = {
         const count = selectedIds.size !== undefined ? selectedIds.size : (selectedIds.length || 0);
 
         DuckControls.Modal.create({
+            defaultEnter: true,
             title: 'Generate New Fingerprint',
             subtitle: `<span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Applied to ${count} selected profiles`,
             icon: 'casino',

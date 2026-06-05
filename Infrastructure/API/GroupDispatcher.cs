@@ -63,7 +63,11 @@ public class GroupDispatcher : IDispatcher
     private static T? ParsePayload<T>(JsonElement? payload) where T : class
     {
         if (!payload.HasValue) return null;
-        try { return JsonSerializer.Deserialize<T>(payload.Value.GetRawText()); }
+        try
+        {
+            return JsonSerializer.Deserialize<T>(payload.Value.GetRawText(),
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
         catch { return null; }
     }
 }

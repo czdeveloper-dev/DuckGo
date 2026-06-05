@@ -10,6 +10,7 @@ window.ProfileModals.RemoveProxy = {
         const title = isSingle ? 'Remove Proxy' : 'Remove Proxy for Selected';
         
         DuckControls.Modal.create({
+            defaultEnter: true,
             title: title,
             subtitle: `<span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Selected: ${count} profile${count > 1 ? 's' : ''}`,
             icon: 'wifi_off',

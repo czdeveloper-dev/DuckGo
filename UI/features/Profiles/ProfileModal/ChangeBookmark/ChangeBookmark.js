@@ -50,6 +50,7 @@ window.ProfileModals.ChangeBookmark = {
         modalBody.appendChild(textareaWrap);
 
         this._modal = DuckControls.Modal.create({
+            defaultEnter: true,
             title: 'Change Bookmarks',
             subtitle: `<span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Applied to ${count} selected profiles`,
             icon: 'bookmark_add',

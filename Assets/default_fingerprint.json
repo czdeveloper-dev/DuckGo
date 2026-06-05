@@ -1,0 +1,467 @@
+{
+  "Timezones": [
+    "America/New_York", "America/Los_Angeles", "America/Chicago", "America/Denver", "America/Phoenix", "America/Anchorage", "America/Adak",
+    "America/Toronto", "America/Vancouver", "America/Mexico_City", "America/Sao_Paulo", "America/Buenos_Aires",
+    "Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Madrid", "Europe/Rome", "Europe/Amsterdam", "Europe/Stockholm",
+    "Europe/Warsaw", "Europe/Prague", "Europe/Vienna", "Europe/Brussels", "Europe/Zurich", "Europe/Dublin", "Europe/Lisbon",
+    "Asia/Tokyo", "Asia/Seoul", "Asia/Shanghai", "Asia/Hong_Kong", "Asia/Taipei", "Asia/Singapore", "Asia/Bangkok",
+    "Asia/Jakarta", "Asia/Manila", "Asia/Ho_Chi_Minh", "Asia/Kolkata", "Asia/Dubai", "Asia/Riyadh",
+    "Australia/Sydney", "Australia/Melbourne", "Australia/Brisbane", "Pacific/Auckland"
+  ],
+  "Languages": [
+    "en-US", "en-GB", "en-AU", "en-CA", "en-IN",
+    "de-DE", "de-AT", "de-CH", "fr-FR", "fr-CA", "fr-BE",
+    "es-ES", "es-MX", "es-AR", "pt-BR", "pt-PT",
+    "it-IT", "nl-NL", "pl-PL", "cs-CZ", "hu-HU", "ro-RO",
+    "ru-RU", "uk-UA", "tr-TR", "ar-SA", "he-IL",
+    "ja-JP", "ko-KR", "zh-CN", "zh-TW", "zh-HK",
+    "th-TH", "vi-VN", "id-ID", "ms-MY", "tl-PH"
+  ],
+
+  "Windows": {
+    "Models": [
+      { "Name": "Windows 11 Pro 24H2",    "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
+      { "Name": "Windows 11 Pro 23H2",    "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
+      { "Name": "Windows 11 Pro 22H2",    "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
+      { "Name": "Windows 10 Pro 24H2",    "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
+      { "Name": "Windows 10 Pro 22H2",    "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
+      { "Name": "Windows 10 Pro 21H2",    "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
+      { "Name": "Windows 10 LTSC 2021",   "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
+      { "Name": "Windows 8.1 Pro",        "UserAgentTemplate": "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
+      { "Name": "Windows 7 Ultimate",      "UserAgentTemplate": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
+      { "Name": "Windows Server 2022",     "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
+      { "Name": "Windows Server 2019",     "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" }
+    ],
+    "Fonts": ["Arial", "Calibri", "Comic Sans MS", "Consolas", "Courier New", "Georgia", "Impact", "Lucida Console", "Segoe UI", "Tahoma", "Times New Roman", "Trebuchet MS", "Verdana"],
+    "ScreenPresets": [
+      { "Width": 3840, "Height": 2160, "PixelRatio": 1.0 },
+      { "Width": 2560, "Height": 1440, "PixelRatio": 1.0 },
+      { "Width": 2560, "Height": 1600, "PixelRatio": 1.0 },
+      { "Width": 1920, "Height": 1200, "PixelRatio": 1.0 },
+      { "Width": 1920, "Height": 1080, "PixelRatio": 1.0 },
+      { "Width": 1920, "Height": 1080, "PixelRatio": 1.5 },
+      { "Width": 1680, "Height": 1050, "PixelRatio": 1.0 },
+      { "Width": 1600, "Height": 900,  "PixelRatio": 1.0 },
+      { "Width": 1536, "Height": 864,  "PixelRatio": 1.0 },
+      { "Width": 1440, "Height": 900,  "PixelRatio": 1.0 },
+      { "Width": 1366, "Height": 768,  "PixelRatio": 1.0 },
+      { "Width": 1360, "Height": 768,  "PixelRatio": 1.0 },
+      { "Width": 1280, "Height": 1024, "PixelRatio": 1.0 },
+      { "Width": 1280, "Height": 800,  "PixelRatio": 1.0 },
+      { "Width": 1280, "Height": 720,  "PixelRatio": 1.0 }
+    ],
+    "HardwareTiers": [
+      { "Concurrency": 2,  "Memory": 4  },
+      { "Concurrency": 4,  "Memory": 8  },
+      { "Concurrency": 6,  "Memory": 8  },
+      { "Concurrency": 8,  "Memory": 8  },
+      { "Concurrency": 8,  "Memory": 16 },
+      { "Concurrency": 12, "Memory": 16 },
+      { "Concurrency": 12, "Memory": 32 },
+      { "Concurrency": 16, "Memory": 16 },
+      { "Concurrency": 16, "Memory": 32 },
+      { "Concurrency": 24, "Memory": 32 },
+      { "Concurrency": 24, "Memory": 64 },
+      { "Concurrency": 32, "Memory": 64 },
+      { "Concurrency": 32, "Memory": 128 }
+    ],
+    "WebGL": {
+      "VendorGPUs": {
+        "Google Inc. (NVIDIA)": [
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 SUPER Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti SUPER Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 SUPER Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 5070 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 5070 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 5050 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 3090 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Laptop GPU Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Laptop GPU Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4050 Laptop GPU Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Laptop GPU Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Laptop GPU Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce GTX 1650 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce GTX 1080 Direct3D11 vs_5_0 ps_5_0, D3D11)"
+        ],
+        "Google Inc. (AMD)": [
+          "ANGLE (AMD, AMD Radeon RX 7900 XTX Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 7900 XT Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 7800 XT Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 7700 XT Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 7600 XT Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 7600 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 6950 XT Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 6900 XT Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 6800 XT Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 6800 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 6750 XT Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 6700 XT Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 6650 XT Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 6600 XT Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 6600 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 5700 XT Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 5700 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 5600 XT Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon Vega 64 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon Vega 56 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (AMD, AMD Radeon RX 580 Direct3D11 vs_5_0 ps_5_0, D3D11)"
+        ],
+        "Google Inc. (Intel)": [
+          "ANGLE (Intel, Intel(R) Arc B580 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) Arc B570 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) Arc A770 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) Arc A750 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) Arc A580 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) Arc A380 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) UHD Graphics 770 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) UHD Graphics 730 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) UHD Graphics 710 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) Iris(R) Xe MAX Graphics Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) UHD Graphics 620 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) UHD Graphics 615 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) HD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) HD Graphics 620 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) HD Graphics 615 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (Intel, Intel(R) HD Graphics 530 Direct3D11 vs_5_0 ps_5_0, D3D11)"
+        ]
+      }
+    }
+  },
+
+  "macOS": {
+    "Models": [
+      { "Name": "macOS Sequoia 15",   "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos" },
+      { "Name": "macOS Sonoma 14",   "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos" },
+      { "Name": "macOS Ventura 13",  "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos" },
+      { "Name": "macOS Monterey 12",  "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos" },
+      { "Name": "macOS Big Sur 11",  "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos" },
+      { "Name": "macOS Catalina 10.15","UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos" }
+    ],
+    "Fonts": ["SF Pro Display", "SF Pro Text", "Helvetica Neue", "Helvetica", "Arial", "Times New Roman", "Times", "Courier New", "Courier", "Verdana", "Georgia", "Palatino", "Roboto", "Menlo", "Monaco", "Consolas"],
+    "ScreenPresets": [
+      { "Width": 3024, "Height": 1964, "PixelRatio": 2.0 },
+      { "Width": 2880, "Height": 1800, "PixelRatio": 2.0 },
+      { "Width": 2560, "Height": 1600, "PixelRatio": 2.0 },
+      { "Width": 2304, "Height": 1440, "PixelRatio": 2.0 },
+      { "Width": 2048, "Height": 1280, "PixelRatio": 2.0 },
+      { "Width": 1920, "Height": 1080, "PixelRatio": 2.0 },
+      { "Width": 1512, "Height": 982,  "PixelRatio": 2.0 },
+      { "Width": 1440, "Height": 900,  "PixelRatio": 2.0 },
+      { "Width": 1280, "Height": 800,  "PixelRatio": 2.0 }
+    ],
+    "HardwareTiers": [
+      { "Concurrency": 8,  "Memory": 8  },
+      { "Concurrency": 10, "Memory": 16 },
+      { "Concurrency": 12, "Memory": 16 },
+      { "Concurrency": 16, "Memory": 32 },
+      { "Concurrency": 20, "Memory": 32 },
+      { "Concurrency": 24, "Memory": 64 },
+      { "Concurrency": 32, "Memory": 64 },
+      { "Concurrency": 32, "Memory": 128 },
+      { "Concurrency": 48, "Memory": 128 },
+      { "Concurrency": 64, "Memory": 256 }
+    ],
+    "WebGL": {
+      "VendorGPUs": {
+        "Google Inc. (Apple)": [
+          "ANGLE (Apple, Apple M4 Max)",
+          "ANGLE (Apple, Apple M4 Pro)",
+          "ANGLE (Apple, Apple M4)",
+          "ANGLE (Apple, Apple M3 Max)",
+          "ANGLE (Apple, Apple M3 Pro)",
+          "ANGLE (Apple, Apple M3)",
+          "ANGLE (Apple, Apple M2 Ultra)",
+          "ANGLE (Apple, Apple M2 Max)",
+          "ANGLE (Apple, Apple M2 Pro)",
+          "ANGLE (Apple, Apple M2)",
+          "ANGLE (Apple, Apple M1 Ultra)",
+          "ANGLE (Apple, Apple M1 Max)",
+          "ANGLE (Apple, Apple M1 Pro)",
+          "ANGLE (Apple, Apple M1)"
+        ],
+        "Google Inc. (AMD)": [
+          "ANGLE (AMD, AMD Radeon Pro W7900)",
+          "ANGLE (AMD, AMD Radeon Pro W7800)",
+          "ANGLE (AMD, AMD Radeon Pro W6800)",
+          "ANGLE (AMD, AMD Radeon Pro 5700 XT)",
+          "ANGLE (AMD, AMD Radeon Pro 5500 XT)",
+          "ANGLE (AMD, AMD Radeon Pro 5600M)",
+          "ANGLE (AMD, AMD Radeon Pro 5300M)"
+        ],
+        "Google Inc. (Intel)": [
+          "ANGLE (Intel, Intel(R) UHD Graphics 770)",
+          "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics)",
+          "ANGLE (Intel, Intel(R) Iris(R) Plus Graphics)",
+          "ANGLE (Intel, Intel(R) UHD Graphics 617)"
+        ]
+      }
+    }
+  },
+
+  "Linux": {
+    "Models": [
+      { "Name": "Ubuntu 24.04 LTS", "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux" },
+      { "Name": "Ubuntu 22.04 LTS", "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux" },
+      { "Name": "Debian 13",        "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux" },
+      { "Name": "Fedora 42",        "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux" },
+      { "Name": "Linux Mint 22",    "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux" },
+      { "Name": "Arch Linux",       "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux" }
+    ],
+    "Fonts": ["DejaVu Sans", "DejaVu Sans Mono", "DejaVu Serif", "Liberation Sans", "Liberation Serif", "Liberation Mono", "Noto Sans", "Noto Sans CJK JP", "Noto Sans CJK SC", "Noto Sans CJK KR", "Ubuntu", "Ubuntu Mono", "Roboto", "Arial", "Times New Roman", "Courier New", "Helvetica", "Open Sans", "Source Code Pro", "Fira Code", "Fira Sans"],
+    "ScreenPresets": [
+      { "Width": 3840, "Height": 2160, "PixelRatio": 1.0 },
+      { "Width": 2560, "Height": 1440, "PixelRatio": 1.0 },
+      { "Width": 1920, "Height": 1080, "PixelRatio": 1.0 },
+      { "Width": 1680, "Height": 1050, "PixelRatio": 1.0 },
+      { "Width": 1600, "Height": 900,  "PixelRatio": 1.0 },
+      { "Width": 1440, "Height": 900,  "PixelRatio": 1.0 },
+      { "Width": 1366, "Height": 768,  "PixelRatio": 1.0 },
+      { "Width": 1280, "Height": 1024, "PixelRatio": 1.0 },
+      { "Width": 1280, "Height": 800,  "PixelRatio": 1.0 },
+      { "Width": 1280, "Height": 720,  "PixelRatio": 1.0 }
+    ],
+    "HardwareTiers": [
+      { "Concurrency": 2,  "Memory": 4  },
+      { "Concurrency": 4,  "Memory": 8  },
+      { "Concurrency": 8,  "Memory": 8  },
+      { "Concurrency": 8,  "Memory": 16 },
+      { "Concurrency": 16, "Memory": 16 },
+      { "Concurrency": 16, "Memory": 32 },
+      { "Concurrency": 32, "Memory": 64 }
+    ],
+    "WebGL": {
+      "VendorGPUs": {
+        "Google Inc. (NVIDIA)": [
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 5080 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 5070 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 5070 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 SUPER Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti SUPER Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Direct3D11 vs_5_0 ps_5_0, D3D11)"
+        ],
+        "Google Inc. (Mesa)": [
+          "Mesa AMD Radeon RX 7900 XTX (RADV NAVI31)",
+          "Mesa AMD Radeon RX 7900 XT (RADV NAVI31)",
+          "Mesa AMD Radeon RX 7800 XT (RADV NAVI23)",
+          "Mesa AMD Radeon RX 7600 (RADV NAVI33)",
+          "Mesa AMD Radeon RX 6600 XT (RADV NAVI23)",
+          "Mesa AMD Radeon RX 5700 XT (RADV NAVI10)",
+          "Mesa AMD Radeon Vega 64 (RADV VEGA10)",
+          "Mesa AMD Radeon Vega 56 (RADV VEGA20)",
+          "Mesa Intel(R) Arc A770 (RADV)",
+          "Mesa Intel(R) Arc A580 (RADV)",
+          "Mesa Intel(R) Arc A380 (RADV)",
+          "Mesa Intel(R) UHD Graphics 770 (Gen12)",
+          "Mesa Intel(R) UHD Graphics 750 (Gen12)",
+          "Mesa Intel(R) UHD Graphics 620 (KBL GT2)",
+          "Mesa Intel(R) Iris(R) Xe Graphics (TGL GT2)",
+          "llvmpipe (LLVM 18.1.8, 256 bits)",
+          "llvmpipe (LLVM 17.0.6, 256 bits)"
+        ]
+      }
+    }
+  },
+
+  "Android": {
+    "Models": [
+      { "Name": "Google Pixel 9 Pro XL",     "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; Pixel 9 Pro XL) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Google Pixel 9 Pro",        "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; Pixel 9 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Google Pixel 9",            "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Google Pixel 8 Pro",        "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Google Pixel 8",            "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Samsung Galaxy S25 Ultra",  "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; SM-S938B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Samsung Galaxy S25+",      "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; SM-S936B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Samsung Galaxy S25",        "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; SM-S931B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Samsung Galaxy S24 Ultra", "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Samsung Galaxy Z Fold 6",  "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-F956B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Samsung Galaxy Z Flip 6",  "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-F741B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Xiaomi 15 Ultra",          "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; 25016PN0BC) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Xiaomi 15",               "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; 25053PY09I) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "OnePlus 13",               "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; CPH2653) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "OPPO Find X8 Ultra",       "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; PHZ110) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "vivo X200 Ultra",         "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; V2405A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Samsung Galaxy A55",       "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-A556E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Samsung Galaxy A35",       "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-A356E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "Xiaomi Redmi Note 14 Pro", "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; 24094PC4AG) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
+      { "Name": "POCO F6 Pro",              "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; 23113RKB6G) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" }
+    ],
+    "Fonts": ["Roboto", "Noto Sans", "Droid Sans", "Droid Sans Mono", "Droid Serif", "Nunito", "Open Sans", "Helvetica", "Arial", "sans-serif"],
+    "ScreenPresets": [
+      { "Width": 1440, "Height": 3200, "PixelRatio": 3.5 },
+      { "Width": 1440, "Height": 3088, "PixelRatio": 3.5 },
+      { "Width": 1440, "Height": 2960, "PixelRatio": 3.5 },
+      { "Width": 1440, "Height": 2840, "PixelRatio": 3.5 },
+      { "Width": 1440, "Height": 2712, "PixelRatio": 3.5 },
+      { "Width": 1080, "Height": 2400, "PixelRatio": 2.8 },
+      { "Width": 1080, "Height": 2340, "PixelRatio": 2.8 },
+      { "Width": 1080, "Height": 2280, "PixelRatio": 2.8 },
+      { "Width": 1080, "Height": 2201, "PixelRatio": 2.8 },
+      { "Width": 1080, "Height": 2160, "PixelRatio": 2.8 },
+      { "Width": 1080, "Height": 2400, "PixelRatio": 2.5 },
+      { "Width": 1080, "Height": 2340, "PixelRatio": 2.5 },
+      { "Width": 1080, "Height": 2280, "PixelRatio": 2.5 },
+      { "Width": 1080, "Height": 2201, "PixelRatio": 2.5 },
+      { "Width": 1080, "Height": 2160, "PixelRatio": 2.5 },
+      { "Width": 1080, "Height": 2400, "PixelRatio": 2.0 },
+      { "Width": 1080, "Height": 2340, "PixelRatio": 2.0 },
+      { "Width": 1080, "Height": 2280, "PixelRatio": 2.0 },
+      { "Width": 1080, "Height": 2160, "PixelRatio": 2.0 },
+      { "Width": 1080, "Height": 1920, "PixelRatio": 2.0 },
+      { "Width": 720,  "Height": 1600, "PixelRatio": 2.0 },
+      { "Width": 720,  "Height": 1520, "PixelRatio": 2.0 },
+      { "Width": 720,  "Height": 1440, "PixelRatio": 2.0 },
+      { "Width": 720,  "Height": 1280, "PixelRatio": 2.0 },
+      { "Width": 480,  "Height": 960,  "PixelRatio": 1.5 }
+    ],
+    "HardwareTiers": [
+      { "Concurrency": 4,  "Memory": 6  },
+      { "Concurrency": 6,  "Memory": 8  },
+      { "Concurrency": 8,  "Memory": 8  },
+      { "Concurrency": 8,  "Memory": 12 },
+      { "Concurrency": 8,  "Memory": 16 },
+      { "Concurrency": 8,  "Memory": 24 },
+      { "Concurrency": 10, "Memory": 16 },
+      { "Concurrency": 10, "Memory": 24 }
+    ],
+    "WebGL": {
+      "VendorGPUs": {
+        "Google Inc. (Qualcomm)": [
+          "WebGL OpenGL ES 3.0 (Qualcomm, Adreno (TM) 750 GPU)",
+          "WebGL OpenGL ES 3.0 (Qualcomm, Adreno (TM) 740 GPU)",
+          "WebGL OpenGL ES 3.0 (Qualcomm, Adreno (TM) 730 GPU)",
+          "WebGL OpenGL ES 3.0 (Qualcomm, Adreno (TM) 720 GPU)",
+          "WebGL OpenGL ES 3.0 (Qualcomm, Adreno (TM) 710 GPU)",
+          "WebGL OpenGL ES 3.0 (Qualcomm, Adreno (TM) 680 GPU)",
+          "WebGL OpenGL ES 3.0 (Qualcomm, Adreno (TM) 660 GPU)",
+          "WebGL OpenGL ES 3.0 (Qualcomm, Adreno (TM) 650 GPU)",
+          "WebGL OpenGL ES 3.0 (Qualcomm, Adreno (TM) 640 GPU)",
+          "WebGL OpenGL ES 3.0 (Qualcomm, Adreno (TM) 630 GPU)",
+          "WebGL OpenGL ES 3.0 (Qualcomm, Adreno (TM) 620 GPU)",
+          "WebGL OpenGL ES 3.0 (Qualcomm, Adreno (TM) 618 GPU)",
+          "WebGL OpenGL ES 3.0 (Qualcomm, Adreno (TM) 616 GPU)",
+          "WebGL OpenGL ES 3.0 (Qualcomm, Adreno (TM) 610 GPU)"
+        ],
+        "Google Inc. (ARM)": [
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G925 MC14)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G725 MC16)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G720 MC12)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G625 MC4)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G615 MC4)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G610 MC4)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G576 MC7)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G510 MC2)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G310 MC2)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G78 MC14)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G77 MC11)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G76 MC12)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G75 MC4)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G57 MC5)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G57 MC3)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G57 MC2)",
+          "WebGL OpenGL ES 3.0 (ARM, Mali-G52 MC2)"
+        ],
+        "Google Inc. (Samsung)": [
+          "WebGL OpenGL ES 3.0 (Samsung, Mali-G78 MC14)",
+          "WebGL OpenGL ES 3.0 (Samsung, Mali-G78 MC12)",
+          "WebGL OpenGL ES 3.0 (Samsung, Mali-G77 MC11)",
+          "WebGL OpenGL ES 3.0 (Samsung, Mali-G76 MC12)",
+          "WebGL OpenGL ES 3.0 (Samsung, Mali-G72 MC3)",
+          "WebGL OpenGL ES 3.0 (Samsung, Mali-G71 MC20)",
+          "WebGL OpenGL ES 3.0 (Samsung, Mali-G71 MP18)"
+        ]
+      }
+    }
+  },
+
+  "iOS": {
+    "Models": [
+      { "Name": "iPhone 16 Pro Max", "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
+      { "Name": "iPhone 16 Pro",    "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
+      { "Name": "iPhone 16",        "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
+      { "Name": "iPhone 15 Pro Max", "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
+      { "Name": "iPhone 15 Pro",    "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
+      { "Name": "iPhone 15",        "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
+      { "Name": "iPhone 14 Pro Max", "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
+      { "Name": "iPhone 14 Pro",    "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
+      { "Name": "iPhone 14",        "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
+      { "Name": "iPhone 13",        "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
+      { "Name": "iPhone SE (3rd)",  "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
+      { "Name": "iPad Pro 13\" M4",  "UserAgentTemplate": "Mozilla/5.0 (iPad; CPU OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPad", "TLSOSMatch": "ios" },
+      { "Name": "iPad Pro 11\" M4",  "UserAgentTemplate": "Mozilla/5.0 (iPad; CPU OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPad", "TLSOSMatch": "ios" },
+      { "Name": "iPad Air M2",       "UserAgentTemplate": "Mozilla/5.0 (iPad; CPU OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPad", "TLSOSMatch": "ios" },
+      { "Name": "iPad (10th Gen)",   "UserAgentTemplate": "Mozilla/5.0 (iPad; CPU OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPad", "TLSOSMatch": "ios" }
+    ],
+    "Fonts": ["SF Pro Display", "SF Pro Text", "Helvetica Neue", "Helvetica", "Arial", "Times New Roman", "Times", "Courier New", "Courier", "Verdana", "Georgia", "Palatino", "Menlo", "Monaco", "Consolas"],
+    "ScreenPresets": [
+      { "Width": 430, "Height": 932, "PixelRatio": 3.0 },
+      { "Width": 393, "Height": 852, "PixelRatio": 3.0 },
+      { "Width": 430, "Height": 968, "PixelRatio": 2.9 },
+      { "Width": 414, "Height": 896, "PixelRatio": 2.9 },
+      { "Width": 414, "Height": 736, "PixelRatio": 3.0 },
+      { "Width": 375, "Height": 812, "PixelRatio": 3.0 },
+      { "Width": 375, "Height": 667, "PixelRatio": 2.0 },
+      { "Width": 320, "Height": 568, "PixelRatio": 2.0 },
+      { "Width": 1032, "Height": 1376, "PixelRatio": 2.0 },
+      { "Width": 1032, "Height": 1376, "PixelRatio": 1.5 },
+      { "Width": 820,  "Height": 1180, "PixelRatio": 2.0 },
+      { "Width": 820,  "Height": 1180, "PixelRatio": 1.5 },
+      { "Width": 834,  "Height": 1194, "PixelRatio": 2.0 },
+      { "Width": 834,  "Height": 1194, "PixelRatio": 1.5 },
+      { "Width": 768,  "Height": 1024, "PixelRatio": 2.0 },
+      { "Width": 768,  "Height": 1024, "PixelRatio": 1.5 }
+    ],
+    "HardwareTiers": [
+      { "Concurrency": 6,  "Memory": 6  },
+      { "Concurrency": 6,  "Memory": 8  },
+      { "Concurrency": 8,  "Memory": 8  },
+      { "Concurrency": 8,  "Memory": 16 },
+      { "Concurrency": 10, "Memory": 16 },
+      { "Concurrency": 12, "Memory": 16 },
+      { "Concurrency": 12, "Memory": 24 },
+      { "Concurrency": 16, "Memory": 36 },
+      { "Concurrency": 16, "Memory": 48 }
+    ],
+    "WebGL": {
+      "VendorGPUs": {
+        "Google Inc. (Apple)": [
+          "WebGL OpenGL ES 3.0 (Apple GPU A18 Pro)",
+          "WebGL OpenGL ES 3.0 (Apple GPU A18)",
+          "WebGL OpenGL ES 3.0 (Apple GPU A17 Pro)",
+          "WebGL OpenGL ES 3.0 (Apple GPU A17)",
+          "WebGL OpenGL ES 3.0 (Apple GPU A16 Bionic)",
+          "WebGL OpenGL ES 3.0 (Apple GPU A15 Bionic)",
+          "WebGL OpenGL ES 3.0 (Apple GPU A14 Bionic)",
+          "WebGL OpenGL ES 3.0 (Apple GPU A13 Bionic)",
+          "WebGL OpenGL ES 3.0 (Apple GPU A12 Bionic)",
+          "WebGL OpenGL ES 3.0 (Apple GPU A12Z Bionic)",
+          "WebGL OpenGL ES 3.0 (Apple GPU A12X Bionic)",
+          "WebGL OpenGL ES 3.0 (Apple GPU A11 Bionic)",
+          "WebGL OpenGL ES 3.0 (Apple GPU A10X Fusion)",
+          "WebGL OpenGL ES 3.0 (Apple GPU A10 Fusion)"
+        ]
+      }
+    }
+  }
+}

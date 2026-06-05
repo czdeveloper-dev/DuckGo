@@ -492,10 +492,18 @@ window.DuckControls.Table = {
             }
 
             if (!data || data.length === 0) {
+                wrap.classList.add('is-empty');
+                thead.style.display = 'none';
+                table.style.height = '100%';
                 emptyTd.colSpan = options.columns.length;
+                emptyTd.style.height = '100%';
                 tbody.appendChild(emptyRow);
                 updateDynCSS();
                 return;
+            } else {
+                wrap.classList.remove('is-empty');
+                thead.style.display = '';
+                table.style.height = '';
             }
 
             const frag = document.createDocumentFragment();

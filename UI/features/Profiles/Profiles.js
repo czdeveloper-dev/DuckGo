@@ -58,9 +58,11 @@
             let items = [];
             try {
                 const filters = {};
-                if (this._filters.search)   filters.search    = this._filters.search;
+                if (this._filters.search)  filters.search     = this._filters.search;
+                if (this._filters.id)       filters.id        = this._filters.id;
                 if (this._filters.group)    filters.groupId   = parseInt(this._filters.group);
-                if (this._filters.status)    filters.browserType = this._filters.status;
+                if (this._filters.tag)      filters.tagIds    = this._filters.tag.split(',').map(v => parseInt(v)).filter(v => !isNaN(v));
+                if (this._filters.status)   filters.browserType = this._filters.status;
                 const resp = await DuckBridge.call('profile.list', filters);
                 items = resp?.Items || resp || [];
             } catch (err) {
@@ -68,11 +70,7 @@
             }
 
             if (!Array.isArray(items) || items.length === 0) {
-                items = [
-                    { Id: 101, Name: 'Google Account Farm - 01', GroupId: 1, BrowserType: 'Chromium', CreatedAt: new Date(Date.now() - 86400000 * 2).toISOString(), LastOpened: new Date(Date.now() - 3600000).toISOString() },
-                    { Id: 102, Name: 'Facebook Ads Manager - 02', GroupId: 2, BrowserType: 'Firefox',   CreatedAt: new Date(Date.now() - 86400000 * 5).toISOString(), LastOpened: new Date(Date.now() - 7200000).toISOString() },
-                    { Id: 103, Name: 'TikTok Creator - 03',       GroupId: null, BrowserType: 'Edge',  CreatedAt: new Date(Date.now() - 86400000 * 10).toISOString(), LastOpened: null },
-                ];
+                items = [];
             }
 
             items = items.map((p, idx) => ({
@@ -153,7 +151,6 @@
                     this._groups.push(result);
                     this._groups.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
                     this._updateGroupSelect();
-                    window.DuckControls?.Toast?.success('Group Created', `Group "${name}" created successfully.`);
                 } catch (e) {
                     window.DuckControls?.Toast?.error('Create Failed', e.message);
                 }
@@ -182,7 +179,6 @@
                     this._groups.sort((a, b) => ((a.Name || a.name) || '').localeCompare((b.Name || b.name) || ''));
                     this._updateGroupSelect();
                     await this.loadProfiles();
-                    window.DuckControls?.Toast?.success('Group Updated', `Renamed to "${newName}".`);
                 } catch (e) {
                     window.DuckControls?.Toast?.error('Update Failed', e.message);
                 }
@@ -200,7 +196,6 @@
                     this._updateGroupSelect();
                     this._filters.group = '';
                     await this.loadProfiles();
-                    window.DuckControls?.Toast?.success('Groups Deleted', `${selectedValues.length} group(s) deleted.`);
                 } catch (e) { window.DuckControls?.Toast?.error('Delete Failed', e.message); }
             });
         },
@@ -219,7 +214,6 @@
                     this._tags.push(result);
                     this._tags.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
                     this._updateTagSelect();
-                    window.DuckControls?.Toast?.success('Tag Created', `Tag "${name}" created successfully.`);
                 } catch (e) {
                     window.DuckControls?.Toast?.error('Create Failed', e.message);
                 }
@@ -243,12 +237,11 @@
             window.ProfileModals.CreateEntity.show('tag', async (newName) => {
                 if (!newName || newName === currentName) return;
                 try {
-                    // Tags don't have a backend update endpoint yet — update locally
+                    await DuckBridge.call('tag.update', { id: tag.Id ?? tag.id, name: newName });
                     if (tag.Name !== undefined) tag.Name = newName;
                     else tag.name = newName;
                     this._tags.sort((a, b) => ((a.Name || a.name) || '').localeCompare((b.Name || b.name) || ''));
                     this._updateTagSelect();
-                    window.DuckControls?.Toast?.success('Tag Updated', `Renamed to "${newName}".`);
                 } catch (e) {
                     window.DuckControls?.Toast?.error('Update Failed', e.message);
                 }
@@ -265,7 +258,6 @@
                     this._tags = this._tags.filter(t => !selectedValues.includes(String(t.Id ?? t.id)));
                     this._updateTagSelect();
                     await this.loadProfiles();
-                    window.DuckControls?.Toast?.success('Tags Deleted', `${selectedValues.length} tag(s) deleted.`);
                 } catch (e) { window.DuckControls?.Toast?.error('Delete Failed', e.message); }
             });
         },

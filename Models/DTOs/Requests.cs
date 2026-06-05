@@ -6,8 +6,67 @@ public record ProfileCreateRequest(
     List<int>? TagIds,
     int? ProxyId,
     string BrowserType,
-    string ProfileData,
-    string? Notes
+    string? ProfileData,
+    string? Notes,
+    string? StartUrl,
+    string? CookiesData,
+    string? CookiesFileName,
+    FingerprintOptions? Fingerprint = null
+);
+
+public record FingerprintOptions(
+    string? Platform,
+    string? OSModel,
+    string? UserAgent,
+    string? BrowserVersion,
+    string? Language,
+    string? AcceptLanguage,
+    int? ScreenWidth,
+    int? ScreenHeight,
+    double? ScreenPixelRatio,
+    string? Timezone,
+    List<string>? Languages,
+    int? HardwareConcurrency,
+    int? DeviceMemory,
+    string? LocationMode,
+    double? Latitude,
+    double? Longitude,
+    int? Accuracy,
+    string? WebGLMode,
+    string? WebGLVendor,
+    string? WebGLRenderer,
+    string? CanvasMode,
+    string? WebGLImageMode,
+    string? PluginsMode,
+    string? FontsMode,
+    List<string>? Fonts,
+    string? WebRtcMode,
+    string? SslMode,
+    string? PortScan,
+    string? PortBlockMode,
+    List<string>? PortBlockList,
+    string? MediaDevicesMode,
+    string? SpeechVoicesMode,
+    string? ClientRectsMode,
+    ProfileProxyOptions? Proxy
+);
+
+public record ProfileProxyOptions(
+    string? Mode,
+    string? Type,
+    string? Host,
+    int? Port,
+    string? Username,
+    string? Password,
+    int? SavedProxyId
+);
+
+public record ProxyCheckRequest(
+    string Type,
+    string Host,
+    int Port,
+    string? Username,
+    string? Password
 );
 
 public record ProfileUpdateRequest(

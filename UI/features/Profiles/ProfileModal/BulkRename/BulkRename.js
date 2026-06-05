@@ -169,6 +169,7 @@
             });
 
             this._modal = window.DuckControls.Modal.create({
+            defaultEnter: true,
                 title: 'Bulk Rename Editor',
                 subtitle: 'Rename multiple profiles using a pattern or prefix.',
                 icon: 'edit_note',

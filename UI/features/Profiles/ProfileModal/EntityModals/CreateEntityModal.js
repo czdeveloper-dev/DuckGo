@@ -68,6 +68,7 @@
             footerWrap.appendChild(createBtn);
 
             this._modal = window.DuckControls.Modal.create({
+            defaultEnter: true,
                 title: isEdit ? `Edit ${entityName}` : `Create New ${entityName}`,
                 icon: isEdit ? 'edit' : (isGroup ? 'folder' : 'label'),
                 content: modalBody,

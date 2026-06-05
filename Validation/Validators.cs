@@ -8,9 +8,7 @@ public class ProfileValidator
     public ValidationResult Validate(ProfileCreateRequest req)
     {
         var result = new ValidationResult();
-        if (string.IsNullOrWhiteSpace(req.Name))
-            result.Errors["name"] = "Name is required";
-        else if (req.Name.Length > 200)
+        if (!string.IsNullOrWhiteSpace(req.Name) && req.Name.Length > 200)
             result.Errors["name"] = "Name must be 200 characters or less";
         if (req.BrowserType != "Chromium" && req.BrowserType != "Firefox")
             result.Errors["browserType"] = "BrowserType must be Chromium or Firefox";

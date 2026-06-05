@@ -148,6 +148,7 @@ window.ProfileModals.ImportProxy = {
         footerWrap.appendChild(buttonsWrap);
 
         this._modal = window.DuckControls.Modal.create({
+            defaultEnter: true,
             title: 'Import Proxy',
             subtitle: 'Bulk assign proxies to your profiles with custom rules.',
             icon: 'upload',
@@ -296,6 +297,7 @@ window.ProfileModals.ImportProxy = {
         scanFooter.appendChild(rightBtns);
 
         const scanModal = window.DuckControls.Modal.create({
+            defaultEnter: true,
             title: 'Proxy Scanner Results',
             icon: 'network_ping',
             content: scanModalBody,

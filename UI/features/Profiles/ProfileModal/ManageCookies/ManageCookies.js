@@ -80,6 +80,7 @@ window.ProfileModals.ManageCookies = {
         renderTable();
 
         this._modal = window.DuckControls.Modal.create({
+            defaultEnter: true,
             title: 'Manage Cookies',
             subtitle: 'View, add, or delete cookies for the selected profile.',
             icon: 'cookie',

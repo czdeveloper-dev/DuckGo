@@ -15,6 +15,8 @@ public class TagService
 
     public async Task<ProfileTag> CreateTagAsync(TagCreateRequest req)
     {
+        if (await _repo.ExistsByNameAsync(req.Name))
+            throw new InvalidOperationException($"A tag with the name \"{req.Name}\" already exists.");
         var tag = new ProfileTag { Name = req.Name, CreatedAt = DateTime.Now };
         var id = await _repo.CreateAsync(tag);
         tag.Id = id;
@@ -22,7 +24,11 @@ public class TagService
     }
 
     public async Task UpdateTagAsync(TagUpdateRequest req)
-        => await _repo.UpdateAsync(req.Id, req.Name);
+    {
+        if (await _repo.ExistsByNameAsync(req.Name, req.Id))
+            throw new InvalidOperationException($"A tag with the name \"{req.Name}\" already exists.");
+        await _repo.UpdateAsync(req.Id, req.Name);
+    }
 
     public async Task DeleteTagAsync(int id)
         => await _repo.DeleteAsync(id);

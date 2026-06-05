@@ -5,153 +5,185 @@
     window.ProfileModals.CreateProfile = window.ProfileModals.CreateProfile || {};
 
     window.ProfileModals.CreateProfile.SecurityTab = {
+        _browserFonts() {
+            const seen = new Set();
+            const fallbacks = [
+                'Arial', 'Helvetica', 'Times New Roman', 'Courier New', 'Verdana', 'Georgia', 'Palatino',
+                'Trebuchet MS', 'Comic Sans MS', 'Impact', 'Segoe UI', 'Tahoma', 'Roboto', 'Noto Sans'
+            ];
+            return fallbacks.filter(f => {
+                const ok = !seen.has(f);
+                seen.add(f);
+                return ok;
+            });
+        },
+
+        _portOptions() {
+            return [
+                { label: '80 (HTTP)', value: '80' },
+                { label: '443 (HTTPS)', value: '443' },
+                { label: '1080 (SOCKS)', value: '1080' },
+                { label: '3000 (Dev Server)', value: '3000' },
+                { label: '3306 (MySQL)', value: '3306' },
+                { label: '5432 (PostgreSQL)', value: '5432' },
+                { label: '6379 (Redis)', value: '6379' },
+                { label: '8080 (Alt HTTP)', value: '8080' },
+                { label: '9222 (Chrome Debug)', value: '9222' },
+                { label: '27017 (MongoDB)', value: '27017' }
+            ];
+        },
+
         render() {
             const container = document.createElement('div');
-            container.style.cssText = 'display: flex; flex-direction: column; gap: 32px; width: 100%;';
+            container.style.cssText = 'display: flex; flex-direction: column; gap: 24px; width: 100%;';
 
             const header = document.createElement('div');
-            header.innerHTML = `
-                <h2 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px;">Security & Privacy</h2>
-                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">Protect your identity with WebRTC, media devices, fonts, client rects, and port scanning protections.</div>
-            `;
+            const h2 = document.createElement('h2');
+            h2.style.cssText = 'margin: 0 0 8px 0; font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px;';
+            h2.textContent = 'Security & Privacy';
+            const subtitle = document.createElement('div');
+            subtitle.style.cssText = 'font-size: 13px; color: var(--text-secondary); line-height: 1.5;';
+            subtitle.textContent = 'Protect your identity with WebRTC, media devices, fonts, client rects, and port scanning protections.';
+            header.appendChild(h2);
+            header.appendChild(subtitle);
             container.appendChild(header);
 
-            // --- WebRTC & Network Security ---
             const rtcSec = document.createElement('div');
-            rtcSec.style.cssText = 'display: flex; flex-direction: column; gap: 20px;';
-            const rtcTitle = document.createElement('div');
-            rtcTitle.style.cssText = 'font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 4px;';
-            rtcTitle.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px; color: var(--accent);">shield</span> Network Security`;
-            rtcSec.appendChild(rtcTitle);
+            rtcSec.style.cssText = 'display: flex; flex-direction: column; gap: 16px;';
 
-            // WebRTC
-            const rtcRow = document.createElement('div');
-            rtcRow.style.cssText = 'display: grid; grid-template-columns: 200px 1fr; align-items: center; gap: 20px;';
-            const rtcLabelWrap = document.createElement('div');
-            rtcLabelWrap.innerHTML = '<div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">WebRTC Public IP</div><div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Control WebRTC leak</div>';
-            const rtcToggle = window.DuckControls.ToggleGroup.create({
+            this.rtcToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Alter', value: 'alter' }, { label: 'Disable', value: 'disable' }, { label: 'Real', value: 'real' }],
                 value: 'disable'
             });
-            rtcRow.appendChild(rtcLabelWrap);
-            rtcRow.appendChild(rtcToggle.element);
-            rtcSec.appendChild(rtcRow);
+            rtcSec.appendChild(window.DuckControls.SettingRow.create({ title: 'WebRTC Public IP', desc: 'Control WebRTC leak and spoof public IPs', control: this.rtcToggle.element, alignTop: false }).element);
 
-            // SSL
-            const sslRow = document.createElement('div');
-            sslRow.style.cssText = 'display: grid; grid-template-columns: 200px 1fr; align-items: center; gap: 20px; margin-top: 10px;';
-            const sslLabelWrap = document.createElement('div');
-            sslLabelWrap.innerHTML = '<div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">SSL</div><div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Spoof SSL certificates</div>';
-            const sslToggle = window.DuckControls.ToggleGroup.create({
+            this.sslToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Noise', value: 'noise' }, { label: 'Real', value: 'real' }],
                 value: 'noise'
             });
-            sslRow.appendChild(sslLabelWrap);
-            sslRow.appendChild(sslToggle.element);
-            rtcSec.appendChild(sslRow);
-            
-            // Port Scan
-            const portRow = document.createElement('div');
-            portRow.style.cssText = 'display: grid; grid-template-columns: 200px 1fr; align-items: center; gap: 20px; margin-top: 10px;';
-            const portLabelWrap = document.createElement('div');
-            portLabelWrap.innerHTML = '<div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Port Scan Protection</div><div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Localhost scan block</div>';
-            const portToggle = window.DuckControls.ToggleGroup.create({
+            rtcSec.appendChild(window.DuckControls.SettingRow.create({ title: 'SSL', desc: 'Spoof SSL certificates dynamically', control: this.sslToggle.element, alignTop: false }).element);
+
+            this.portToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Protect', value: 'protect' }, { label: 'Decline', value: 'decline' }],
                 value: 'protect'
             });
-            portRow.appendChild(portLabelWrap);
-            portRow.appendChild(portToggle.element);
-            rtcSec.appendChild(portRow);
+            rtcSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Port Scan Protection', desc: 'Block aggressive localhost port scanning', control: this.portToggle.element, alignTop: false }).element);
 
-            container.appendChild(rtcSec);
+            this.portBlockModeSelect = window.DuckControls.ChipSelect.create({
+                options: [
+                    { label: 'Block Default', value: 'block_default' },
+                    { label: 'Block All', value: 'block_all' },
+                    { label: 'Allow List', value: 'allow_list' },
+                    { label: 'Custom', value: 'custom' }
+                ],
+                value: 'block_default',
+                onChange: (val) => {
+                    portListWrap.style.display = ['allow_list', 'custom'].includes(val) ? 'flex' : 'none';
+                    window.ProfileModals?.CreateProfile?._scheduleSync?.();
+                }
+            });
 
-            // Divider
-            const divider = document.createElement('div');
-            divider.style.cssText = 'height: 1px; background: var(--border-default); margin: 8px 0;';
-            container.appendChild(divider);
+            const portBlockWrap = document.createElement('div');
+            portBlockWrap.style.cssText = 'display:flex; flex-direction:column; gap:12px;';
+            portBlockWrap.appendChild(window.DuckControls.SettingRow.create({ title: 'Port Block Mode', desc: 'Choose how localhost and internal ports are filtered', control: this.portBlockModeSelect.element, alignTop: true }).element);
 
-            // --- Privacy Masks (Media, Fonts, Rects) ---
+            const portListWrap = document.createElement('div');
+            portListWrap.style.cssText = 'display:none; flex-direction:column; gap:12px; margin-left: 0; padding: 16px; background: var(--bg-surface); border-radius: 8px; border: 1px solid var(--border-default);';
+            this.portBlockListInput = window.DuckControls.ComboBoxTag.create({
+                label: 'Port Block List',
+                placeholder: 'Select or type a port and press Enter',
+                values: [],
+                options: this._portOptions(),
+                allowCustom: true,
+                onChange: () => window.ProfileModals?.CreateProfile?._scheduleSync?.()
+            });
+            portListWrap.appendChild(this.portBlockListInput.element);
+            portBlockWrap.appendChild(portListWrap);
+            rtcSec.appendChild(portBlockWrap);
+
+            container.appendChild(window.DuckControls.Card.create({ title: 'Network Security', icon: 'shield', desc: 'Prevent network-level fingerprinting', content: rtcSec }).element);
+
             const privSec = document.createElement('div');
-            privSec.style.cssText = 'display: flex; flex-direction: column; gap: 20px;';
-            const privTitle = document.createElement('div');
-            privTitle.style.cssText = 'font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 4px;';
-            privTitle.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px; color: var(--accent);">fingerprint</span> Privacy Masks`;
-            privSec.appendChild(privTitle);
+            privSec.style.cssText = 'display: flex; flex-direction: column; gap: 16px;';
 
-            // Media Devices
-            const mediaRow = document.createElement('div');
-            mediaRow.style.cssText = 'display: grid; grid-template-columns: 200px 1fr; align-items: center; gap: 20px;';
-            const mediaLabelWrap = document.createElement('div');
-            mediaLabelWrap.innerHTML = '<div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Media Devices</div><div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Microphones & Cameras</div>';
-            const mediaToggle = window.DuckControls.ToggleGroup.create({
+            this.mediaToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Noise', value: 'noise' }, { label: 'Block', value: 'block' }, { label: 'Real', value: 'real' }],
                 value: 'noise'
             });
-            mediaRow.appendChild(mediaLabelWrap);
-            mediaRow.appendChild(mediaToggle.element);
-            privSec.appendChild(mediaRow);
+            privSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Media Devices', desc: 'Spoof available Microphones & Cameras', control: this.mediaToggle.element, alignTop: false }).element);
 
-            // Speech Voices
-            const speechRow = document.createElement('div');
-            speechRow.style.cssText = 'display: grid; grid-template-columns: 200px 1fr; align-items: center; gap: 20px; margin-top: 10px;';
-            const speechLabelWrap = document.createElement('div');
-            speechLabelWrap.innerHTML = '<div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Speech Voices</div><div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Web Speech API Voices</div>';
-            const speechToggle = window.DuckControls.ToggleGroup.create({
+            this.speechToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Noise', value: 'noise' }, { label: 'Real', value: 'real' }],
                 value: 'noise'
             });
-            speechRow.appendChild(speechLabelWrap);
-            speechRow.appendChild(speechToggle.element);
-            privSec.appendChild(speechRow);
+            privSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Speech Voices', desc: 'Mask Web Speech API Voices', control: this.speechToggle.element, alignTop: false }).element);
 
-            // Client Rects
-            const rectsRow = document.createElement('div');
-            rectsRow.style.cssText = 'display: grid; grid-template-columns: 200px 1fr; align-items: center; gap: 20px; margin-top: 10px;';
-            const rectsLabelWrap = document.createElement('div');
-            rectsLabelWrap.innerHTML = '<div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Client Rects</div><div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">ClientRects API noise</div>';
-            const rectsToggle = window.DuckControls.ToggleGroup.create({
+            this.rectsToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Noise', value: 'noise' }, { label: 'Real', value: 'real' }],
                 value: 'noise'
             });
-            rectsRow.appendChild(rectsLabelWrap);
-            rectsRow.appendChild(rectsToggle.element);
-            privSec.appendChild(rectsRow);
+            privSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Client Rects', desc: 'Add noise to getClientRects API', control: this.rectsToggle.element, alignTop: false }).element);
 
-            // Fonts
-            const fontsRow = document.createElement('div');
-            fontsRow.style.cssText = 'display: grid; grid-template-columns: 200px 1fr; align-items: start; gap: 20px; margin-top: 10px;';
-            const fontsLabelWrap = document.createElement('div');
-            fontsLabelWrap.innerHTML = '<div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Fonts</div><div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Installed System Fonts</div>';
-            
-            const fontsWrap = document.createElement('div');
-            fontsWrap.style.cssText = 'display: flex; flex-direction: column; gap: 12px;';
-            const fontsToggle = window.DuckControls.ToggleGroup.create({
+            this.fontsToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Default', value: 'default' }, { label: 'Custom', value: 'custom' }],
                 value: 'default',
                 onChange: (val) => {
                     fontCustomBox.style.display = val === 'custom' ? 'flex' : 'none';
+                    window.ProfileModals?.CreateProfile?._scheduleSync?.();
                 }
             });
-            fontsWrap.appendChild(fontsToggle.element);
 
             const fontCustomBox = document.createElement('div');
-            fontCustomBox.style.cssText = 'display: none; justify-content: center; align-items: center; background: var(--bg-surface); padding: 24px; border-radius: 8px; border: 1px solid var(--border-default); margin-top: 16px; width: 100%; box-sizing: border-box;';
-            const fontTagInput = window.DuckControls.TagInput.create({
+            fontCustomBox.style.cssText = 'display: none; flex-direction: column; gap: 12px; background: var(--bg-surface); padding: 20px; border-radius: 8px; border: 1px solid var(--border-default); width: 100%; box-sizing: border-box;';
+            const fontTagInput = window.DuckControls.ComboBoxTag.create({
                 label: 'Custom Fonts',
                 placeholder: 'e.g. Arial, Helvetica (press Enter)',
-                values: ['Arial']
+                values: this._browserFonts().slice(0, 3),
+                options: this._browserFonts().map(f => ({ label: f, value: f })),
+                allowCustom: true
             });
-            fontTagInput.element.style.width = '600px';
+            fontTagInput.element.style.width = '100%';
             fontCustomBox.appendChild(fontTagInput.element);
 
-            fontsRow.appendChild(fontsLabelWrap);
-            fontsRow.appendChild(fontsWrap);
-            privSec.appendChild(fontsRow);
+            const fontBtnRow = document.createElement('div');
+            fontBtnRow.style.cssText = 'display:flex; justify-content:flex-end;';
+            const useCurrentFontsBtn = window.DuckControls.Button.create(null, {
+                text: 'Use Current Browser Fonts',
+                variant: 'surface',
+                icon: 'text_fields',
+                onClick: () => {
+                    const currentFonts = this._browserFonts();
+                    fontTagInput.setOptions(currentFonts.map(f => ({ label: f, value: f })));
+                    fontTagInput.setValues(currentFonts.slice(0, 3));
+                    window.ProfileModals?.CreateProfile?._scheduleSync?.();
+                }
+            });
+            fontBtnRow.appendChild(useCurrentFontsBtn.element);
+            fontCustomBox.appendChild(fontBtnRow);
+            this._fontTagInput = fontTagInput;
+
+            privSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Fonts Masking', desc: 'Spoof installed system fonts', control: this.fontsToggle.element, alignTop: false }).element);
             privSec.appendChild(fontCustomBox);
 
-            container.appendChild(privSec);
+            container.appendChild(window.DuckControls.Card.create({ title: 'Privacy Masks', icon: 'fingerprint', desc: 'Advanced browser API spoofing', content: privSec }).element);
 
             return container;
+        },
+
+        getValues() {
+            const fontsMode = this.fontsToggle ? this.fontsToggle.getValue() : 'default';
+            return {
+                webrtcMode: this.rtcToggle ? this.rtcToggle.getValue() : 'disable',
+                sslMode: this.sslToggle ? this.sslToggle.getValue() : 'noise',
+                portScan: this.portToggle ? this.portToggle.getValue() : 'protect',
+                portBlockMode: this.portBlockModeSelect ? this.portBlockModeSelect.getValue() : 'block_default',
+                portBlockList: this.portBlockListInput ? this.portBlockListInput.getValues() : [],
+                mediaDevices: this.mediaToggle ? this.mediaToggle.getValue() : 'noise',
+                speechVoices: this.speechToggle ? this.speechToggle.getValue() : 'noise',
+                clientRects: this.rectsToggle ? this.rectsToggle.getValue() : 'noise',
+                fontsMode: fontsMode,
+                customFonts: fontsMode === 'custom' && this._fontTagInput ? this._fontTagInput.getValues() : [],
+            };
         }
     };
 })();

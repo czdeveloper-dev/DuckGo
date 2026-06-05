@@ -33,6 +33,7 @@ window.ProfileModals.SetBrowserVersion = {
         let versionCombo = null;
 
         this._modal = DuckControls.Modal.create({
+            defaultEnter: true,
             title: 'Set Browser Version',
             subtitle: `<span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Applied to ${count} selected profiles`,
             icon: 'manage_history',

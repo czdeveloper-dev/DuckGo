@@ -5,6 +5,7 @@ public class SystemConfig
     public string Platform { get; set; } = "Win32";
     public string Language { get; set; } = "en-US";
     public string UserAgent { get; set; } = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+    public string BrowserVersion { get; set; } = "126";
     public string AcceptLanguage { get; set; } = "en-US,en;q=0.9";
     public string Timezone { get; set; } = "America/New_York";
     public int HardwareConcurrency { get; set; } = 8;
