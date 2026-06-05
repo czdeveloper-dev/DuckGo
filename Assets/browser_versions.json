@@ -1,0 +1,151 @@
+{
+  "browsers": [
+    {
+      "browserType": "chromium",
+      "versions": [
+        {
+          "version": "138",
+          "description": "Chrome 138 Stable",
+          "downloadUrl": "https://storage.googleapis.com/chrome-for-testing-public/138.0.7204.12/win64/chrome-win64.zip",
+          "md5": ""
+        },
+        {
+          "version": "137",
+          "description": "Chrome 137 Stable",
+          "downloadUrl": "https://storage.googleapis.com/chrome-for-testing-public/137.0.7103.93/win64/chrome-win64.zip",
+          "md5": ""
+        },
+        {
+          "version": "136",
+          "description": "Chrome 136 Stable",
+          "downloadUrl": "https://storage.googleapis.com/chrome-for-testing-public/136.0.7103.48/win64/chrome-win64.zip",
+          "md5": ""
+        },
+        {
+          "version": "135",
+          "description": "Chrome 135 Stable",
+          "downloadUrl": "https://storage.googleapis.com/chrome-for-testing-public/135.0.7049.84/win64/chrome-win64.zip",
+          "md5": ""
+        },
+        {
+          "version": "134",
+          "description": "Chrome 134 Stable",
+          "downloadUrl": "https://storage.googleapis.com/chrome-for-testing-public/134.0.6998.262/win64/chrome-win64.zip",
+          "md5": ""
+        },
+        {
+          "version": "133",
+          "description": "Chrome 133 Stable",
+          "downloadUrl": "https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.137/win64/chrome-win64.zip",
+          "md5": ""
+        },
+        {
+          "version": "132",
+          "description": "Chrome 132 Stable",
+          "downloadUrl": "https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.159/win64/chrome-win64.zip",
+          "md5": ""
+        },
+        {
+          "version": "131",
+          "description": "Chrome 131 Stable",
+          "downloadUrl": "https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.204/win64/chrome-win64.zip",
+          "md5": ""
+        },
+        {
+          "version": "130",
+          "description": "Chrome 130 Stable",
+          "downloadUrl": "https://storage.googleapis.com/chrome-for-testing-public/130.0.6723.187/win64/chrome-win64.zip",
+          "md5": ""
+        },
+        {
+          "version": "129",
+          "description": "Chrome 129 Stable",
+          "downloadUrl": "https://storage.googleapis.com/chrome-for-testing-public/129.0.6668.172/win64/chrome-win64.zip",
+          "md5": ""
+        },
+        {
+          "version": "128",
+          "description": "Chrome 128 Stable",
+          "downloadUrl": "https://storage.googleapis.com/chrome-for-testing-public/128.0.6613.188/win64/chrome-win64.zip",
+          "md5": ""
+        }
+      ]
+    },
+    {
+      "browserType": "firefox",
+      "versions": [
+        {
+          "version": "138",
+          "description": "Firefox 138 Stable",
+          "downloadUrl": "https://download.mozilla.org/?product=firefox-138-SSL&os=win64&lang=en-US",
+          "md5": ""
+        },
+        {
+          "version": "137",
+          "description": "Firefox 137 Stable",
+          "downloadUrl": "https://download.mozilla.org/?product=firefox-137-SSL&os=win64&lang=en-US",
+          "md5": ""
+        },
+        {
+          "version": "136",
+          "description": "Firefox 136 Stable",
+          "downloadUrl": "https://download.mozilla.org/?product=firefox-136-SSL&os=win64&lang=en-US",
+          "md5": ""
+        },
+        {
+          "version": "135",
+          "description": "Firefox 135 Stable",
+          "downloadUrl": "https://download.mozilla.org/?product=firefox-135-SSL&os=win64&lang=en-US",
+          "md5": ""
+        },
+        {
+          "version": "134",
+          "description": "Firefox 134 Stable",
+          "downloadUrl": "https://download.mozilla.org/?product=firefox-134-SSL&os=win64&lang=en-US",
+          "md5": ""
+        },
+        {
+          "version": "133",
+          "description": "Firefox 133 Stable",
+          "downloadUrl": "https://download.mozilla.org/?product=firefox-133-SSL&os=win64&lang=en-US",
+          "md5": ""
+        }
+      ]
+    },
+    {
+      "browserType": "edge",
+      "versions": [
+        {
+          "version": "138",
+          "description": "Edge 138 Stable",
+          "downloadUrl": "https://msedgedriver.azureedge.net/138.0.335.33/edgedriver_win64.zip",
+          "md5": ""
+        },
+        {
+          "version": "137",
+          "description": "Edge 137 Stable",
+          "downloadUrl": "https://msedgedriver.azureedge.net/137.0.3202.24/edgedriver_win64.zip",
+          "md5": ""
+        },
+        {
+          "version": "136",
+          "description": "Edge 136 Stable",
+          "downloadUrl": "https://msedgedriver.azureedge.net/136.0.3350.72/edgedriver_win64.zip",
+          "md5": ""
+        },
+        {
+          "version": "135",
+          "description": "Edge 135 Stable",
+          "downloadUrl": "https://msedgedriver.azureedge.net/135.0.3175.73/edgedriver_win64.zip",
+          "md5": ""
+        },
+        {
+          "version": "134",
+          "description": "Edge 134 Stable",
+          "downloadUrl": "https://msedgedriver.azureedge.net/134.0.3124.45/edgedriver_win64.zip",
+          "md5": ""
+        }
+      ]
+    }
+  ]
+}

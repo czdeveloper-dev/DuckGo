@@ -1,4 +1,4 @@
-using System.Net.Http;
+using System.IO;
 using System.Text.Json;
 using DuckGo.Models.Configs;
 using DuckGo.Models.DTOs;
@@ -12,13 +12,10 @@ public class BrowserVersionService
         PropertyNameCaseInsensitive = true
     };
 
-    private static readonly HttpClient HttpClient = new();
-
     public async Task<BrowserCatalogResponse> GetBrowserCatalogAsync()
     {
-        using var response = await HttpClient.GetAsync(AppConfig.BrowserVersionsConfigUrl);
-        response.EnsureSuccessStatusCode();
-        var json = await response.Content.ReadAsStringAsync();
+        var assetPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "browser_versions.json");
+        var json = await File.ReadAllTextAsync(assetPath);
 
         var config = JsonSerializer.Deserialize<BrowserVersionsConfig>(json, JsonOptions)
             ?? throw new InvalidOperationException("Browser versions config could not be parsed.");
