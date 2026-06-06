@@ -105,7 +105,6 @@
             deleteBtn.addEventListener('click', () => {
                 const vals = multiSelect.getValues();
                 if (vals.length === 0) {
-                    if (window.DuckControls && DuckControls.Toast) DuckControls.Toast.error('Validation Error', `Please select at least one ${entityName} to delete.`);
                     return;
                 }
                 if (onDelete) onDelete(vals, isGroup ? deleteProfilesMode : null);

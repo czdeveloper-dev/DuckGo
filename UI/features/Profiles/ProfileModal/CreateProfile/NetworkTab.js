@@ -6,6 +6,7 @@
 
     window.ProfileModals.CreateProfile.NetworkTab = {
         _savedProxies: [],
+        _proxyTypes: [],
 
         _currentBrowserLanguages() {
             const langs = Array.isArray(navigator.languages) && navigator.languages.length
@@ -20,11 +21,11 @@
         },
 
         _proxyTypeLabel(type) {
-            const value = this._normalizeProxyType(type);
-            if (value === 'https') return 'HTTPS';
-            if (value === 'socks4') return 'Socks4';
-            if (value === 'socks5') return 'Socks5';
-            return 'HTTP/HTTPS';
+            const value = String(type || 'http').trim().toLowerCase();
+            const found = this._proxyTypes.find(t =>
+                String(t.Value || t.value || '').toLowerCase() === value);
+            if (found) return found.Label || found.label || value.toUpperCase();
+            return value.toUpperCase();
         },
 
         _toggleLocationInputs(mode) {
@@ -100,6 +101,28 @@
                 this.sProxy.setValue(options[0].value);
             }
             this._updateProtocolHint();
+            this._loadProxyTypes();
+        },
+
+        async _loadProxyTypes() {
+            try {
+                const types = await DuckBridge.call('proxyType.list');
+                this._proxyTypes = Array.isArray(types) ? types : [];
+            } catch (e) {
+                console.warn('[NetworkTab] Failed to load proxy types', e);
+                this._proxyTypes = [];
+            }
+
+            if (this.pType && this._proxyTypes.length > 0) {
+                const options = this._proxyTypes.map(t => ({
+                    label: t.Label || t.label || String(t.Value || t.value || ''),
+                    value: t.Value || t.value || ''
+                }));
+                this.pType.setOptions(options);
+                if (options.length > 0 && !this.pType.getValue()) {
+                    this.pType.setValue(options[0].value);
+                }
+            }
         },
 
         async _setCurrentCoordinates() {
@@ -126,11 +149,8 @@
                     const ipData = await ipRes.json();
                     if (ipData && ipData.latitude && ipData.longitude) {
                         setCoords(ipData.latitude, ipData.longitude, 1000);
-                    } else {
-                        window.DuckControls?.Toast?.warning('Location unavailable', 'Could not get location from IP.');
                     }
                 } catch (err) {
-                    window.DuckControls?.Toast?.warning('Location unavailable', err?.message || 'Could not get current coordinates.');
                 }
             };
 
@@ -186,12 +206,7 @@
             hostPortRow.style.cssText = 'display: grid; grid-template-columns: 220px 1fr 140px; gap: 12px; align-items: end;';
             this.pType = window.DuckControls.Select.create({
                 label: 'Protocol',
-                options: [
-                    { label: 'HTTP/HTTPS', value: 'http' },
-                    { label: 'HTTPS', value: 'https' },
-                    { label: 'Socks4', value: 'socks4' },
-                    { label: 'Socks5', value: 'socks5' }
-                ],
+                options: [],
                 value: 'http',
                 onChange: () => {
                     this._updateProtocolHint();
@@ -249,6 +264,58 @@
             this._protocolHint = protocolHint;
             dynamicProxyWrap.appendChild(protocolHint);
 
+            // ── Proxy status indicator ──────────────────────────────────────
+            const proxyStatusWrap = document.createElement('div');
+            proxyStatusWrap.style.cssText = 'display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-default); background: var(--bg-subtle); min-height: 36px; transition: all 0.2s ease;';
+            proxyStatusWrap.style.display = 'none';
+
+            const statusDot = document.createElement('span');
+            statusDot.style.cssText = 'width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; transition: background 0.3s ease;';
+            proxyStatusWrap.appendChild(statusDot);
+
+            const statusLabel = document.createElement('span');
+            statusLabel.style.cssText = 'font-size: 12px; color: var(--text-secondary); transition: color 0.3s ease;';
+            statusLabel.textContent = 'Not checked yet';
+            proxyStatusWrap.appendChild(statusLabel);
+
+            const latencyLabel = document.createElement('span');
+            latencyLabel.style.cssText = 'font-size: 11px; color: var(--text-muted); margin-left: auto;';
+            proxyStatusWrap.appendChild(latencyLabel);
+
+            this._proxyStatusWrap = proxyStatusWrap;
+            this._proxyStatusDot = statusDot;
+            this._proxyStatusLabel = statusLabel;
+            this._proxyLatencyLabel = latencyLabel;
+            dynamicProxyWrap.appendChild(proxyStatusWrap);
+
+            const _setProxyStatus = (status, latencyMs) => {
+                proxyStatusWrap.style.display = 'flex';
+                if (status === 'alive') {
+                    proxyStatusWrap.style.borderColor = 'var(--success, #22c55e)';
+                    proxyStatusWrap.style.background = 'rgba(34, 197, 94, 0.08)';
+                    statusDot.style.background = 'var(--success, #22c55e)';
+                    statusLabel.textContent = latencyMs != null ? `Connected — ${latencyMs}ms` : 'Connected';
+                    statusLabel.style.color = 'var(--success, #22c55e)';
+                    latencyLabel.textContent = latencyMs != null ? `${latencyMs}ms` : '';
+                } else if (status === 'not_found') {
+                    proxyStatusWrap.style.borderColor = 'var(--warning, #f59e0b)';
+                    proxyStatusWrap.style.background = 'rgba(245, 158, 11, 0.08)';
+                    statusDot.style.background = 'var(--warning, #f59e0b)';
+                    statusLabel.textContent = 'Proxy not found';
+                    statusLabel.style.color = 'var(--warning, #f59e0b)';
+                    latencyLabel.textContent = '';
+                } else {
+                    proxyStatusWrap.style.borderColor = 'var(--danger, #ef4444)';
+                    proxyStatusWrap.style.background = 'rgba(239, 68, 68, 0.08)';
+                    statusDot.style.background = 'var(--danger, #ef4444)';
+                    statusLabel.textContent = latencyMs != null ? `Connection failed — ${latencyMs}ms` : 'Connection failed';
+                    statusLabel.style.color = 'var(--danger, #ef4444)';
+                    latencyLabel.textContent = latencyMs != null ? `${latencyMs}ms` : '';
+                }
+            };
+            this._setProxyStatus = _setProxyStatus;
+            // ─────────────────────────────────────────────────────────────
+
             dynamicProxyWrap.appendChild(customProxyForm);
             dynamicProxyWrap.appendChild(savedProxyForm);
 
@@ -262,7 +329,6 @@
                 onClick: async () => {
                     const mode = this.proxyTypeToggle?.getValue?.() || 'none';
                     if (mode === 'none') {
-                        window.DuckControls?.Toast?.warning('No proxy selected', 'Choose Custom Proxy or Saved Proxy first.');
                         return;
                     }
 
@@ -278,7 +344,6 @@
                         if (mode === 'saved') {
                             const id = parseInt(this.sProxy?.getValue?.() || '0', 10);
                             if (!id) {
-                                window.DuckControls?.Toast?.warning('Missing proxy', 'Please select a saved proxy.');
                                 return;
                             }
                             res = await DuckBridge.call('proxy.check', { id });
@@ -294,15 +359,13 @@
                         }
 
                         const status = res?.status || res?.Status || 'dead';
-                        if (status === 'alive') {
-                            window.DuckControls?.Toast?.success('Proxy Valid', 'Proxy is reachable from backend.');
-                        } else if (status === 'not_found') {
-                            window.DuckControls?.Toast?.warning('Proxy missing', 'Saved proxy was not found.');
-                        } else {
-                            window.DuckControls?.Toast?.error('Proxy Error', 'Connection failed from backend.');
+                        const latency = res?.latency ?? res?.Latency ?? null;
+                        this._setProxyStatus?.(status, latency);
+
+                        if (status === 'dead') {
                         }
                     } catch (e) {
-                        window.DuckControls?.Toast?.error('Error', e.message || 'Proxy check failed.');
+                        this._setProxyStatus?.('dead', null);
                     } finally {
                         if (iconEl) iconEl.textContent = 'network_check';
                         if (textEl) textEl.textContent = originalText;
@@ -332,7 +395,8 @@
                 label: '',
                 placeholder: 'Search timezone...',
                 options: [{ label: 'Auto (Match IP)', value: 'auto' }],
-                value: 'auto'
+                value: 'auto',
+                onChange: () => window.ProfileModals?.CreateProfile?._scheduleSync?.()
             });
             this.tzSelect.element.style.width = '300px';
             geoSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Timezone', desc: 'Override local machine timezone', control: this.tzSelect.element, alignTop: false }).element);

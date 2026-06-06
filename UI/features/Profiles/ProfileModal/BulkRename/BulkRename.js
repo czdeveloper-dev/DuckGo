@@ -180,7 +180,6 @@
                     { text: 'Submit to database', icon: 'save', class: 'duck-btn-primary', onClick: () => {
                         const validData = this._computedNames.filter(c => c.newName && c.newName.trim() !== '');
                         if (validData.length === 0) {
-                            if (window.DuckControls && window.DuckControls.Toast) window.DuckControls.Toast.info('Bulk Rename', 'No valid names to update.');
                             return;
                         }
                         this._applyRename();
@@ -206,15 +205,12 @@
                 }));
             
             if (changes.length === 0) {
-                if (window.DuckControls && DuckControls.Toast) DuckControls.Toast.info('Batch Editor', 'No valid changes detected to submit.');
                 return;
             }
             
             try {
                 const promises = changes.map(c => window._duckBridge.call('profile.update', { id: c.id, changes: { Name: c.name } }));
                 await Promise.all(promises);
-                
-                if (window.DuckControls && DuckControls.Toast) DuckControls.Toast.success('Batch Editor', `Successfully renamed ${changes.length} profiles.`);
                 
                 if (this._modal) this._modal.close();
                 
@@ -226,7 +222,7 @@
                 }
             } catch (err) {
                 console.error('Bulk Rename Error:', err);
-                if (window.DuckControls && DuckControls.Toast) DuckControls.Toast.error('Batch Editor', 'An error occurred during renaming.');
+                // toast handled by DuckBridge
             }
         }
     };

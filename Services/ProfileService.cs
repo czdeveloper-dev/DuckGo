@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Bogus;
 using DuckGo.Data.Repositories;
 using DuckGo.Models.Configs;
@@ -9,12 +11,16 @@ namespace DuckGo.Services;
 
 public class ProfileService
 {
+    private static readonly JsonSerializerOptions NoScientificNotationOptions = new()
+    {
+        WriteIndented = false,
+        Converters = { new DoubleNoScientificNotationConverter() }
+    };
+
     private readonly IProfileRepository _profileRepo;
     private readonly IGroupRepository _groupRepo;
     private readonly ITagRepository _tagRepo;
     private readonly IProxyRepository _proxyRepo;
-    private readonly ProfileFolderService _folderService;
-    private readonly ConfigBuilder _configBuilder;
     private readonly FingerprintService _fingerprintSvc;
 
     public ProfileService(
@@ -22,16 +28,12 @@ public class ProfileService
         IGroupRepository groupRepo,
         ITagRepository tagRepo,
         IProxyRepository proxyRepo,
-        ProfileFolderService folderService,
-        ConfigBuilder configBuilder,
         FingerprintService fingerprintSvc)
     {
         _profileRepo = profileRepo;
         _groupRepo = groupRepo;
         _tagRepo = tagRepo;
         _proxyRepo = proxyRepo;
-        _folderService = folderService;
-        _configBuilder = configBuilder;
         _fingerprintSvc = fingerprintSvc;
     }
 
@@ -48,7 +50,7 @@ public class ProfileService
 
         var items = profiles.Select(p =>
         {
-            p.TagIds = TryDeserialize(p.Tags, () => JsonSerializer.Deserialize<List<int>>(p.Tags)) ?? new();
+            p.TagIds = TryDeserialize(p.TagIdsJson, () => JsonSerializer.Deserialize<List<int>>(p.TagIdsJson)) ?? new();
             p.TagNames = p.TagIds.Select(id => tagDict.GetValueOrDefault(id, "")).Where(n => n != "").ToList();
             return new ProfileListItem
             {
@@ -63,6 +65,7 @@ public class ProfileService
                 BrowserType = p.BrowserType,
                 BrowserVersion = p.BrowserVersion,
                 Notes = p.Notes,
+                Cookies = p.Cookies,
                 Status = p.Status,
                 CreatedAt = p.CreatedAt,
                 LastOpened = p.LastOpened
@@ -78,7 +81,7 @@ public class ProfileService
         if (p == null) return null;
         var allTags = await _tagRepo.GetAllAsync();
         var tagDict = allTags.ToDictionary(t => t.Id, t => t.Name);
-        p.TagIds = TryDeserialize(p.Tags, () => JsonSerializer.Deserialize<List<int>>(p.Tags)) ?? new();
+        p.TagIds = TryDeserialize(p.TagIdsJson, () => JsonSerializer.Deserialize<List<int>>(p.TagIdsJson)) ?? new();
         p.TagNames = p.TagIds.Select(id => tagDict.GetValueOrDefault(id, "")).Where(n => n != "").ToList();
         return new ProfileListItem
         {
@@ -92,6 +95,7 @@ public class ProfileService
             ProxyName = p.ProxyName,
             BrowserType = p.BrowserType,
             Notes = p.Notes,
+            Cookies = p.Cookies,
             Status = p.Status,
             CreatedAt = p.CreatedAt,
             LastOpened = p.LastOpened
@@ -124,19 +128,20 @@ public class ProfileService
             );
 
             ApplyFingerprintOverrides(cfg, normalizedReq);
-            profileData = JsonSerializer.Serialize(cfg, new JsonSerializerOptions { WriteIndented = false });
+            profileData = JsonSerializer.Serialize(cfg, NoScientificNotationOptions);
         }
 
         var profile = new Profile
         {
             Name = normalizedReq.Name,
             GroupId = normalizedReq.GroupId,
-            Tags = JsonSerializer.Serialize(normalizedReq.TagIds ?? new List<int>()),
+            TagIdsJson = JsonSerializer.Serialize(normalizedReq.TagIds ?? new List<int>()),
             ProxyId = normalizedReq.ProxyId,
             BrowserType = normalizedReq.BrowserType,
             BrowserVersion = normalizedReq.Fingerprint?.BrowserVersion ?? "",
             ProfileData = profileData,
             Notes = normalizedReq.Notes ?? "",
+            Cookies = normalizedReq.Cookies ?? normalizedReq.CookiesData ?? "[]",
             CreatedAt = DateTime.Now
         };
 
@@ -144,12 +149,8 @@ public class ProfileService
         profile.Id = id;
 
         var hydrated = HydrateProfileMetadata(profile.ProfileData, profile, normalizedReq.StartUrl);
-        profile.ProfileData = JsonSerializer.Serialize(hydrated, new JsonSerializerOptions { WriteIndented = false });
+        profile.ProfileData = JsonSerializer.Serialize(hydrated, NoScientificNotationOptions);
         await _profileRepo.UpdateAsync(profile);
-
-        _folderService.CreateProfileFolder(id);
-        var configJson = _configBuilder.BuildConfigJson(profile);
-        _folderService.SaveConfigJson(id, configJson);
 
         return (await GetProfileAsync(id))!;
     }
@@ -161,31 +162,26 @@ public class ProfileService
 
         existing.Name = req.Name;
         existing.GroupId = req.GroupId;
-        existing.Tags = JsonSerializer.Serialize(req.TagIds ?? new List<int>());
+        existing.TagIdsJson = JsonSerializer.Serialize(req.TagIds ?? new List<int>());
         existing.ProxyId = req.ProxyId;
         existing.BrowserType = req.BrowserType;
         existing.BrowserVersion = TryDeserialize(req.ProfileData, () => JsonSerializer.Deserialize<ProfileDataConfig>(req.ProfileData))?.System?.BrowserVersion ?? existing.BrowserVersion;
         existing.ProfileData = req.ProfileData;
         existing.Notes = req.Notes ?? "";
+        existing.Cookies = req.Cookies ?? "[]";
 
         await _profileRepo.UpdateAsync(existing);
-
-        var configJson = _configBuilder.BuildConfigJson(existing);
-        _folderService.SaveConfigJson(existing.Id, configJson);
 
         return (await GetProfileAsync(existing.Id))!;
     }
 
     public async Task DeleteProfileAsync(int id)
     {
-        _folderService.DeleteProfileFolder(id);
         await _profileRepo.DeleteAsync(id);
     }
 
     public async Task BulkDeleteAsync(List<int> ids)
     {
-        foreach (var id in ids)
-            _folderService.DeleteProfileFolder(id);
         await _profileRepo.BulkDeleteAsync(ids);
     }
 
@@ -201,20 +197,17 @@ public class ProfileService
         {
             Name = newName,
             GroupId = source.GroupId,
-            Tags = source.Tags,
+            TagIdsJson = source.TagIdsJson,
             ProxyId = source.ProxyId,
             BrowserType = source.BrowserType,
             ProfileData = source.ProfileData,
             Notes = source.Notes,
+            Cookies = source.Cookies,
             CreatedAt = DateTime.Now
         };
 
         var id = await _profileRepo.CreateAsync(copy);
         copy.Id = id;
-
-        _folderService.CreateProfileFolder(id);
-        var configJson = _configBuilder.BuildConfigJson(copy);
-        _folderService.SaveConfigJson(id, configJson);
 
         return (await GetProfileAsync(id))!;
     }
@@ -238,8 +231,11 @@ public class ProfileService
         var fp = req.Fingerprint;
         if (fp == null)
         {
-            cfg.Cookies.FileName = req.CookiesFileName;
-            cfg.Cookies.RawData = req.CookiesData;
+            if (!string.IsNullOrWhiteSpace(req.CookiesFileName) || !string.IsNullOrWhiteSpace(req.CookiesData))
+            {
+                cfg.Cookies.FileName = req.CookiesFileName;
+                cfg.Cookies.RawData = req.CookiesData;
+            }
             return;
         }
 
@@ -314,8 +310,11 @@ public class ProfileService
         if (!string.IsNullOrWhiteSpace(fp.PortBlockMode)) cfg.Security.PortBlockMode = fp.PortBlockMode;
         cfg.Security.PortBlockList = fp.PortBlockList ?? new List<string>();
 
-        cfg.Cookies.FileName = req.CookiesFileName;
-        cfg.Cookies.RawData = req.CookiesData;
+        if (!string.IsNullOrWhiteSpace(req.CookiesFileName) || !string.IsNullOrWhiteSpace(req.CookiesData))
+        {
+            cfg.Cookies.FileName = req.CookiesFileName;
+            cfg.Cookies.RawData = req.CookiesData;
+        }
     }
 
     private static ProfileDataConfig HydrateProfileMetadata(string profileData, Profile profile, string? startUrl)
@@ -325,6 +324,14 @@ public class ProfileService
         cfg.Profile.ProfileID = profile.Id.ToString();
         cfg.Profile.ProfileName = profile.Name;
         cfg.Profile.StartURL = startUrl?.Trim() ?? cfg.Profile.StartURL ?? "";
+
+        if (cfg.Cookies != null
+            && string.IsNullOrWhiteSpace(cfg.Cookies.FileName)
+            && string.IsNullOrWhiteSpace(cfg.Cookies.RawData))
+        {
+            cfg.Cookies = null;
+        }
+
         return cfg;
     }
 
@@ -344,10 +351,10 @@ public class ProfileService
         if (!string.IsNullOrWhiteSpace(name)) return name.Trim();
 
         var faker = new Faker();
-        var left = faker.Hacker.Adjective();
-        var right = faker.Hacker.Noun();
-        var suffix = faker.Random.Number(100, 9999);
-        return $"{char.ToUpperInvariant(left[0])}{left[1..]} {char.ToUpperInvariant(right[0])}{right[1..]} {suffix}";
+        var firstName = faker.Name.FirstName();
+        var lastName = faker.Name.LastName();
+        var suffix = faker.Random.Number(10, 9999);
+        return $"{firstName} {lastName} {suffix}";
     }
 
     private static int? NormalizeProxyId(int? requestProxyId, ProfileProxyOptions? proxy)
@@ -383,5 +390,19 @@ public class ProfileService
     {
         try { return deserializer(); }
         catch { return null; }
+    }
+
+    private class DoubleNoScientificNotationConverter : JsonConverter<double>
+    {
+        public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            => reader.GetDouble();
+
+        public override void Write(Utf8JsonWriter writer, double value, JsonSerializerOptions options)
+        {
+            if (Math.Abs(value) < 1e-15)
+                writer.WriteRawValue("0");
+            else
+                writer.WriteRawValue(value.ToString("G17", CultureInfo.InvariantCulture));
+        }
     }
 }

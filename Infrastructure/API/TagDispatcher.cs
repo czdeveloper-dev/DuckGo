@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace DuckGo.Infrastructure.API;
 
@@ -26,7 +27,9 @@ public class TagDispatcher : IDispatcher
 
     private async Task<(bool, string?, JsonElement?)> ListAsync()
     {
+        Debug.WriteLine($"[TagDispatcher] ListAsync called");
         var result = await _service.GetTagsAsync();
+        Debug.WriteLine($"[TagDispatcher] ListAsync result count: {result.Count}");
         return (true, null, WrapInElement(result));
     }
 

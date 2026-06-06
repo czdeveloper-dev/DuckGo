@@ -56,25 +56,34 @@ public class ProxyService
     public async Task DeleteProxyAsync(int id)
         => await _repo.DeleteAsync(id);
 
-    public async Task<string> CheckProxyAsync(int id)
+    public async Task<ProxyCheckResult> CheckProxyAsync(int id)
     {
         var proxy = await _repo.GetByIdAsync(id);
-        if (proxy == null) return "not_found";
+        if (proxy == null) return new ProxyCheckResult { Status = "not_found" };
         return await CheckProxyAsync(new ProxyCheckRequest(proxy.Type, proxy.Host, proxy.Port, proxy.Username, proxy.Password));
     }
 
-    public async Task<string> CheckProxyAsync(ProxyCheckRequest req)
+    public async Task<ProxyCheckResult> CheckProxyAsync(ProxyCheckRequest req)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             using var tcp = new TcpClient();
             var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             await tcp.ConnectAsync(req.Host, req.Port, cancel.Token);
-            return "alive";
+            sw.Stop();
+            return new ProxyCheckResult { Status = "alive", LatencyMs = (int)sw.ElapsedMilliseconds };
         }
         catch
         {
-            return "dead";
+            sw.Stop();
+            return new ProxyCheckResult { Status = "dead", LatencyMs = (int)sw.ElapsedMilliseconds };
         }
     }
+}
+
+public class ProxyCheckResult
+{
+    public string Status { get; set; } = "dead";
+    public int LatencyMs { get; set; }
 }

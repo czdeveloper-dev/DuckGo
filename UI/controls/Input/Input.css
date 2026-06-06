@@ -69,3 +69,7 @@
 .search-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(94,106,210,0.18); }
 .search-box input { background: transparent; border: none; box-shadow: none; color: var(--text-primary); padding: 0 10px 0 34px; height: 100%; font-size: 13px; width: 100%; outline: none; }
 .search-icon { position: absolute; left: 10px; color: var(--text-tertiary); font-size: 16px; pointer-events: none; }
+
+/* Full width modifier */
+.filter-stacked.full-width { width: 100%; align-items: stretch; }
+.filter-stacked.full-width .search-box { width: 100%; max-width: none; }

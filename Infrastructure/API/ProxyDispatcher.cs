@@ -61,14 +61,14 @@ public class ProxyDispatcher : IDispatcher
 
         if (payload.Value.TryGetProperty("id", out var idProp) && idProp.ValueKind != JsonValueKind.Null)
         {
-            var status = await _service.CheckProxyAsync(idProp.GetInt32());
-            return (true, null, WrapInElement(new { status }));
+            var result = await _service.CheckProxyAsync(idProp.GetInt32());
+            return (true, null, WrapInElement(result));
         }
 
         var req = ParsePayload<Models.DTOs.ProxyCheckRequest>(payload);
         if (req == null) return (false, "Invalid payload", null);
-        var directStatus = await _service.CheckProxyAsync(req);
-        return (true, null, WrapInElement(new { status = directStatus }));
+        var result2 = await _service.CheckProxyAsync(req);
+        return (true, null, WrapInElement(result2));
     }
 
     private static JsonElement WrapInElement<T>(T obj)

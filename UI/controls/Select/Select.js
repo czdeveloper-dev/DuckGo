@@ -147,11 +147,9 @@ window.DuckControls.Select = {
                 if (_menuCtrl) {
                     _menuCtrl.setItems(buildItems());
                 }
-                // Sync display text to current value (may differ after options change)
-                if (selectValue) {
-                    const opt = getOptionsArr().find(o => o.value === selectValue);
-                    textSpan.textContent = opt ? opt.label : (initialOptions.label || initialOptions.placeholder || 'Select...');
-                }
+                // Always sync display text to the currently selected value's label
+                const opt = _optionsArr.find(o => o.value === selectValue);
+                textSpan.textContent = opt ? opt.label : (initialOptions.placeholder || 'Select...');
             },
 
             getOptions() { return getOptionsArr(); }

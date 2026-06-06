@@ -330,9 +330,6 @@ window.ProfileModals.ImportProxy = {
                     const writable = await handle.createWritable();
                     await writable.write(out);
                     await writable.close();
-                    if (window.DuckControls && window.DuckControls.Toast) {
-                        DuckControls.Toast.success('Export Saved', 'Results exported successfully.');
-                    }
                 } else {
                     const blob = new Blob([out], { type: 'text/plain' });
                     const url = URL.createObjectURL(blob);
@@ -354,9 +351,6 @@ window.ProfileModals.ImportProxy = {
             if (this._ta && this._ta.textarea) {
                 this._ta.textarea.value = aliveProxies.join('\n');
                 this._validateProxies(this._ta.textarea.value);
-            }
-            if (window.DuckControls && DuckControls.Toast) {
-                DuckControls.Toast.success('Filtered', `Kept ${aliveProxies.length} alive proxies.`);
             }
             scanModal.close();
         });
@@ -421,8 +415,5 @@ window.ProfileModals.ImportProxy = {
         // Implement bridge integration here
         
         if (this._modal) this._modal.close();
-        if (window.DuckControls && DuckControls.Toast) {
-            DuckControls.Toast.success('Proxies Imported', `Successfully assigned proxies to profiles.`);
-        }
     }
 };

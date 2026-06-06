@@ -57,7 +57,6 @@
             createBtn.addEventListener('click', () => {
                 const val = nameInput.getValue().trim();
                 if (!val) {
-                    if (window.DuckControls && DuckControls.Toast) DuckControls.Toast.error('Validation Error', `${entityName} name is required.`);
                     return;
                 }
                 if (onSave) onSave(val);

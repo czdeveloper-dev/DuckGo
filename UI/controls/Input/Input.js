@@ -3,6 +3,7 @@ window.DuckControls.Input = {
     create(options) {
         const wrap = document.createElement('div');
         wrap.className = 'filter-stacked';
+        if (options.fullWidth) wrap.classList.add('full-width');
         if (options.width) wrap.style.width = options.width;
         
         if (options.label) {

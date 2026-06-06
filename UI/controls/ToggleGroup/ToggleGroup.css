@@ -7,6 +7,8 @@
     padding: 2px;
     gap: 2px;
     width: fit-content;
+    min-width: 0;
+    flex-shrink: 1;
 }
 
 .duck-toggle-group-btn {
@@ -24,6 +26,10 @@
     justify-content: center;
     outline: none;
     white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .duck-toggle-group-btn:hover {

@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using Microsoft.Web.WebView2.Core;
 using DuckGo.Data;
 using DuckGo.Data.Repositories;
@@ -16,8 +17,8 @@ namespace DuckGo;
 
 public partial class MainWindow : Window
 {
-    private static readonly string ResourcePrefix = "DuckGo.UI.";
     private string? _uiFolder;
+    private string? _assetFolder;
 
     // Services & Dispatcher (unified message pipeline)
     private DatabaseService?   _db;
@@ -25,6 +26,7 @@ public partial class MainWindow : Window
     private GroupService?     _groupService;
     private TagService?       _tagService;
     private ProxyService?     _proxyService;
+    private AssetServer?      _assetServer;
     private MessageDispatcher? _dispatcher;
 
     public MainWindow()
@@ -35,75 +37,101 @@ public partial class MainWindow : Window
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
-        // ── Init services ─────────────────────────────────────────────────
-        _db = new DatabaseService();
-        await _db.InitializeAsync();
-
-        var groupRepo   = new GroupRepository(_db);
-        var tagRepo     = new TagRepository(_db);
-        var proxyRepo   = new ProxyRepository(_db);
-        var profileRepo = new ProfileRepository(_db);
-
-        _groupService   = new GroupService(groupRepo);
-        _tagService     = new TagService(tagRepo);
-        _proxyService   = new ProxyService(proxyRepo);
-        var fingerprintSvc = new FingerprintService();
-        var browserVersionSvc = new BrowserVersionService();
-        _profileService = new ProfileService(
-            profileRepo, groupRepo, tagRepo, proxyRepo,
-            new ProfileFolderService(), new ConfigBuilder(), fingerprintSvc);
-
-        // ── Unified dispatcher ───────────────────────────────────────────
-        _dispatcher = new MessageDispatcher(new IDispatcher[]
+        Debug.WriteLine("[DuckGo] OnLoaded started");
+        try
         {
-            new BrowserDispatcher(browserVersionSvc),
-            new FingerprintDispatcher(fingerprintSvc),   // must be before ProfileDispatcher
-            new ProfileDispatcher(_profileService!, fingerprintSvc),
-            new GroupDispatcher(_groupService!),
-            new TagDispatcher(_tagService!),
-            new ProxyDispatcher(_proxyService!),
-        });
+            // ── Init services ─────────────────────────────────────────────────
+            _db = new DatabaseService();
+            await _db.InitializeAsync();
+            Debug.WriteLine("[DuckGo] Database initialized");
 
-        // ── WebView2 setup ───────────────────────────────────────────────
-        WebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(255, 244, 246, 248);
-        await WebView.EnsureCoreWebView2Async();
+            // ── Start asset server (serves browser_versions + fingerprint templates) ─
+            _assetServer = new AssetServer(AppConfig.BaseDir);
+            _assetServer.Start();
+            AppConfig.AssetServerUrl = _assetServer.BaseUrl;
+            Debug.WriteLine($"[DuckGo] Asset server: {AppConfig.AssetServerUrl}");
 
-        WebView.CoreWebView2.Settings.IsScriptEnabled = true;
-        WebView.CoreWebView2.Settings.AreDefaultScriptDialogsEnabled = false;
-        WebView.CoreWebView2.Settings.IsStatusBarEnabled = false;
-        WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
+            var groupRepo   = new GroupRepository(_db);
+            var tagRepo     = new TagRepository(_db);
+            var proxyRepo   = new ProxyRepository(_db);
+            var profileRepo = new ProfileRepository(_db);
+            var proxyTypeRepo = new ProxyTypeRepository(_db);
 
-        // ── Extract & host UI ─────────────────────────────────────────────
-        _uiFolder = ExtractUiFiles();
-        if (_uiFolder == null)
-        {
-            MessageBox.Show("Failed to extract UI files", "DuckGo Error");
-            return;
+            _groupService   = new GroupService(groupRepo);
+            _tagService     = new TagService(tagRepo);
+            _proxyService   = new ProxyService(proxyRepo);
+            var fingerprintSvc = new FingerprintService();
+            var browserVersionSvc = new BrowserVersionService();
+            _profileService = new ProfileService(
+                profileRepo, groupRepo, tagRepo, proxyRepo, fingerprintSvc);
+            Debug.WriteLine("[DuckGo] Services created");
+
+            // ── Unified dispatcher ───────────────────────────────────────────
+            _dispatcher = new MessageDispatcher(new IDispatcher[]
+            {
+                new BrowserDispatcher(browserVersionSvc),
+                new FingerprintDispatcher(fingerprintSvc),
+                new ProfileDispatcher(_profileService!, fingerprintSvc),
+                new GroupDispatcher(_groupService!),
+                new TagDispatcher(_tagService!),
+                new ProxyDispatcher(_proxyService!),
+                new ProxyTypeDispatcher(proxyTypeRepo),
+            });
+            Debug.WriteLine("[DuckGo] Dispatcher created");
+
+            // ── WebView2 setup ───────────────────────────────────────────────
+            WebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(255, 244, 246, 248);
+            await WebView.EnsureCoreWebView2Async();
+            Debug.WriteLine("[DuckGo] WebView2 ready");
+
+            WebView.CoreWebView2.Settings.IsScriptEnabled = true;
+            WebView.CoreWebView2.Settings.AreDefaultScriptDialogsEnabled = false;
+            WebView.CoreWebView2.Settings.IsStatusBarEnabled = false;
+            WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
+
+            // ── Extract & host UI + Assets ───────────────────────────────────────
+            _uiFolder = ExtractResources("DuckGo.UI.", "UI");
+            _assetFolder = ExtractResources("DuckGo.Assets.", "Assets");
+            if (_uiFolder == null)
+            {
+                MessageBox.Show("Failed to extract UI files", "DuckGo Error");
+                return;
+            }
+            // Register extracted Assets folder path so services can read local files
+            if (_assetFolder != null) AppConfig.AssetFolder = _assetFolder;
+            Debug.WriteLine($"[DuckGo] UI folder: {_uiFolder}");
+            if (_assetFolder != null) Debug.WriteLine($"[DuckGo] Asset folder: {_assetFolder}");
+
+            WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                "duckgo.local", _uiFolder, CoreWebView2HostResourceAccessKind.Allow);
+
+            WebView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
+            PreviewKeyDown += OnPreviewKeyDown;
+            Debug.WriteLine("[DuckGo] Navigating to index.html...");
+            WebView.CoreWebView2.Navigate("http://duckgo.local/index.html");
+            Debug.WriteLine("[DuckGo] OnLoaded completed successfully");
         }
-
-        WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-            "duckgo.local", _uiFolder, CoreWebView2HostResourceAccessKind.Allow);
-
-        WebView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
-        PreviewKeyDown += OnPreviewKeyDown;
-
-        WebView.CoreWebView2.Navigate("http://duckgo.local/index.html");
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[DuckGo] OnLoaded EXCEPTION: {ex}");
+            MessageBox.Show($"OnLoaded failed:\n{ex.Message}\n\n{ex.StackTrace}", "DuckGo Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
-    private string? ExtractUiFiles()
+    private string? ExtractResources(string prefix, string folderName)
     {
         try
         {
-            var tempPath = Path.Combine(Path.GetTempPath(), "DuckGo_UI");
+            var tempPath = Path.Combine(Path.GetTempPath(), $"DuckGo_{folderName}");
             if (Directory.Exists(tempPath)) { try { Directory.Delete(tempPath, true); } catch { } }
             Directory.CreateDirectory(tempPath);
 
             var assembly = Assembly.GetExecutingAssembly();
             foreach (var name in assembly.GetManifestResourceNames())
             {
-                if (!name.StartsWith(ResourcePrefix)) continue;
+                if (!name.StartsWith(prefix)) continue;
 
-                var relativePath = name.Substring(ResourcePrefix.Length);
+                var relativePath = name.Substring(prefix.Length);
                 var lastDot = relativePath.LastIndexOf('.');
                 if (lastDot > 0)
                 {
@@ -123,7 +151,7 @@ public partial class MainWindow : Window
                 }
             }
 
-            Console.WriteLine($"[DuckGo] UI folder: {tempPath}");
+            Console.WriteLine($"[DuckGo] {folderName} folder: {tempPath}");
             return tempPath;
         }
         catch
@@ -157,17 +185,20 @@ public partial class MainWindow : Window
 
             if (raw.Contains("\"type\"") && raw.Contains("\"request\""))
             {
+                if (_dispatcher == null) return;
                 var responseJson = await _dispatcher!.DispatchAsync(raw);
                 WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({responseJson})");
             }
             else
             {
+                if (_dispatcher == null) return;
                 var responseJson = await _dispatcher!.DispatchAsync(raw);
                 WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({responseJson})");
             }
         }
         catch (Exception ex)
         {
+            Debug.WriteLine($"[DuckGo] OnWebMessageReceived EXCEPTION: {ex}");
             try
             {
                 var errJson = System.Text.Json.JsonSerializer.Serialize(
@@ -193,6 +224,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _assetServer?.Dispose();
         if (!string.IsNullOrEmpty(_uiFolder) && Directory.Exists(_uiFolder))
         {
             try { Directory.Delete(_uiFolder, true); } catch { }

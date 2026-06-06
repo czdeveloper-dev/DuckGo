@@ -28,6 +28,8 @@ public class ProfileDispatcher : IDispatcher
             "profile.delete" => await DeleteAsync(payload),
             "profile.duplicate" => await DuplicateAsync(payload),
             "profile.getFingerprintTemplate" => await GetFingerprintTemplateAsync(),
+            "profile.generateFingerprint" => await GenerateFingerprintAsync(payload),
+            "profile.bulkCreate" => await BulkCreateAsync(payload),
             _ => (false, $"Unknown action: {action}", null)
         };
     }
@@ -94,10 +96,63 @@ public class ProfileDispatcher : IDispatcher
         return (true, null, WrapInElement(result));
     }
 
+    private async Task<(bool, string?, JsonElement?)> BulkCreateAsync(JsonElement? payload)
+    {
+        var req = ParsePayload<Models.DTOs.BulkCreateRequest>(payload);
+        if (req == null) return (false, "Invalid payload", null);
+
+        var count = Math.Clamp(req.Quantity ?? 1, 1, 500);
+        var results = new List<Models.DTOs.ProfileListItem>();
+
+        // Pre-fetch base IP coordinates (bulk = useOffset = true → random offset per profile)
+        await _fingerprintService.GetRandomLocationAsync("", useOffset: true);
+
+        for (int i = 0; i < count; i++)
+        {
+            string? nameForThis = null;
+            if (!string.IsNullOrWhiteSpace(req.Prefix))
+                nameForThis = count == 1 ? req.Prefix : $"{req.Prefix} {i + 1}";
+
+            var createReq = new Models.DTOs.ProfileCreateRequest(
+                Name: nameForThis ?? "",
+                GroupId: req.GroupId,
+                TagIds: req.TagIds,
+                ProxyId: req.ProxyId,
+                BrowserType: req.BrowserType,
+                ProfileData: null,
+                Notes: req.Notes ?? "",
+                StartUrl: null,
+                CookiesData: null,
+                CookiesFileName: null,
+                Cookies: null,
+                Fingerprint: req.Fingerprint
+            );
+
+            var result = await _service.CreateProfileAsync(createReq);
+            results.Add(result);
+        }
+
+        return (true, null, WrapInElement(results));
+    }
+
     private async Task<(bool, string?, JsonElement?)> GetFingerprintTemplateAsync()
     {
         var tmpl = await _fingerprintService.GetTemplatesAsync();
         return (true, null, WrapInElement(tmpl));
+    }
+
+    private async Task<(bool, string?, JsonElement?)> GenerateFingerprintAsync(JsonElement? payload)
+    {
+        string? platform = null, browserType = null, osModelName = null;
+        if (payload.HasValue)
+        {
+            var p = payload.Value;
+            if (p.TryGetProperty("platform", out var pl)) platform = pl.GetString();
+            if (p.TryGetProperty("browser", out var b)) browserType = b.GetString();
+            if (p.TryGetProperty("model", out var m)) osModelName = m.GetString();
+        }
+        var result = await _fingerprintService.GenerateStructuredAsync(platform, browserType, osModelName);
+        return (true, null, WrapInElement(result));
     }
 
     private static JsonElement WrapInElement<T>(T obj)

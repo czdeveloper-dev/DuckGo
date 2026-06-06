@@ -1,8 +1,10 @@
 using System.IO;
+using System.Net.Http;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DuckGo.Models.Configs;
+using DuckGo.Models.DTOs;
 
 namespace DuckGo.Services;
 
@@ -12,6 +14,10 @@ public class FingerprintService
     {
         PropertyNameCaseInsensitive = true
     };
+
+    private static readonly HttpClient _geoClient = new() { Timeout = TimeSpan.FromSeconds(5) };
+    private static (double Lat, double Lng)? _cachedGeo = null;
+    private static DateTime _geoCacheExpiry = DateTime.MinValue;
 
     private readonly string _assetPath;
     private FingerprintTemplate? _templates;
@@ -36,21 +42,31 @@ public class FingerprintService
         if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
             Directory.CreateDirectory(dir);
 
-        // Bootstrap: copy from embedded resource to AppData if missing
         if (!File.Exists(_assetPath))
         {
-            var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = "DuckGo.Assets.default_fingerprint.json";
-            using var stream = assembly.GetManifestResourceStream(resourceName);
-            if (stream != null)
+            // 1. Try load from extracted Assets folder
+            var assetFile = AppConfig.FingerprintTemplatePath;
+            if (!string.IsNullOrEmpty(assetFile) && File.Exists(assetFile))
             {
-                using var outStream = File.Create(_assetPath);
-                await stream.CopyToAsync(outStream);
+                var assetJson = await File.ReadAllTextAsync(assetFile);
+                await File.WriteAllTextAsync(_assetPath, assetJson);
             }
             else
             {
-                throw new FileNotFoundException(
-                    $"Fingerprint template not found at {_assetPath} and embedded resource '{resourceName}' not found.");
+                // 2. Fallback: copy from embedded resource
+                var assembly = Assembly.GetExecutingAssembly();
+                var resourceName = "DuckGo.Assets.default_fingerprint.json";
+                using var stream = assembly.GetManifestResourceStream(resourceName);
+                if (stream != null)
+                {
+                    using var outStream = File.Create(_assetPath);
+                    await stream.CopyToAsync(outStream);
+                }
+                else
+                {
+                    throw new FileNotFoundException(
+                        $"Fingerprint template not found at {_assetPath} and embedded resource '{resourceName}' not found.");
+                }
             }
         }
 
@@ -154,13 +170,15 @@ public class FingerprintService
         {
             System = new SystemConfig
             {
-                Platform          = osModel.PlatformString,
-                Language          = langs.FirstOrDefault() ?? "en-US",
-                UserAgent         = ua,
-                AcceptLanguage    = acceptLang,
-                Timezone          = tz,
+                Platform              = osModel.PlatformString,
+                Language             = langs.FirstOrDefault() ?? "en-US",
+                UserAgent           = ua,
+                AcceptLanguage      = acceptLang,
+                Timezone            = tz,
                 HardwareConcurrency = hwTier.Concurrency,
-                DeviceMemory      = hwTier.Memory,
+                DeviceMemory        = hwTier.Memory,
+                Architecture        = osModel.Architecture,
+                Bitness             = osModel.Bitness,
                 Screen = new ScreenConfig
                 {
                     Width      = screenPreset.Width,
@@ -214,24 +232,76 @@ public class FingerprintService
                 },
                 Connection = new ConnectionConfig
                 {
-                    Mode         = "Noise",
-                    EffectiveType = "4g",
-                    Downlink     = 10.0,
-                    Rtt          = 50
+                    Mode           = "Noise",
+                    EffectiveType  = "4g",
+                    Downlink       = 10.0,
+                    Rtt            = 50
                 },
                 StorageQuota = 549755813888,
                 DoNotTrack   = "1"
             },
-            Network = new NetworkConfig(),
+            Network  = new NetworkConfig(),
             Security = new SecurityConfig(),
-            Location = new LocationConfig
-            {
-                Mode     = "Noise",
-                Latitude = 40.7128,
-                Longitude = -74.0060,
-                Accuracy = 100
-            }
+            Location = await BuildLocationConfigAsync(tz)
         };
+    }
+
+    private async Task<LocationConfig> BuildLocationConfigAsync(string timezone)
+    {
+        var (lat, lng) = await GetRandomLocationAsync(timezone, useOffset: false);
+        return new LocationConfig
+        {
+            Mode     = "Noise",
+            Latitude = lat,
+            Longitude = lng,
+            Accuracy = Random.Shared.Next(50, 500)
+        };
+    }
+
+    public async Task<(double Lat, double Lng)> GetRandomLocationAsync(string timezone, bool useOffset = false)
+    {
+        if (useOffset && _cachedGeo.HasValue && DateTime.UtcNow < _geoCacheExpiry)
+        {
+            var b = _cachedGeo.Value;
+            var dLat = (Random.Shared.NextDouble() - 0.5) * 1.0;
+            var dLng = (Random.Shared.NextDouble() - 0.5) * 1.0;
+            return (Math.Round(b.Lat + dLat, 6), Math.Round(b.Lng + dLng, 6));
+        }
+
+        try
+        {
+            var json = await _geoClient.GetStringAsync("http://ip-api.com/json/");
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("status", out var st) && st.GetString() == "success")
+            {
+                var lat = doc.RootElement.GetProperty("lat").GetDouble();
+                var lng = doc.RootElement.GetProperty("lon").GetDouble();
+                _cachedGeo = (lat, lng);
+                _geoCacheExpiry = DateTime.UtcNow.AddMinutes(5);
+                if (useOffset)
+                {
+                    return (Math.Round(lat + (Random.Shared.NextDouble() - 0.5) * 1.0, 6),
+                            Math.Round(lng + (Random.Shared.NextDouble() - 0.5) * 1.0, 6));
+                }
+                return (Math.Round(lat, 6), Math.Round(lng, 6));
+            }
+        }
+        catch { }
+
+        return GetRandomLocationFromTimezoneFallback(timezone);
+    }
+
+    private (double Lat, double Lng) GetRandomLocationFromTimezoneFallback(string timezone)
+    {
+        if (_templates?.TimezoneGeo != null &&
+            _templates.TimezoneGeo.TryGetValue(timezone, out var b))
+        {
+            var lat = b.LatMin + Random.Shared.NextDouble() * (b.LatMax - b.LatMin);
+            var lng = b.LngMin + Random.Shared.NextDouble() * (b.LngMax - b.LngMin);
+            return (Math.Round(lat, 6), Math.Round(lng, 6));
+        }
+        return (Math.Round(Random.Shared.NextDouble() * 180 - 90, 6),
+                Math.Round(Random.Shared.NextDouble() * 360 - 180, 6));
     }
 
     /// <summary>
@@ -255,5 +325,51 @@ public class FingerprintService
             webglVendor    = cfg.Fingerprint?.WebGL.Vendor ?? "",
             webglRenderer  = cfg.Fingerprint?.WebGL.Renderer ?? "",
         };
+    }
+
+    /// <summary>
+    /// Generate a complete structured fingerprint summary for the UI modal.
+    /// </summary>
+    public async Task<FingerprintSummaryResponse> GenerateStructuredAsync(
+        string? platform = null,
+        string? browserType = null,
+        string? osModelName = null)
+    {
+        var cfg = await GenerateAsync(platform, browserType, osModelName);
+        var langs = cfg.System?.AcceptLanguage?.Split(',').Select(l => l.Trim()).ToList() ?? new List<string> { "en-US" };
+        return new FingerprintSummaryResponse(
+            Platform: cfg.System?.Platform ?? "Win32",
+            BrowserVersion: "138",
+            UserAgent: cfg.System?.UserAgent ?? "",
+            Screen: $"{cfg.System?.Screen.Width}x{cfg.System?.Screen.Height}",
+            ScreenWidth: cfg.System?.Screen.Width.ToString() ?? "1920",
+            ScreenHeight: cfg.System?.Screen.Height.ToString() ?? "1080",
+            ScreenPixelRatio: cfg.System?.Screen.PixelRatio ?? 1.0,
+            Timezone: cfg.System?.Timezone ?? "",
+            AcceptLanguage: cfg.System?.AcceptLanguage ?? "en-US, en",
+            Languages: langs,
+            HardwareConcurrency: cfg.System?.HardwareConcurrency ?? 8,
+            DeviceMemory: cfg.System?.DeviceMemory ?? 8,
+            Architecture: cfg.System?.Architecture ?? "x86",
+            Bitness: cfg.System?.Bitness ?? "64",
+            WebGLVendor: cfg.Fingerprint?.WebGL.Vendor ?? "",
+            WebGLRenderer: cfg.Fingerprint?.WebGL.Renderer ?? "",
+            WebGLMode: "Noise",
+            CanvasMode: "Noise",
+            WebGLImageMode: "Noise",
+            PluginsMode: "Noise",
+            FontsMode: "Random",
+            Fonts: cfg.Fingerprint?.Fonts ?? new List<string>(),
+            WebRtcMode: "Alter",
+            SslMode: "Noise",
+            PortScan: "Protect",
+            PortBlockMode: "BlockDefault",
+            PortBlockList: new List<string>(),
+            MediaDevicesMode: "Noise",
+            SpeechVoicesMode: "Noise",
+            ClientRectsMode: "Noise",
+            PlatformString: cfg.System?.Platform ?? "Win32",
+            TLSOSMatch: cfg.Fingerprint?.TLSOSMatch ?? ""
+        );
     }
 }

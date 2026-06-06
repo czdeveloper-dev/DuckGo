@@ -43,7 +43,8 @@
 
             this.cpuChipSelect = window.DuckControls.ComboBox.create({
                 placeholder: 'Search hardware tier...',
-                options: [{ label: 'Loading...', value: '' }]
+                options: [{ label: 'Loading...', value: '' }],
+                onChange: () => window.ProfileModals?.CreateProfile?._scheduleSync?.()
             });
             this.cpuChipSelect.element.style.width = '100%';
             hwTierWrap.appendChild(this.cpuChipSelect.element);
@@ -53,6 +54,8 @@
 
             this.cpuToggle.element.addEventListener('click', () => {
                 hwTierWrap.style.display = this.cpuToggle.getValue() === 'custom' ? 'flex' : 'none';
+                if (this.cpuToggle.getValue() === 'custom') this._randomizeTier?.();
+                window.ProfileModals?.CreateProfile?._scheduleSync?.();
             });
 
             container.appendChild(window.DuckControls.Card.create({ title: 'CPU & Memory', icon: 'memory', desc: 'Configure core and memory footprint', content: cpuSec }).element);
@@ -78,7 +81,8 @@
 
             this.resChipSelect = window.DuckControls.ComboBox.create({
                 placeholder: 'Search resolution...',
-                options: [{ label: 'Loading...', value: '' }]
+                options: [{ label: 'Loading...', value: '' }],
+                onChange: () => window.ProfileModals?.CreateProfile?._scheduleSync?.()
             });
             this.resChipSelect.element.style.width = '100%';
             resChipWrap.appendChild(this.resChipSelect.element);
@@ -88,6 +92,8 @@
 
             this.resToggle.element.addEventListener('click', () => {
                 resChipWrap.style.display = this.resToggle.getValue() === 'custom' ? 'flex' : 'none';
+                if (this.resToggle.getValue() === 'custom') this._randomizeResolution?.();
+                window.ProfileModals?.CreateProfile?._scheduleSync?.();
             });
 
             container.appendChild(window.DuckControls.Card.create({ title: 'Display & Graphics', icon: 'monitor', desc: 'Screen resolutions and monitor configs', content: gfxSec }).element);
@@ -109,7 +115,16 @@
 
             this.webglMetaToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Real', value: 'real' }, { label: 'Random', value: 'random' }, { label: 'Custom', value: 'custom' }],
-                value: 'random'
+                value: 'random',
+                onChange: (val) => {
+                    // Show/hide WebGL custom box and randomize when switching to Custom
+                    webglCustomBox.style.display = val === 'custom' ? 'flex' : 'none';
+                    if (val === 'custom') {
+                        this._randomizeWebGL();
+                    }
+                    // Sync overview after the toggle value has updated
+                    setTimeout(() => window.ProfileModals?.CreateProfile?._scheduleSync?.(), 0);
+                }
             });
             emuSec.appendChild(window.DuckControls.SettingRow.create({ title: 'WebGL Metadata', desc: 'Spoof GPU vendor and renderer strings', control: this.webglMetaToggle.element, alignTop: false }).element);
 
@@ -120,7 +135,21 @@
                 label: 'Vendor',
                 placeholder: 'Select vendor...',
                 options: [{ label: 'Loading...', value: '' }],
-                width: '100%'
+                width: '100%',
+                onChange: () => {
+                    // Cascade renderer list when vendor changes
+                    const vendor = this._webglVendorSelect?.getValue?.() || '';
+                    const osBlock = this._currentOsBlock;
+                    const renderers = osBlock?.WebGL?.VendorGPUs?.[vendor] || [];
+                    if (this._rendererSelect) {
+                        this._rendererSelect.setOptions(renderers.map(r => ({ label: r, value: r })));
+                        if (renderers.length > 0) {
+                            const randomRenderer = renderers[Math.floor(Math.random() * renderers.length)];
+                            this._rendererSelect.setValue(randomRenderer);
+                        }
+                    }
+                    window.ProfileModals?.CreateProfile?._scheduleSync?.();
+                }
             });
             webglCustomBox.appendChild(this._webglVendorSelect.element);
 
@@ -128,13 +157,10 @@
                 label: 'Renderer',
                 placeholder: 'Select renderer...',
                 options: [{ label: 'Loading...', value: '' }],
-                width: '100%'
+                width: '100%',
+                onChange: () => window.ProfileModals?.CreateProfile?._scheduleSync?.()
             });
             webglCustomBox.appendChild(this._rendererSelect.element);
-
-            this.webglMetaToggle.element.addEventListener('click', () => {
-                webglCustomBox.style.display = this.webglMetaToggle.getValue() === 'custom' ? 'flex' : 'none';
-            });
             emuSec.appendChild(webglCustomBox);
 
             this.pluginsToggle = window.DuckControls.ToggleGroup.create({

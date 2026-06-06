@@ -1,4 +1,5 @@
 using System.IO;
+using System.Reflection;
 using System.Text.Json;
 using DuckGo.Models.Configs;
 using DuckGo.Models.DTOs;
@@ -11,11 +12,41 @@ public class BrowserVersionService
     {
         PropertyNameCaseInsensitive = true
     };
+    private static readonly string LocalFilePath =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                     "DuckGo", "BrowserVersions", "browser_versions.json");
 
     public async Task<BrowserCatalogResponse> GetBrowserCatalogAsync()
     {
-        var assetPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "browser_versions.json");
-        var json = await File.ReadAllTextAsync(assetPath);
+        string json;
+
+        if (File.Exists(LocalFilePath))
+        {
+            json = await File.ReadAllTextAsync(LocalFilePath);
+        }
+        else
+        {
+            // Try load from extracted Assets folder
+            var assetFile = AppConfig.BrowserVersionsConfigPath;
+            if (!string.IsNullOrEmpty(assetFile) && File.Exists(assetFile))
+            {
+                json = await File.ReadAllTextAsync(assetFile);
+                // Cache to local so next startup is instant
+                var dir = Path.GetDirectoryName(LocalFilePath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+                await File.WriteAllTextAsync(LocalFilePath, json);
+            }
+            else
+            {
+                json = await LoadEmbeddedAsync();
+                // Cache to local
+                var dir = Path.GetDirectoryName(LocalFilePath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+                await File.WriteAllTextAsync(LocalFilePath, json);
+            }
+        }
 
         var config = JsonSerializer.Deserialize<BrowserVersionsConfig>(json, JsonOptions)
             ?? throw new InvalidOperationException("Browser versions config could not be parsed.");
@@ -45,5 +76,16 @@ public class BrowserVersionService
                 })
                 .ToList()
         };
+    }
+
+    private static async Task<string> LoadEmbeddedAsync()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        var resourceName = "DuckGo.Assets.browser_versions.json";
+        await using var stream = assembly.GetManifestResourceStream(resourceName)
+            ?? throw new FileNotFoundException(
+                $"Browser versions config not found locally and remote download failed. Embedded resource '{resourceName}' also not found.");
+        using var reader = new StreamReader(stream);
+        return await reader.ReadToEndAsync();
     }
 }

@@ -9,6 +9,7 @@ public class FingerprintTemplate
     public Dictionary<string, OsTemplate> OS { get; set; } = new();
     public List<string> Timezones { get; set; } = new();
     public List<string> Languages { get; set; } = new();
+    public Dictionary<string, GeoBounds> TimezoneGeo { get; set; } = new();
 
     /// <summary>
     /// Deserializes from a JSON string that has OS keys (Windows, macOS, Linux...)
@@ -28,12 +29,29 @@ public class FingerprintTemplate
         if (node?["Languages"] is JsonArray langArr)
             tmpl.Languages = langArr.Select(x => x!.GetValue<string>()).ToList();
 
+        if (node?["TimezoneGeo"] is JsonObject geoObj)
+        {
+            foreach (var kvp in geoObj)
+            {
+                if (kvp.Value is JsonObject bounds)
+                {
+                    tmpl.TimezoneGeo[kvp.Key] = new GeoBounds
+                    {
+                        LatMin = bounds["LatMin"]?.GetValue<double>() ?? 0,
+                        LatMax = bounds["LatMax"]?.GetValue<double>() ?? 0,
+                        LngMin = bounds["LngMin"]?.GetValue<double>() ?? 0,
+                        LngMax = bounds["LngMax"]?.GetValue<double>() ?? 0,
+                    };
+                }
+            }
+        }
+
         if (node is JsonObject obj)
         {
             foreach (var kvp in obj)
             {
-                // Skip arrays we already handled
-                if (kvp.Value is JsonArray || kvp.Key is "Timezones" or "Languages")
+                // Skip arrays and metadata sections
+                if (kvp.Value is JsonArray || kvp.Key is "Timezones" or "Languages" or "TimezoneGeo")
                     continue;
                 // Everything else is treated as an OS block (Windows, macOS, Linux...)
                 if (kvp.Value is JsonObject osBlock)
@@ -41,7 +59,23 @@ public class FingerprintTemplate
                     var osJson = JsonSerializer.Serialize(osBlock);
                     var osTemplate = JsonSerializer.Deserialize<OsTemplate>(osJson, opts);
                     if (osTemplate != null)
+                    {
+                        // Parse Architecture/Bitness per model (OsModel uses default case-sensitive deserialize)
+                        if (osBlock["Models"] is JsonArray modelsArr)
+                        {
+                            for (int i = 0; i < modelsArr.Count; i++)
+                            {
+                                if (modelsArr[i] is JsonObject modelObj && i < osTemplate.Models.Count)
+                                {
+                                    if (modelObj.TryGetPropertyValue("Architecture", out var archNode))
+                                        osTemplate.Models[i].Architecture = archNode?.GetValue<string>() ?? "x86";
+                                    if (modelObj.TryGetPropertyValue("Bitness", out var bitsNode))
+                                        osTemplate.Models[i].Bitness = bitsNode?.GetValue<string>() ?? "64";
+                                }
+                            }
+                        }
                         tmpl.OS[kvp.Key] = osTemplate;
+                    }
                 }
             }
         }
@@ -65,6 +99,16 @@ public class OsModel
     public string UserAgentTemplate { get; set; } = "";
     public string PlatformString { get; set; } = "";
     public string TLSOSMatch { get; set; } = "";
+    public string Architecture { get; set; } = "x86";
+    public string Bitness { get; set; } = "64";
+}
+
+public class GeoBounds
+{
+    public double LatMin { get; set; }
+    public double LatMax { get; set; }
+    public double LngMin { get; set; }
+    public double LngMax { get; set; }
 }
 
 public class ScreenPreset

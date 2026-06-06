@@ -110,11 +110,9 @@
                     const name = nameInput.getValue().trim();
                     const format = formatInput.getValues();
                     if (!name) {
-                        if (window.DuckControls.Toast) DuckControls.Toast.error('Validation', 'Table name cannot be empty');
                         return;
                     }
                     if (format.length === 0) {
-                        if (window.DuckControls.Toast) DuckControls.Toast.error('Validation', 'Please define at least one data format');
                         return;
                     }
                     onSave({ name, format });

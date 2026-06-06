@@ -7,7 +7,7 @@
     window.ProfileModals.CreateProfile.GeneralTab = {
         _fpTemplate: null,
         _browserCatalog: null,
-        _defaultStartUrl: 'chrome://newtab',
+        _defaultStartUrl: '',
 
         _setTemplate(template) {
             this._fpTemplate = template;
@@ -114,14 +114,6 @@
 
             this.osSelect = window.DuckControls.Select.create({
                 label: 'Operating System',
-                options: [
-                    { label: 'Windows', value: 'Windows' },
-                    { label: 'macOS', value: 'macOS' },
-                    { label: 'Linux', value: 'Linux' },
-                    { label: 'Android', value: 'Android' },
-                    { label: 'iOS', value: 'iOS' }
-                ],
-                value: 'Windows',
                 onChange: (e) => {
                     const osVal = e.target.value;
                     const models = this._getOsModels(osVal);
@@ -129,6 +121,7 @@
                     if (models.length > 0) this.osModelSelect.setValue(models[0].value);
                     this._syncUaPreview();
                     if (this._onOsChange) this._onOsChange(osVal);
+                    window.ProfileModals?.CreateProfile?._scheduleSync?.();
                 }
             });
             this._osSelectCtrl = this.osSelect;
@@ -157,6 +150,7 @@
                 label: 'Browser Kernel',
                 options: browserOptions,
                 value: initialBrowser,
+                dataField: 'browserType',
                 onChange: () => {
                     const selectedBrowser = this.browserSelect?.getValue?.() || initialBrowser;
                     const versionOptions = this._getBrowserVersions(selectedBrowser);

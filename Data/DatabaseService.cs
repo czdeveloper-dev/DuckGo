@@ -43,6 +43,7 @@ public class DatabaseService : IDisposable
                 ProxyId INTEGER,
                 BrowserType TEXT DEFAULT 'Chromium',
                 BrowserVersion TEXT DEFAULT '',
+                Cookies TEXT DEFAULT '[]',
                 ProfileData TEXT DEFAULT '{}',
                 Notes TEXT DEFAULT '',
                 CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -50,7 +51,6 @@ public class DatabaseService : IDisposable
                 FOREIGN KEY (GroupId) REFERENCES Groups(Id) ON DELETE SET NULL
             )");
 
-        await EnsureColumnExistsAsync(conn, "Profiles", "BrowserVersion", "ALTER TABLE Profiles ADD COLUMN BrowserVersion TEXT DEFAULT ''");
 
         await RunNonQueryAsync(conn, @"
             CREATE TABLE IF NOT EXISTS Proxies (
@@ -64,6 +64,42 @@ public class DatabaseService : IDisposable
                 Status TEXT DEFAULT 'active',
                 CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
             )");
+
+        await RunNonQueryAsync(conn, @"
+            CREATE TABLE IF NOT EXISTS ProxyTypes (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Value TEXT NOT NULL UNIQUE,
+                Label TEXT NOT NULL,
+                DisplayOrder INTEGER NOT NULL DEFAULT 0
+            )");
+
+        await SeedProxyTypesAsync(conn);
+    }
+
+    private static async Task SeedProxyTypesAsync(SqliteConnection conn)
+    {
+        await using var checkCmd = conn.CreateCommand();
+        checkCmd.CommandText = "SELECT COUNT(*) FROM ProxyTypes";
+        var count = Convert.ToInt32(await checkCmd.ExecuteScalarAsync());
+        if (count > 0) return;
+
+        var types = new[]
+        {
+            ("http",   "HTTP",      1),
+            ("https",  "HTTPS",     2),
+            ("socks4", "SOCKS4",    3),
+            ("socks5", "SOCKS5",    4),
+        };
+
+        foreach (var (value, label, order) in types)
+        {
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = "INSERT OR IGNORE INTO ProxyTypes (Value, Label, DisplayOrder) VALUES (@v, @l, @o)";
+            cmd.Parameters.AddWithValue("@v", value);
+            cmd.Parameters.AddWithValue("@l", label);
+            cmd.Parameters.AddWithValue("@o", order);
+            await cmd.ExecuteNonQueryAsync();
+        }
     }
 
     private static async Task RunNonQueryAsync(SqliteConnection conn, string sql)

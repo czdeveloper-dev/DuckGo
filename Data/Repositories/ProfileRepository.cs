@@ -90,17 +90,18 @@ public class ProfileRepository : IProfileRepository
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            INSERT INTO Profiles (Name, GroupId, Tags, ProxyId, BrowserType, BrowserVersion, ProfileData, Notes, CreatedAt)
-            VALUES (@name, @groupId, @tags, @proxyId, @browserType, @browserVersion, @profileData, @notes, @createdAt);
+            INSERT INTO Profiles (Name, GroupId, Tags, ProxyId, BrowserType, BrowserVersion, ProfileData, Notes, Cookies, CreatedAt)
+            VALUES (@name, @groupId, @tagIds, @proxyId, @browserType, @browserVersion, @profileData, @notes, @cookies, @createdAt);
             SELECT last_insert_rowid();";
         cmd.Parameters.AddWithValue("@name", profile.Name);
         cmd.Parameters.AddWithValue("@groupId", profile.GroupId.HasValue ? profile.GroupId.Value : DBNull.Value);
-        cmd.Parameters.AddWithValue("@tags", profile.Tags);
+        cmd.Parameters.AddWithValue("@tagIds", profile.TagIdsJson);
         cmd.Parameters.AddWithValue("@proxyId", profile.ProxyId.HasValue ? profile.ProxyId.Value : DBNull.Value);
         cmd.Parameters.AddWithValue("@browserType", profile.BrowserType);
         cmd.Parameters.AddWithValue("@browserVersion", string.IsNullOrWhiteSpace(profile.BrowserVersion) ? DBNull.Value : profile.BrowserVersion);
         cmd.Parameters.AddWithValue("@profileData", profile.ProfileData);
         cmd.Parameters.AddWithValue("@notes", profile.Notes);
+        cmd.Parameters.AddWithValue("@cookies", profile.Cookies);
         cmd.Parameters.AddWithValue("@createdAt", profile.CreatedAt.ToString("o"));
         var result = await cmd.ExecuteScalarAsync();
         return Convert.ToInt32(result);
@@ -113,20 +114,22 @@ public class ProfileRepository : IProfileRepository
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             UPDATE Profiles SET
-                Name = @name, GroupId = @groupId, Tags = @tags,
+                Name = @name, GroupId = @groupId, Tags = @tagIds,
                 ProxyId = @proxyId, BrowserType = @browserType,
                 BrowserVersion = @browserVersion,
-                ProfileData = @profileData, Notes = @notes
+                ProfileData = @profileData, Notes = @notes,
+                Cookies = @cookies
             WHERE Id = @id";
         cmd.Parameters.AddWithValue("@id", profile.Id);
         cmd.Parameters.AddWithValue("@name", profile.Name);
         cmd.Parameters.AddWithValue("@groupId", profile.GroupId.HasValue ? profile.GroupId.Value : DBNull.Value);
-        cmd.Parameters.AddWithValue("@tags", profile.Tags);
+        cmd.Parameters.AddWithValue("@tagIds", profile.TagIdsJson);
         cmd.Parameters.AddWithValue("@proxyId", profile.ProxyId.HasValue ? profile.ProxyId.Value : DBNull.Value);
         cmd.Parameters.AddWithValue("@browserType", profile.BrowserType);
         cmd.Parameters.AddWithValue("@browserVersion", string.IsNullOrWhiteSpace(profile.BrowserVersion) ? DBNull.Value : profile.BrowserVersion);
         cmd.Parameters.AddWithValue("@profileData", profile.ProfileData);
         cmd.Parameters.AddWithValue("@notes", profile.Notes);
+        cmd.Parameters.AddWithValue("@cookies", profile.Cookies);
         await cmd.ExecuteNonQueryAsync();
     }
 
@@ -176,10 +179,11 @@ public class ProfileRepository : IProfileRepository
 
     private static Profile ReadProfile(SqliteDataReader reader)
     {
+        // DB column is still named "Tags" in existing databases; once a migration runs it will be "TagIds"
         var ordinal = reader.GetOrdinal("Tags");
-        var tagsJson = reader.IsDBNull(ordinal) ? "[]" : reader.GetString(ordinal);
+        var tagIdsJson = reader.IsDBNull(ordinal) ? "[]" : reader.GetString(ordinal);
         List<int> tagIds;
-        try { tagIds = System.Text.Json.JsonSerializer.Deserialize<List<int>>(tagsJson) ?? new(); }
+        try { tagIds = System.Text.Json.JsonSerializer.Deserialize<List<int>>(tagIdsJson) ?? new(); }
         catch { tagIds = new(); }
 
         return new Profile
@@ -187,13 +191,14 @@ public class ProfileRepository : IProfileRepository
             Id = reader.GetInt32(reader.GetOrdinal("Id")),
             Name = reader.GetString(reader.GetOrdinal("Name")),
             GroupId = reader.IsDBNull(reader.GetOrdinal("GroupId")) ? null : reader.GetInt32(reader.GetOrdinal("GroupId")),
-            Tags = tagsJson,
+            TagIdsJson = tagIdsJson,
             TagIds = tagIds,
             ProxyId = reader.IsDBNull(reader.GetOrdinal("ProxyId")) ? null : reader.GetInt32(reader.GetOrdinal("ProxyId")),
             BrowserType = reader.GetString(reader.GetOrdinal("BrowserType")),
             BrowserVersion = reader.IsDBNull(reader.GetOrdinal("BrowserVersion")) ? "" : reader.GetString(reader.GetOrdinal("BrowserVersion")),
             ProfileData = reader.IsDBNull(reader.GetOrdinal("ProfileData")) ? "{}" : reader.GetString(reader.GetOrdinal("ProfileData")),
             Notes = reader.IsDBNull(reader.GetOrdinal("Notes")) ? "" : reader.GetString(reader.GetOrdinal("Notes")),
+            Cookies = reader.IsDBNull(reader.GetOrdinal("Cookies")) ? "[]" : reader.GetString(reader.GetOrdinal("Cookies")),
             CreatedAt = reader.IsDBNull(reader.GetOrdinal("CreatedAt")) ? DateTime.Now : DateTime.Parse(reader.GetString(reader.GetOrdinal("CreatedAt"))),
             LastOpened = reader.IsDBNull(reader.GetOrdinal("LastOpened")) ? null : DateTime.Parse(reader.GetString(reader.GetOrdinal("LastOpened")))
         };

@@ -1,5 +1,40 @@
 namespace DuckGo.Models.DTOs;
 
+public record FingerprintSummaryResponse(
+    string Platform,
+    string BrowserVersion,
+    string UserAgent,
+    string Screen,
+    string ScreenWidth,
+    string ScreenHeight,
+    double ScreenPixelRatio,
+    string Timezone,
+    string AcceptLanguage,
+    List<string> Languages,
+    int HardwareConcurrency,
+    int DeviceMemory,
+    string Architecture,
+    string Bitness,
+    string WebGLVendor,
+    string WebGLRenderer,
+    string WebGLMode,
+    string CanvasMode,
+    string WebGLImageMode,
+    string PluginsMode,
+    string FontsMode,
+    List<string> Fonts,
+    string WebRtcMode,
+    string SslMode,
+    string PortScan,
+    string PortBlockMode,
+    List<string> PortBlockList,
+    string MediaDevicesMode,
+    string SpeechVoicesMode,
+    string ClientRectsMode,
+    string PlatformString,
+    string TLSOSMatch
+);
+
 public record ProfileCreateRequest(
     string Name,
     int? GroupId,
@@ -11,6 +46,7 @@ public record ProfileCreateRequest(
     string? StartUrl,
     string? CookiesData,
     string? CookiesFileName,
+    string? Cookies,
     FingerprintOptions? Fingerprint = null
 );
 
@@ -77,13 +113,25 @@ public record ProfileUpdateRequest(
     int? ProxyId,
     string BrowserType,
     string ProfileData,
-    string? Notes
+    string? Notes,
+    string? Cookies
 );
 
 public record BulkDeleteRequest(List<int> Ids);
 public record BulkStartRequest(List<int> Ids);
 public record BulkStopRequest(List<int> Ids);
 public record BulkAssignGroupRequest(List<int> Ids, int? GroupId);
+
+public record BulkCreateRequest(
+    int? Quantity,
+    string? Prefix,
+    int? GroupId,
+    List<int>? TagIds,
+    int? ProxyId,
+    string BrowserType,
+    string? Notes,
+    FingerprintOptions? Fingerprint
+);
 
 public record GroupCreateRequest(string Name);
 public record GroupUpdateRequest(int Id, string Name);

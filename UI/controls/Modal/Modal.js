@@ -125,6 +125,9 @@
                         if (btnDef.isDefault) {
                             btn.setAttribute('data-duck-default', 'true');
                         }
+                        if (btnDef.disabled) {
+                            btn.disabled = true;
+                        }
                         if (btnDef.onClick) {
                             btn.addEventListener('click', (e) => btnDef.onClick(e, this));
                         }

@@ -90,15 +90,29 @@
             this.element.addEventListener('click', this._boundClick);
         }
 
-        _handleClick(e) {
-            if (this.options.disabled || this.options.loading) {
+        async _handleClick(e) {
+            if (this.options.disabled || this.options.loading || this.options.spinning) {
                 e.preventDefault();
                 e.stopPropagation();
                 return;
             }
 
             if (this.options.onClick) {
-                this.options.onClick(e);
+                const result = this.options.onClick(e, this);
+                if (result instanceof Promise) {
+                    this.setSpinning(true);
+                    this.element.disabled = true;
+                    const minTimePromise = new Promise(resolve => setTimeout(resolve, 500));
+                    try {
+                        await Promise.all([result, minTimePromise]);
+                    } finally {
+                        this.setSpinning(false);
+                        if (!this.options.disabled && !this.options.loading) {
+                            this.element.removeAttribute('disabled');
+                            this.element.disabled = false;
+                        }
+                    }
+                }
             }
         }
 

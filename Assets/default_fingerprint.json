@@ -18,19 +18,65 @@
     "th-TH", "vi-VN", "id-ID", "ms-MY", "tl-PH"
   ],
 
+  "TimezoneGeo": {
+    "America/New_York":      { "LatMin": 25.0,  "LatMax": 48.0,  "LngMin": -84.0,  "LngMax": -67.0  },
+    "America/Los_Angeles":  { "LatMin": 32.0,  "LatMax": 49.0,  "LngMin": -124.0, "LngMax": -114.0 },
+    "America/Chicago":       { "LatMin": 36.0,  "LatMax": 48.0,  "LngMin": -100.0, "LngMax": -82.0  },
+    "America/Denver":       { "LatMin": 31.0,  "LatMax": 49.0,  "LngMin": -117.0, "LngMax": -102.0 },
+    "America/Phoenix":       { "LatMin": 31.0,  "LatMax": 37.0,  "LngMin": -115.0, "LngMax": -109.0 },
+    "America/Anchorage":     { "LatMin": 59.0,  "LatMax": 62.0,  "LngMin": -153.0, "LngMax": -147.0 },
+    "America/Adak":          { "LatMin": 51.0,  "LatMax": 52.0,  "LngMin": -180.0, "LngMax": -176.0 },
+    "America/Toronto":       { "LatMin": 43.0,  "LatMax": 56.0,  "LngMin": -84.0,  "LngMax": -74.0  },
+    "America/Vancouver":     { "LatMin": 49.0,  "LatMax": 49.3,  "LngMin": -124.0, "LngMax": -122.0 },
+    "America/Mexico_City":   { "LatMin": 14.0,  "LatMax": 33.0,  "LngMin": -117.0, "LngMax": -86.0  },
+    "America/Sao_Paulo":     { "LatMin": -34.0, "LatMax": 5.0,   "LngMin": -74.0,  "LngMax": -34.0  },
+    "America/Buenos_Aires":  { "LatMin": -55.0, "LatMax": -21.0, "LngMin": -74.0,  "LngMax": -53.0  },
+    "Europe/London":         { "LatMin": 49.0,  "LatMax": 61.0,  "LngMin": -8.0,   "LngMax": 2.0    },
+    "Europe/Paris":          { "LatMin": 41.0,  "LatMax": 51.0,  "LngMin": -5.0,   "LngMax": 10.0   },
+    "Europe/Berlin":         { "LatMin": 47.0,  "LatMax": 55.0,  "LngMin": 6.0,    "LngMax": 15.0   },
+    "Europe/Madrid":         { "LatMin": 36.0,  "LatMax": 44.0,  "LngMin": -9.0,   "LngMax": 4.0    },
+    "Europe/Rome":           { "LatMin": 36.0,  "LatMax": 47.0,  "LngMin": 7.0,    "LngMax": 19.0   },
+    "Europe/Amsterdam":      { "LatMin": 50.0,  "LatMax": 54.0,  "LngMin": 3.0,    "LngMax": 7.0    },
+    "Europe/Stockholm":      { "LatMin": 55.0,  "LatMax": 69.0,  "LngMin": 11.0,   "LngMax": 24.0   },
+    "Europe/Warsaw":         { "LatMin": 49.0,  "LatMax": 55.0,  "LngMin": 14.0,   "LngMax": 25.0   },
+    "Europe/Prague":         { "LatMin": 48.5,  "LatMax": 51.5,  "LngMin": 12.0,   "LngMax": 19.0   },
+    "Europe/Vienna":         { "LatMin": 46.0,  "LatMax": 49.5,  "LngMin": 9.5,    "LngMax": 17.5   },
+    "Europe/Brussels":       { "LatMin": 49.0,  "LatMax": 51.5,  "LngMin": 2.5,    "LngMax": 6.5    },
+    "Europe/Zurich":         { "LatMin": 46.0,  "LatMax": 48.0,  "LngMin": 6.0,    "LngMax": 10.5   },
+    "Europe/Dublin":         { "LatMin": 51.0,  "LatMax": 55.5,  "LngMin": -10.5,  "LngMax": -6.0   },
+    "Europe/Lisbon":         { "LatMin": 37.0,  "LatMax": 42.0,  "LngMin": -9.5,   "LngMax": -6.0   },
+    "Asia/Tokyo":            { "LatMin": 24.0,  "LatMax": 46.0,  "LngMin": 123.0,  "LngMax": 146.0  },
+    "Asia/Seoul":            { "LatMin": 33.0,  "LatMax": 39.0,  "LngMin": 124.0,  "LngMax": 131.0  },
+    "Asia/Shanghai":         { "LatMin": 18.0,  "LatMax": 54.0,  "LngMin": 73.0,   "LngMax": 135.0  },
+    "Asia/Hong_Kong":        { "LatMin": 22.0,  "LatMax": 23.0,  "LngMin": 113.0,  "LngMax": 115.0  },
+    "Asia/Taipei":           { "LatMin": 22.0,  "LatMax": 26.0,  "LngMin": 119.0,  "LngMax": 123.0  },
+    "Asia/Singapore":        { "LatMin": 1.0,   "LatMax": 2.0,   "LngMin": 103.0,  "LngMax": 104.0  },
+    "Asia/Bangkok":          { "LatMin": 6.0,   "LatMax": 21.0,  "LngMin": 97.0,   "LngMax": 106.0  },
+    "Asia/Jakarta":          { "LatMin": -11.0, "LatMax": 7.0,   "LngMin": 95.0,   "LngMax": 141.0  },
+    "Asia/Manila":           { "LatMin": 5.0,   "LatMax": 22.0,  "LngMin": 116.0,  "LngMax": 128.0  },
+    "Asia/Ho_Chi_Minh":      { "LatMin": 8.0,   "LatMax": 23.0,  "LngMin": 102.0,  "LngMax": 109.0  },
+    "Asia/Kolkata":          { "LatMin": 6.0,   "LatMax": 36.0,  "LngMin": 68.0,   "LngMax": 98.0   },
+    "Asia/Dubai":            { "LatMin": 12.0,  "LatMax": 35.0,  "LngMin": 35.0,   "LngMax": 60.0   },
+    "Asia/Riyadh":           { "LatMin": 16.0,  "LatMax": 33.0,  "LngMin": 35.0,   "LngMax": 56.0   },
+    "Australia/Sydney":      { "LatMin": -44.0, "LatMax": -10.0, "LngMin": 113.0,  "LngMax": 154.0  },
+    "Australia/Melbourne":   { "LatMin": -39.0, "LatMax": -34.0, "LngMin": 140.0,  "LngMax": 150.0  },
+    "Australia/Brisbane":    { "LatMin": -28.0, "LatMax": -26.0, "LngMin": 152.0,  "LngMax": 154.0  },
+    "Pacific/Auckland":      { "LatMin": -47.0, "LatMax": -35.0, "LngMin": 166.0,  "LngMax": 178.0  }
+  },
+
   "Windows": {
     "Models": [
-      { "Name": "Windows 11 Pro 24H2",    "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
-      { "Name": "Windows 11 Pro 23H2",    "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
-      { "Name": "Windows 11 Pro 22H2",    "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
-      { "Name": "Windows 10 Pro 24H2",    "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
-      { "Name": "Windows 10 Pro 22H2",    "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
-      { "Name": "Windows 10 Pro 21H2",    "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
-      { "Name": "Windows 10 LTSC 2021",   "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
-      { "Name": "Windows 8.1 Pro",        "UserAgentTemplate": "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
-      { "Name": "Windows 7 Ultimate",      "UserAgentTemplate": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
-      { "Name": "Windows Server 2022",     "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" },
-      { "Name": "Windows Server 2019",     "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows" }
+      { "Name": "Windows 11 Pro 24H2",      "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Windows 11 Pro 23H2",      "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Windows 11 Pro 22H2",      "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Windows 10 Pro 24H2",      "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Windows 10 Pro 22H2",      "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Windows 10 Pro 21H2",      "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Windows 10 LTSC 2021",     "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Windows 8.1 Pro",          "UserAgentTemplate": "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36",  "PlatformString": "Win32", "TLSOSMatch": "windows", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Windows 7 Ultimate",       "UserAgentTemplate": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36",    "PlatformString": "Win32", "TLSOSMatch": "windows", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Windows Server 2022",      "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Windows Server 2019",      "UserAgentTemplate": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Win32", "TLSOSMatch": "windows", "Architecture": "x86", "Bitness": "64" }
     ],
     "Fonts": ["Arial", "Calibri", "Comic Sans MS", "Consolas", "Courier New", "Georgia", "Impact", "Lucida Console", "Segoe UI", "Tahoma", "Times New Roman", "Trebuchet MS", "Verdana"],
     "ScreenPresets": [
@@ -148,12 +194,12 @@
 
   "macOS": {
     "Models": [
-      { "Name": "macOS Sequoia 15",   "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos" },
-      { "Name": "macOS Sonoma 14",   "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos" },
-      { "Name": "macOS Ventura 13",  "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos" },
-      { "Name": "macOS Monterey 12",  "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos" },
-      { "Name": "macOS Big Sur 11",  "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos" },
-      { "Name": "macOS Catalina 10.15","UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos" }
+      { "Name": "macOS Sequoia 15",    "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "macOS Sonoma 14",      "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "macOS Ventura 13",    "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "macOS Monterey 12",    "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "macOS Big Sur 11",     "UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "macOS Catalina 10.15","UserAgentTemplate": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "MacIntel", "TLSOSMatch": "macos", "Architecture": "x86", "Bitness": "64" }
     ],
     "Fonts": ["SF Pro Display", "SF Pro Text", "Helvetica Neue", "Helvetica", "Arial", "Times New Roman", "Times", "Courier New", "Courier", "Verdana", "Georgia", "Palatino", "Roboto", "Menlo", "Monaco", "Consolas"],
     "ScreenPresets": [
@@ -218,12 +264,12 @@
 
   "Linux": {
     "Models": [
-      { "Name": "Ubuntu 24.04 LTS", "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux" },
-      { "Name": "Ubuntu 22.04 LTS", "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux" },
-      { "Name": "Debian 13",        "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux" },
-      { "Name": "Fedora 42",        "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux" },
-      { "Name": "Linux Mint 22",    "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux" },
-      { "Name": "Arch Linux",       "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux" }
+      { "Name": "Ubuntu 24.04 LTS", "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Ubuntu 22.04 LTS", "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Debian 13",         "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Fedora 42",         "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Linux Mint 22",     "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux", "Architecture": "x86", "Bitness": "64" },
+      { "Name": "Arch Linux",        "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux", "Architecture": "x86", "Bitness": "64" }
     ],
     "Fonts": ["DejaVu Sans", "DejaVu Sans Mono", "DejaVu Serif", "Liberation Sans", "Liberation Serif", "Liberation Mono", "Noto Sans", "Noto Sans CJK JP", "Noto Sans CJK SC", "Noto Sans CJK KR", "Ubuntu", "Ubuntu Mono", "Roboto", "Arial", "Times New Roman", "Courier New", "Helvetica", "Open Sans", "Source Code Pro", "Fira Code", "Fira Sans"],
     "ScreenPresets": [
@@ -286,26 +332,26 @@
 
   "Android": {
     "Models": [
-      { "Name": "Google Pixel 9 Pro XL",     "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; Pixel 9 Pro XL) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Google Pixel 9 Pro",        "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; Pixel 9 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Google Pixel 9",            "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Google Pixel 8 Pro",        "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Google Pixel 8",            "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Samsung Galaxy S25 Ultra",  "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; SM-S938B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Samsung Galaxy S25+",      "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; SM-S936B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Samsung Galaxy S25",        "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; SM-S931B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Samsung Galaxy S24 Ultra", "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Samsung Galaxy Z Fold 6",  "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-F956B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Samsung Galaxy Z Flip 6",  "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-F741B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Xiaomi 15 Ultra",          "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; 25016PN0BC) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Xiaomi 15",               "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; 25053PY09I) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "OnePlus 13",               "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; CPH2653) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "OPPO Find X8 Ultra",       "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; PHZ110) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "vivo X200 Ultra",         "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; V2405A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Samsung Galaxy A55",       "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-A556E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Samsung Galaxy A35",       "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-A356E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "Xiaomi Redmi Note 14 Pro", "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; 24094PC4AG) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" },
-      { "Name": "POCO F6 Pro",              "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; 23113RKB6G) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36", "PlatformString": "Linux aarch64", "TLSOSMatch": "android" }
+      { "Name": "Google Pixel 9 Pro XL",    "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; Pixel 9 Pro XL) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",    "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Google Pixel 9 Pro",      "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; Pixel 9 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",      "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Google Pixel 9",          "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",          "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Google Pixel 8 Pro",       "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",       "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Google Pixel 8",          "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",          "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Samsung Galaxy S25 Ultra", "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; SM-S938B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",     "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Samsung Galaxy S25+",      "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; SM-S936B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",      "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Samsung Galaxy S25",       "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; SM-S931B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",       "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Samsung Galaxy S24 Ultra", "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",    "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Samsung Galaxy Z Fold 6",  "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-F956B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",  "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Samsung Galaxy Z Flip 6",  "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-F741B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",  "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Xiaomi 15 Ultra",          "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; 25016PN0BC) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",      "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Xiaomi 15",               "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; 25053PY09I) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",       "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "OnePlus 13",               "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; CPH2653) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",        "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "OPPO Find X8 Ultra",       "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; PHZ110) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",      "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "vivo X200 Ultra",          "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 15; V2405A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",        "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Samsung Galaxy A55",        "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-A556E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",   "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Samsung Galaxy A35",        "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-A356E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",   "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "Xiaomi Redmi Note 14 Pro", "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; 24094PC4AG) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",  "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "POCO F6 Pro",               "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; 23113RKB6G) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",      "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" }
     ],
     "Fonts": ["Roboto", "Noto Sans", "Droid Sans", "Droid Sans Mono", "Droid Serif", "Nunito", "Open Sans", "Helvetica", "Arial", "sans-serif"],
     "ScreenPresets": [
@@ -397,21 +443,21 @@
 
   "iOS": {
     "Models": [
-      { "Name": "iPhone 16 Pro Max", "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
-      { "Name": "iPhone 16 Pro",    "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
-      { "Name": "iPhone 16",        "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
-      { "Name": "iPhone 15 Pro Max", "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
-      { "Name": "iPhone 15 Pro",    "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
-      { "Name": "iPhone 15",        "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
-      { "Name": "iPhone 14 Pro Max", "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
-      { "Name": "iPhone 14 Pro",    "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
-      { "Name": "iPhone 14",        "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
-      { "Name": "iPhone 13",        "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
-      { "Name": "iPhone SE (3rd)",  "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios" },
-      { "Name": "iPad Pro 13\" M4",  "UserAgentTemplate": "Mozilla/5.0 (iPad; CPU OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPad", "TLSOSMatch": "ios" },
-      { "Name": "iPad Pro 11\" M4",  "UserAgentTemplate": "Mozilla/5.0 (iPad; CPU OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPad", "TLSOSMatch": "ios" },
-      { "Name": "iPad Air M2",       "UserAgentTemplate": "Mozilla/5.0 (iPad; CPU OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPad", "TLSOSMatch": "ios" },
-      { "Name": "iPad (10th Gen)",   "UserAgentTemplate": "Mozilla/5.0 (iPad; CPU OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPad", "TLSOSMatch": "ios" }
+      { "Name": "iPhone 16 Pro Max", "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "iPhone 16 Pro",    "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "iPhone 16",        "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "iPhone 15 Pro Max", "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "iPhone 15 Pro",    "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "iPhone 15",        "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "iPhone 14 Pro Max", "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "iPhone 14 Pro",    "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "iPhone 14",        "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "iPhone 13",        "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "iPhone SE (3rd)",  "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "iPad Pro 13\" M4",  "UserAgentTemplate": "Mozilla/5.0 (iPad; CPU OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPad", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "iPad Pro 11\" M4",  "UserAgentTemplate": "Mozilla/5.0 (iPad; CPU OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPad", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "iPad Air M2",       "UserAgentTemplate": "Mozilla/5.0 (iPad; CPU OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPad", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
+      { "Name": "iPad (10th Gen)",   "UserAgentTemplate": "Mozilla/5.0 (iPad; CPU OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPad", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" }
     ],
     "Fonts": ["SF Pro Display", "SF Pro Text", "Helvetica Neue", "Helvetica", "Arial", "Times New Roman", "Times", "Courier New", "Courier", "Verdana", "Georgia", "Palatino", "Menlo", "Monaco", "Consolas"],
     "ScreenPresets": [

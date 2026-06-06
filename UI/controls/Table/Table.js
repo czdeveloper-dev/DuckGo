@@ -4,6 +4,9 @@ window.DuckControls.Table = {
         // ── Outer wrapper (flex container that fills parent) ─────────
         const wrap = document.createElement('div');
         wrap.className = 'data-table-wrap';
+        wrap.style.position = 'relative';
+
+        let _loaderOverlay, _loaderSpinner, _loaderText;
 
         // ── Scroll container ─────────────────────────────────────────
         const container = document.createElement('div');
@@ -590,6 +593,43 @@ window.DuckControls.Table = {
             table,
             tbody,
             updateStickyPositions: updateDynCSS,
+            setLoading(loading, content = 'Loading data...') {
+                if (loading) {
+                    if (!_loaderOverlay) {
+                        _loaderOverlay = document.createElement('div');
+                        _loaderOverlay.className = 'duck-table-loader active';
+                        
+                        _loaderSpinner = document.createElement('div');
+                        _loaderSpinner.className = 'spinner';
+                        
+                        _loaderText = document.createElement('div');
+                        _loaderText.className = 'duck-table-loader-text';
+                        
+                        _loaderOverlay.appendChild(_loaderSpinner);
+                        _loaderOverlay.appendChild(_loaderText);
+                        wrap.appendChild(_loaderOverlay);
+                    }
+                    _loaderOverlay.classList.add('active');
+                    
+                    if (typeof content === 'string') {
+                        if (content.trim().startsWith('<')) {
+                            _loaderSpinner.style.display = 'none';
+                            _loaderText.innerHTML = content;
+                        } else {
+                            _loaderSpinner.style.display = '';
+                            _loaderText.textContent = content;
+                        }
+                    } else if (content instanceof HTMLElement) {
+                        _loaderSpinner.style.display = 'none';
+                        _loaderText.innerHTML = '';
+                        _loaderText.appendChild(content);
+                    }
+                } else {
+                    if (_loaderOverlay) {
+                        _loaderOverlay.classList.remove('active');
+                    }
+                }
+            },
             getCheckedValues() {
                 const result = [];
                 tbody.querySelectorAll('td').forEach(td => {

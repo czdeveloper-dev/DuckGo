@@ -55,6 +55,7 @@
         },
 
         async loadProfiles() {
+            if (this._table && this._table.setLoading) this._table.setLoading(true);
             let items = [];
             try {
                 const filters = {};
@@ -63,10 +64,18 @@
                 if (this._filters.group)    filters.groupId   = parseInt(this._filters.group);
                 if (this._filters.tag)      filters.tagIds    = this._filters.tag.split(',').map(v => parseInt(v)).filter(v => !isNaN(v));
                 if (this._filters.status)   filters.browserType = this._filters.status;
-                const resp = await DuckBridge.call('profile.list', filters);
+                
+                const minTimePromise = new Promise(resolve => setTimeout(resolve, 300));
+                const [resp] = await Promise.all([
+                    DuckBridge.call('profile.list', filters),
+                    minTimePromise
+                ]);
+                
                 items = resp?.Items || resp || [];
             } catch (err) {
                 console.warn('[Profiles] Bridge unavailable, using mock:', err);
+            } finally {
+                if (this._table && this._table.setLoading) this._table.setLoading(false);
             }
 
             if (!Array.isArray(items) || items.length === 0) {
@@ -152,7 +161,7 @@
                     this._groups.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
                     this._updateGroupSelect();
                 } catch (e) {
-                    window.DuckControls?.Toast?.error('Create Failed', e.message);
+                    // toast handled by DuckBridge
                 }
             });
         },
@@ -162,7 +171,6 @@
             if (!group) {
                 const selectedValue = this._groupCtrl?.getValue() || '';
                 if (!selectedValue) {
-                    window.DuckControls?.Toast?.info('Select a Group', 'Select a group from the dropdown to edit.');
                     return;
                 }
                 group = this._groups.find(g => String(g.Id ?? g.id) === selectedValue);
@@ -180,14 +188,14 @@
                     this._updateGroupSelect();
                     await this.loadProfiles();
                 } catch (e) {
-                    window.DuckControls?.Toast?.error('Update Failed', e.message);
+                    // toast handled by DuckBridge
                 }
             }, currentName);
         },
 
         async _deleteGroup() {
             const items = this._buildGroupDeleteItems();
-            if (items.length === 0) { window.DuckControls?.Toast?.info('No Groups', 'No groups available to delete.'); return; }
+            if (items.length === 0) { return; }
             if (!window.ProfileModals?.DeleteEntity) return;
             window.ProfileModals.DeleteEntity.show('group', items, async (selectedValues) => {
                 try {
@@ -196,7 +204,9 @@
                     this._updateGroupSelect();
                     this._filters.group = '';
                     await this.loadProfiles();
-                } catch (e) { window.DuckControls?.Toast?.error('Delete Failed', e.message); }
+                } catch (e) {
+                    // toast handled by DuckBridge
+                }
             });
         },
 
@@ -215,7 +225,7 @@
                     this._tags.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
                     this._updateTagSelect();
                 } catch (e) {
-                    window.DuckControls?.Toast?.error('Create Failed', e.message);
+                    // toast handled by DuckBridge
                 }
             });
         },
@@ -225,7 +235,6 @@
             if (!tag) {
                 const selectedValues = this._tagCtrl?.getValues() || [];
                 if (selectedValues.length === 0) {
-                    window.DuckControls?.Toast?.info('Select a Tag', 'Select a tag from the dropdown to edit.');
                     return;
                 }
                 const tagId = parseInt(selectedValues[0]);
@@ -243,14 +252,14 @@
                     this._tags.sort((a, b) => ((a.Name || a.name) || '').localeCompare((b.Name || b.name) || ''));
                     this._updateTagSelect();
                 } catch (e) {
-                    window.DuckControls?.Toast?.error('Update Failed', e.message);
+                    // toast handled by DuckBridge
                 }
             }, currentName);
         },
 
         async _deleteTag() {
             const items = this._buildTagDeleteItems();
-            if (items.length === 0) { window.DuckControls?.Toast?.info('No Tags', 'No tags available to delete.'); return; }
+            if (items.length === 0) { return; }
             if (!window.ProfileModals?.DeleteEntity) return;
             window.ProfileModals.DeleteEntity.show('tag', items, async (selectedValues) => {
                 try {
@@ -258,7 +267,9 @@
                     this._tags = this._tags.filter(t => !selectedValues.includes(String(t.Id ?? t.id)));
                     this._updateTagSelect();
                     await this.loadProfiles();
-                } catch (e) { window.DuckControls?.Toast?.error('Delete Failed', e.message); }
+                } catch (e) {
+                    // toast handled by DuckBridge
+                }
             });
         },
 
@@ -269,12 +280,15 @@
                 this._refreshBtn = DuckControls.Button.create(refreshEl, {
                     variant: 'surface', icon: 'refresh',
                     onClick: () => {
-                        if (this._refreshBtn) this._refreshBtn.setSpinning(true);
-                        Promise.all([this.loadGroups(), this.loadTags(), this.loadProfiles()])
-                            .finally(() => { if (this._refreshBtn) this._refreshBtn.setSpinning(false); });
+                        return Promise.all([this.loadGroups(), this.loadTags(), this.loadProfiles()]);
                     }
                 });
             }
+
+            // Reload table when profiles are created (single or bulk)
+            window.addEventListener('profile-created', async () => {
+                await Promise.all([this.loadGroups(), this.loadTags(), this.loadProfiles()]);
+            });
 
             const colsEl = document.getElementById('ctrl-cols');
             if (colsEl) {
@@ -517,12 +531,12 @@
         async _deleteProfile(id) {
             if (window.ProfileModals?.DeleteProfiles) {
                 window.ProfileModals.DeleteProfiles.show(new Set([id]), async (ids) => {
-                    try { await DuckBridge.call('profile.delete', { id: ids[0] }); this._selectedIds.delete(ids[0]); this._updateBulkActions(); await this.loadProfiles(); }
+                    try { await DuckBridge.call('profile.delete', { id: ids[0] }); this._selectedIds.delete(ids[0]); this._updateBulkActions(); await this.loadProfiles(); window.ProfileModals?.CreateProfile?._refreshEntityData?.(); }
                     catch (e) { console.error('Delete failed:', e); }
                 });
             } else {
                 if (!confirm('Delete this profile?')) return;
-                try { await DuckBridge.call('profile.delete', { id }); this._selectedIds.delete(id); this._updateBulkActions(); await this.loadProfiles(); }
+                try { await DuckBridge.call('profile.delete', { id }); this._selectedIds.delete(id); this._updateBulkActions(); await this.loadProfiles(); window.ProfileModals?.CreateProfile?._refreshEntityData?.(); }
                 catch (e) { console.error('Delete failed:', e); }
             }
         },
@@ -533,27 +547,27 @@
         _bulkDelete()  {
             if (this._selectedIds.size === 0) return;
             window.ProfileModals?.DeleteProfiles.show(this._selectedIds, async (ids) => {
-                for (const id of ids) { try { await DuckBridge.call('profile.delete', { id }); } catch {} }
+                for (const id of ids) { try { await DuckBridge.call('profile.delete', { id }); } catch (e) { /* toast handled by DuckBridge */ } }
                 this._selectedIds.clear(); this._updateBulkActions(); await this.loadProfiles();
+                window.ProfileModals?.CreateProfile?._refreshEntityData?.();
             });
         },
         _bulkRemoveProxy() { if (this._selectedIds.size > 0) window.ProfileModals?.RemoveProxy?.show(this._selectedIds, async (ids) => { console.log('Remove proxy:', ids); await this.loadProfiles(); }); },
         _bulkCopyProxy() {
             if (this._selectedIds.size === 0) return;
             const proxies = [...this._selectedIds].map(id => this._profilesData.find(p => p.id === id)?.proxy).filter(p => p && p !== 'Direct');
-            if (!proxies.length) { window.DuckControls?.Toast?.info('Copy Proxy', 'No proxies to copy.'); return; }
-            this._copyToClipboard(proxies.join('\n')).then(() => window.DuckControls?.Toast?.success('Copied', `${proxies.length} proxies copied.`));
+            if (!proxies.length) return;
+            this._copyToClipboard(proxies.join('\n'));
         },
         _bulkCheckProxy() {
             if (this._selectedIds.size === 0) return;
             let count = 0;
             [...this._selectedIds].forEach(id => { const r = this._profilesData.find(p => p.id === id); if (r?.proxy && r.proxy !== 'Direct') { r.status = 'running'; r.message = 'Checking proxy...'; count++; } });
-            if (!count) { window.DuckControls?.Toast?.info('Check Proxy', 'No proxies configured.'); return; }
+            if (!count) return;
             this._table?.updateData(this._profilesData);
             setTimeout(() => {
                 [...this._selectedIds].forEach(id => { const r = this._profilesData.find(p => p.id === id); if (r?.proxy && r.proxy !== 'Direct') { r.status = 'ready'; r.message = `Proxy alive - ${Math.floor(Math.random() * 200 + 50)}ms`; } });
                 this._table?.updateData(this._profilesData);
-                window.DuckControls?.Toast?.success('Proxy Check', `Checked ${count} proxies.`);
             }, 1000);
         },
         _openModal(profileId) { console.log('[Profiles] Open modal for profile:', profileId); },

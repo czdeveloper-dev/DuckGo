@@ -21,6 +21,18 @@
         _syncTimer: null,
         _browserCatalog: null,
 
+        // Listen for profile-created so Group/Tag dropdowns stay fresh
+        _initProfileCreatedListener() {
+            window.removeEventListener('profile-created', this._onProfileCreatedBound);
+            this._onProfileCreatedBound = () => this._refreshEntityData();
+            window.addEventListener('profile-created', this._onProfileCreatedBound);
+        },
+
+        // ── Module init ──────────────────────────────────────────────────
+        _init() {
+            this._initProfileCreatedListener();
+        },
+
         _collectTabValues() {
             const values = {};
             ['GeneralTab', 'NetworkTab', 'HardwareTab', 'SecurityTab', 'CookiesTab', 'NotesTab'].forEach(tabName => {
@@ -120,8 +132,24 @@
             set('Tags', tagText);
             set('Operating System', v.os || 'Windows');
             set('OS Model', v.osModel || 'Auto');
-            set('Browser', `Chromium ${v.browserVersion || '138'}`);
-            set('User Agent', v.userAgent || 'Auto-generated');
+            // Resolve browser type from catalog (v.browser = lowercase key)
+            const browserLabel = v.browser
+                ? (this._browserCatalog?.Browsers?.find(b => String(b.BrowserType || '').toLowerCase() === String(v.browser).toLowerCase())?.BrowserType || v.browser)
+                : 'Chromium';
+            set('Browser', `${browserLabel} ${v.browserVersion || '138'}`);
+            // User-Agent: show actual generated UA in auto mode, custom value in custom mode
+            if (v.autoGenerateUa) {
+                const osVal = v.os || 'Windows';
+                const modelVal = v.osModel || null;
+                const version = v.browserVersion || '138';
+                const block = this._fpTemplate?.OS?.[osVal];
+                const modelDef = (block?.Models || []).find(m => m.Name === modelVal) || block?.Models?.[0];
+                const ua = modelDef?.UserAgentTemplate?.replace('{VERSION}', version)
+                    || `Generated for ${osVal} ${modelVal || ''}`.trim();
+                set('User Agent', ua);
+            } else {
+                set('User Agent', v.userAgent || '—');
+            }
             set('Screen Resolution', this._fmtResolution(v));
             set('Timezone', v.timezone || 'Auto (Match IP)');
             set('Language', this._fmtLanguages(v.languages));
@@ -132,16 +160,257 @@
             set('Fonts', v.fontsMode === 'custom' ? (v.customFonts?.join(', ') || 'None') : 'Default');
             set('WebRTC', v.webrtcMode || 'disable');
             set('SSL', v.sslMode || 'noise');
-            set('Ports', v.portBlockMode || v.portScan || 'protect');
+            set('Ports', this._fmtPorts(v));
             set('Media', v.mediaDevices || 'noise');
             set('Speech', v.speechVoices || 'noise');
             set('Rects', v.clientRects || 'noise');
         },
 
         _fmtResolution(v) {
-            if (v.screenMode === 'custom' && v.screenWidth) return `${v.screenWidth}×${v.screenHeight}`;
+            if (v.screenMode === 'custom' && v.screenWidth) {
+                const pr = v.screenPixelRatio != null ? ` @${v.screenPixelRatio}x` : '';
+                return `${v.screenWidth}×${v.screenHeight}${pr}`;
+            }
             if (v.screenMode === 'random') return 'Random';
-            return v.screenPreset || '1920×1080';
+            return v.screenPreset ? v.screenPreset.replace(/x/g, '×') : '1920×1080';
+        },
+
+        _fmtPorts(v) {
+            const base = v.portScan === 'decline' ? 'Decline' : 'Protect';
+            const mode = v.portBlockMode || 'block_default';
+            const labels = { block_default: 'Block Default', block_all: 'Block All', allow_list: 'Allow List', custom: 'Custom' };
+            const modeLabel = labels[mode] || mode;
+            if (['allow_list', 'custom'].includes(mode) && v.portBlockList?.length > 0) {
+                return `${base} · ${modeLabel} · ${v.portBlockList.join(', ')}`;
+            }
+            return `${base} · ${modeLabel}`;
+        },
+
+        /**
+         * Apply a structured fingerprint response to all tab controls.
+         * Called by the "New" button after backend generates fingerprint.
+         */
+        _applyFingerprintResponse(fp) {
+            const hwTab  = window.ProfileModals.CreateProfile.HardwareTab;
+            const genTab = window.ProfileModals.CreateProfile.GeneralTab;
+            const netTab = window.ProfileModals.CreateProfile.NetworkTab;
+            const secTab = window.ProfileModals.CreateProfile.SecurityTab;
+
+            // Hardware: CPU
+            if (hwTab) {
+                hwTab.cpuToggle?.setValue?.('custom');
+                const concurrency = fp?.hardwareConcurrency ?? fp?.HardwareConcurrency ?? 8;
+                const memory = fp?.deviceMemory ?? fp?.DeviceMemory ?? 8;
+                hwTab.cpuChipSelect?.setValue?.(`${concurrency}-${memory}`);
+                // CPU chip select dropdown visibility
+                const hwTierWrap = hwTab.cpuToggle?.element?.closest('[class*="card"]')?.querySelector('[style*="display"]') || null;
+                if (hwTierWrap && hwTierWrap.style.display === 'none' && hwTab.cpuToggle?.getValue?.() === 'custom') {
+                    const allDisplays = hwTab.cpuToggle?.element?.closest('.duck-card-content')?.querySelectorAll('[style*="display"]') || [];
+                    for (const el of allDisplays) {
+                        if (el.style.display === 'none' && el.textContent.includes('Hardware Tier')) {
+                            el.style.display = 'flex';
+                            break;
+                        }
+                    }
+                }
+
+                // Hardware: Screen
+                if (fp?.screenWidth && fp?.screenHeight) {
+                    hwTab.resToggle?.setValue?.('custom');
+                    const pr = fp.screenPixelRatio ?? 1.0;
+                    hwTab.resChipSelect?.setValue?.(`${fp.screenWidth}x${fp.screenHeight}x${pr}`);
+                }
+
+                // Hardware: WebGL
+                if (fp?.webglVendor || fp?.WebGLVendor) {
+                    hwTab.webglMetaToggle?.setValue?.('custom');
+                    const vendor = fp.webglVendor || fp.WebGLVendor;
+                    const renderer = fp.webglRenderer || fp.WebGLRenderer;
+                    if (hwTab._webglVendorSelect) {
+                        const osBlock = hwTab._currentOsBlock;
+                        const vendors = osBlock?.WebGL?.VendorGPUs ? Object.keys(osBlock.WebGL.VendorGPUs) : [];
+                        const match = vendors.find(v => v.toLowerCase() === String(vendor).toLowerCase());
+                        if (match) hwTab._webglVendorSelect.setValue(match);
+                    }
+                    if (hwTab._rendererSelect && renderer) {
+                        const osBlock = hwTab._currentOsBlock;
+                        const currentVendor = hwTab._webglVendorSelect?.getValue?.() || '';
+                        const renderers = osBlock?.WebGL?.VendorGPUs?.[currentVendor] || [];
+                        const match = renderers.find(r => String(r).toLowerCase().includes(String(renderer).toLowerCase()));
+                        if (match) hwTab._rendererSelect.setValue(match);
+                    }
+                }
+            }
+
+            // General: Browser version
+            if (genTab) {
+                const version = fp?.browserVersion || fp?.BrowserVersion || '138';
+                genTab.browserVersion?.setValue?.(version);
+                const ua = fp?.userAgent || fp?.UserAgent || '';
+                if (ua && genTab.uaModeToggle?.getValue?.() === 'custom') {
+                    genTab.uaInput?.setValue?.(ua);
+                }
+            }
+
+            // Network: languages + timezone
+            if (netTab) {
+                const langs = fp?.languages || fp?.Languages || [];
+                if (langs.length > 0) {
+                    netTab.langTagInput?.setValues?.(Array.isArray(langs) ? langs : String(langs).split(',').map(l => l.trim()));
+                }
+                const tz = fp?.timezone || fp?.Timezone || 'auto';
+                netTab.tzSelect?.setValue?.(tz);
+            }
+
+            // Security: client rects
+            if (secTab) {
+                secTab.rectsToggle?.setValue?.('noise');
+            }
+
+            this._syncSummary();
+        },
+
+        /**
+         * Collect all tab values into a ProfileCreateRequest payload.
+         */
+        _collectPayload(name) {
+            const v = this._collectTabValues();
+            const groupValue = this._groupCtrl?.getValue?.() || '';
+            const groupId = groupValue ? parseInt(groupValue, 10) : null;
+            const tagValues = this._tagCtrl?.getValues?.() || [];
+            const tagIds = tagValues.map(t => parseInt(t, 10)).filter(n => !isNaN(n));
+
+            return {
+                name,
+                groupId,
+                tagIds: tagIds.length ? tagIds : null,
+                browserType: (v.browser || 'chromium').charAt(0).toUpperCase() + (v.browser || 'chromium').slice(1),
+                startUrl: v.startUrl || '',
+                notes: v.notes || '',
+                cookies: v.cookies || null,
+                cookiesData:    v.cookiesData    || null,
+                cookiesFileName: v.cookiesFileName || null,
+                fingerprint: {
+                    platform: v.os || 'Windows',
+                    osModel: v.osModel || null,
+                    browserVersion: v.browserVersion || '138',
+                    userAgent: v.autoGenerateUa ? null : (v.userAgent || null),
+                    languages: v.languages || ['en-US', 'en'],
+                    timezone: v.timezone || 'auto',
+                    screenWidth: v.screenWidth ? parseInt(v.screenWidth, 10) : null,
+                    screenHeight: v.screenHeight ? parseInt(v.screenHeight, 10) : null,
+                    screenPixelRatio: v.screenPixelRatio || null,
+                    hardwareConcurrency: v.concurrency || null,
+                    deviceMemory: v.deviceMemory || null,
+                    webglMode: v.webglMode || 'random',
+                    webglVendor: v.webglVendor || null,
+                    webglRenderer: v.webglRenderer || null,
+                    canvasMode: v.canvasMode || 'noise',
+                    webglImageMode: v.webglImageMode || 'noise',
+                    pluginsMode: v.pluginsMode || 'noise',
+                    fontsMode: v.fontsMode || 'default',
+                    fonts: v.fontsMode === 'custom' ? (v.customFonts || []) : null,
+                    webRtcMode: v.webrtcMode || 'disable',
+                    sslMode: v.sslMode || 'noise',
+                    portScan: v.portScan || 'protect',
+                    portBlockMode: v.portBlockMode || 'block_default',
+                    portBlockList: v.portBlockList || [],
+                    mediaDevicesMode: v.mediaDevices || 'noise',
+                    speechVoicesMode: v.speechVoices || 'noise',
+                    clientRectsMode: v.clientRects || 'noise',
+                    locationMode: v.locationMode || 'noise',
+                    latitude: v.customCoordinates?.lat || null,
+                    longitude: v.customCoordinates?.lng || null,
+                    accuracy: v.customCoordinates?.accuracy || null,
+                }
+            };
+        },
+
+        _collectBulkPayload(qty, prefix) {
+            const v = this._collectTabValues();
+            const groupValue = this._groupCtrl?.getValue?.() || '';
+            const groupId = groupValue ? parseInt(groupValue, 10) : null;
+            const tagValues = this._tagCtrl?.getValues?.() || [];
+            const tagIds = tagValues.map(t => parseInt(t, 10)).filter(n => !isNaN(n));
+
+            return {
+                quantity: qty,
+                prefix: prefix || null,
+                groupId,
+                tagIds: tagIds.length ? tagIds : null,
+                browserType: (v.browser || 'chromium').charAt(0).toUpperCase() + (v.browser || 'chromium').slice(1),
+                notes: v.notes || '',
+                fingerprint: {
+                    platform: v.os || 'Windows',
+                    osModel: v.osModel || null,
+                    browserVersion: v.browserVersion || '138',
+                    userAgent: v.autoGenerateUa ? null : (v.userAgent || null),
+                    languages: v.languages || ['en-US', 'en'],
+                    timezone: v.timezone || 'auto',
+                    screenWidth: v.screenWidth ? parseInt(v.screenWidth, 10) : null,
+                    screenHeight: v.screenHeight ? parseInt(v.screenHeight, 10) : null,
+                    screenPixelRatio: v.screenPixelRatio || null,
+                    hardwareConcurrency: v.concurrency || null,
+                    deviceMemory: v.deviceMemory || null,
+                    webglMode: v.webglMode || 'random',
+                    webglVendor: v.webglVendor || null,
+                    webglRenderer: v.webglRenderer || null,
+                    canvasMode: v.canvasMode || 'noise',
+                    webglImageMode: v.webglImageMode || 'noise',
+                    pluginsMode: v.pluginsMode || 'noise',
+                    fontsMode: v.fontsMode || 'default',
+                    fonts: v.fontsMode === 'custom' ? (v.customFonts || []) : null,
+                    webRtcMode: v.webrtcMode || 'disable',
+                    sslMode: v.sslMode || 'noise',
+                    portScan: v.portScan || 'protect',
+                    portBlockMode: v.portBlockMode || 'block_default',
+                    portBlockList: v.portBlockList || [],
+                    mediaDevicesMode: v.mediaDevices || 'noise',
+                    speechVoicesMode: v.speechVoices || 'noise',
+                    clientRectsMode: v.clientRects || 'noise',
+                    locationMode: v.locationMode || 'noise',
+                    latitude: v.customCoordinates?.lat || null,
+                    longitude: v.customCoordinates?.lng || null,
+                    accuracy: v.customCoordinates?.accuracy || null,
+                }
+            };
+        },
+
+        _clearFieldError() {
+            this._modal?.container?.querySelectorAll('.field-error-label').forEach(el => el.remove());
+            this._modal?.container?.querySelectorAll('.is-error').forEach(el => el.classList.remove('is-error'));
+        },
+
+        _showFieldError(field, message) {
+            if (!this._modal?.container) return;
+            const ctrl = this._fieldErrorTarget(field);
+            if (!ctrl) { window.DuckControls.Toast?.warning?.(message); return; }
+
+            // Mark control as error
+            ctrl.classList.add('is-error');
+
+            // Find or create error label
+            let errLabel = ctrl.parentElement?.querySelector('.field-error-label');
+            if (!errLabel) {
+                errLabel = document.createElement('div');
+                errLabel.className = 'field-error-label';
+                errLabel.style.cssText = 'font-size: 11px; color: var(--danger); margin-top: 4px; display: flex; align-items: center; gap: 4px;';
+                ctrl.parentElement?.appendChild(errLabel);
+            }
+            errLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:12px">error</span> ' + message;
+        },
+
+        _fieldErrorTarget(field) {
+            const map = {
+                browserType: () => this.browserSelect?.element || document.querySelector('[data-field="browserType"]'),
+                prefix:     () => this._nameInput?.querySelector?.('input'),
+                quantity:   () => this._qtyCtrl?.element?.querySelector?.('input'),
+                'proxy.host': () => document.querySelector('[data-field="proxy.host"]'),
+                'proxy.port': () => document.querySelector('[data-field="proxy.port"]'),
+                'proxy.type': () => document.querySelector('[data-field="proxy.type"]'),
+            };
+            const finder = map[field];
+            return finder ? finder() : null;
         },
 
         _fmtLanguages(langs) {
@@ -157,17 +426,24 @@
         },
 
         _fmtHardware(v) {
-            return `${v.concurrency || 8} Cores, ${v.deviceMemory || 8} GB RAM`;
+            if (v.cpuMode === 'real') return 'Real hardware';
+            if (v.cpuMode === 'random') return 'Random hardware';
+            // Custom mode: show selected tier
+            if (v.concurrency != null && v.deviceMemory != null) {
+                return `${v.concurrency} Cores, ${v.deviceMemory} GB RAM`;
+            }
+            return '—';
         },
 
         _fmtWebGL(v) {
             if (v.webglMode === 'real') return 'Real (no spoof)';
             if (v.webglMode === 'random') return 'Random spoofed';
-            if (v.webglVendor && v.webglRenderer) {
-                const short = v.webglRenderer.length > 40 ? v.webglRenderer.substring(0, 40) + '...' : v.webglRenderer;
-                return `${v.webglVendor}\n${short}`;
+            if (v.webglVendor || v.webglRenderer) {
+                const parts = [v.webglVendor, v.webglRenderer].filter(Boolean);
+                const short = parts.map(p => p.length > 40 ? p.substring(0, 40) + '...' : p);
+                return short.join('\n');
             }
-            return 'Random spoofed';
+            return 'Custom (no selection)';
         },
 
         _fmtProxy(v) {
@@ -214,10 +490,23 @@
             const osBlock = tmpl.OS?.[osValue];
 
             // ── GeneralTab: OS model select ────────────────────────────────
-            const osModels = (osBlock?.Models || []).map(m => ({ label: m.Name, value: m.Name }));
-            if (genTab?.osModelSelect) {
-                genTab.osModelSelect.setOptions(osModels);
-                if (osModels.length > 0) genTab.osModelSelect.setValue(osModels[0].value);
+            if (genTab) {
+                // OS list (Windows, macOS, Linux...) from template keys
+                const osKeys = tmpl.OS ? Object.keys(tmpl.OS) : [];
+                const osOpts = osKeys.map(k => ({ label: k, value: k }));
+                if (genTab.osSelect) {
+                    genTab.osSelect.setOptions(osOpts);
+                    if (osOpts.length > 0) {
+                        const matchedOpt = osOpts.find(o => o.value === osValue);
+                        genTab.osSelect.setValue(matchedOpt ? matchedOpt.value : osOpts[0].value);
+                    }
+                }
+
+                const osModels = (osBlock?.Models || []).map(m => ({ label: m.Name, value: m.Name }));
+                if (genTab.osModelSelect) {
+                    genTab.osModelSelect.setOptions(osModels);
+                    if (osModels.length > 0) genTab.osModelSelect.setValue(osModels[0].value);
+                }
             }
 
             // ── HardwareTab ────────────────────────────────────────────────
@@ -274,10 +563,9 @@
                     }
                 }
 
-                // Randomize default values for Random modes
-                hwTab._randomizeTier?.();
-                hwTab._randomizeResolution?.();
-                hwTab._randomizeWebGL?.();
+                // Cascade completes — sync overview immediately (vendor/renderer already set above)
+                if (this._syncTimer) clearTimeout(this._syncTimer);
+                this._syncSummary();
             }
 
             // ── NetworkTab: language options + timezone ────────────────────
@@ -296,6 +584,10 @@
                     const tzOpts = (tmpl.Timezones || []).map(tz => ({ label: tz, value: tz }));
                     netTab._tzSelect.setOptions([{ label: 'Auto (Match IP)', value: 'auto' }, ...tzOpts]);
                     netTab._tzSelect.setValue('auto');
+                } else if (netTab.tzSelect) {
+                    const tzOpts = (tmpl.Timezones || []).map(tz => ({ label: tz, value: tz }));
+                    netTab.tzSelect.setOptions([{ label: 'Auto (Match IP)', value: 'auto' }, ...tzOpts]);
+                    netTab.tzSelect.setValue('auto');
                 }
             }
 
@@ -384,10 +676,48 @@
                 content: loadingContent,
                 size: 'xxl',
                 buttons: [
-                    { text: 'Cancel', variant: 'ghost', onClick: () => this._modal?.close() },
+                    { text: 'Cancel', class: 'duck-btn-ghost', onClick: () => this._modal?.close() },
                     {
-                        text: 'Create Profile', variant: 'primary', icon: 'add', disabled: true,
-                        onClick: async () => { /* wired after form loads */ }
+                        text: 'Create Profile', class: 'duck-btn-primary', isDefault: true, icon: 'add', disabled: true,
+                        onClick: async () => {
+                            const mode = this._modeCtrl?.getValue?.() || 'single';
+                            const qty = mode === 'bulk' ? (this._qtyCtrl?.getValue?.() || 1) : 1;
+                            const prefixVal = this._nameInput?.querySelector('input')?.value?.trim() || null;
+
+                            if (qty > 1 && !prefixVal) {
+                                window.DuckControls.Toast?.warning?.('Please enter a prefix for bulk creation.');
+                                return;
+                            }
+
+                            try {
+                                this._modal.setLoading(true, qty > 1 ? `Creating ${qty} profiles...` : 'Creating profile...');
+                                let results;
+
+                                if (qty > 1) {
+                                    const payload = this._collectBulkPayload(qty, prefixVal);
+                                    results = await DuckBridge.call('profile.bulkCreate', payload);
+                                } else {
+                                    const payload = this._collectPayload(prefixVal || null);
+                                    const result = await DuckBridge.call('profile.create', payload);
+                                    results = [result];
+                                }
+
+                                this._modal.setLoading(false);
+                                this._modal.close();
+                                window.DispatchEvent?.(new CustomEvent('profile-created', { detail: results }));
+                                if (this._onCreated) this._onCreated(results);
+                            } catch (err) {
+                                this._modal.setLoading(false);
+                                const msg = err?.message || String(err);
+                                const field = err?._field || '';
+                                console.error('[CreateProfile] create failed:', msg, 'field:', field);
+
+                                // Show error label on the relevant field
+                                this._clearFieldError();
+                                if (field) this._showFieldError(field, msg);
+                                // else toast handled by DuckBridge
+                            }
+                        }
                     }
                 ],
                 onClose: () => {
@@ -403,11 +733,33 @@
             });
 
             const showError = (msg) => {
-                errorMsg.textContent = msg;
-                loadingWrap.style.display = 'none';
-                errorWrap.style.display = 'flex';
-                const submitBtn = this._modal?.container?.querySelector('.duck-btn-primary');
-                if (submitBtn) submitBtn.disabled = true;
+                // Stop skeleton loading — show explicit error state inside modal body
+                const modalBody = this._modal?.container?.querySelector('.duck-modal-body');
+                if (modalBody) {
+                    modalBody.innerHTML = '';
+                    modalBody.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:16px;padding:40px;text-align:center;';
+
+                    const icon = document.createElement('span');
+                    icon.className = 'material-symbols-outlined';
+                    icon.style.cssText = 'font-size:48px;color:var(--danger);opacity:0.8;';
+                    icon.textContent = 'error_outline';
+
+                    const title = document.createElement('div');
+                    title.style.cssText = 'font-size:15px;font-weight:600;color:var(--text-primary);';
+                    title.textContent = 'Failed to Load Data';
+
+                    const detail = document.createElement('div');
+                    detail.style.cssText = 'font-size:13px;color:var(--text-secondary);max-width:340px;line-height:1.6;';
+                    detail.textContent = msg;
+
+                    modalBody.appendChild(icon);
+                    modalBody.appendChild(title);
+                    modalBody.appendChild(detail);
+                }
+
+                // Hide footer
+                const footer = this._modal?.container?.querySelector('.duck-modal-footer');
+                if (footer) footer.style.display = 'none';
             };
 
             this._modal.open();
@@ -428,6 +780,16 @@
             this._fpTemplate = template;
             this._browserCatalog = browserCatalog;
 
+            // Pass data to all tabs before building the form
+            ['GeneralTab', 'NetworkTab', 'HardwareTab', 'SecurityTab', 'CookiesTab', 'NotesTab'].forEach(tabName => {
+                const tab = window.ProfileModals.CreateProfile[tabName];
+                if (tab?._setTemplate) tab._setTemplate(template);
+                if (tab?._setBrowserCatalog) tab._setBrowserCatalog(browserCatalog);
+            });
+
+            // Cascade OS defaults so all tab controls are populated before first render
+            this._cascadeOsChange('Windows');
+
             // ── Build form and replace skeleton ─────────────────────────────
             const container = this._buildFormContainer(template, browserCatalog);
 
@@ -437,6 +799,9 @@
                 modalBody.appendChild(container);
                 modalBody.style.cssText = 'display:flex;flex-direction:column;overflow:hidden;padding:0;';
             }
+
+            // Cascade OS defaults AFTER tabs are rendered so all controls exist in DOM
+            this._cascadeOsChange('Windows');
 
             // Enable submit button now that form is ready
             const submitBtn = this._modal?.container?.querySelector('.duck-btn-primary');
@@ -483,36 +848,36 @@
 
             // Row 1: Mode + Name
             const row1 = document.createElement('div');
-            row1.style.cssText = 'display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: start;';
-            
+            row1.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start;';
+
             const nameWrap = document.createElement('div');
             nameWrap.style.cssText = 'display: flex; gap: 12px; align-items: flex-end; width: 100%;';
 
-            const nameInput = window.DuckControls.Input.create({ label: 'Profile Name', placeholder: 'Enter profile name...', icon: 'badge' });
+            const nameInput = window.DuckControls.Input.create({ label: 'Profile Name', placeholder: 'Enter profile name...', icon: 'badge', fullWidth: true });
             nameInput.element.style.flex = '1';
+            this._nameInput = nameInput.element;
 
             const qtySpin = window.DuckControls.SpinNumber.create({ value: 1, min: 1, max: 100 });
-            const qtyWrap = document.createElement('div');
-            qtyWrap.style.cssText = 'display: none; width: 120px; flex-direction: column; gap: 6px;';
-            const qtyLabel = document.createElement('label');
-            qtyLabel.textContent = 'Quantity';
-            qtyLabel.style.cssText = 'font-size: 12px; font-weight: 600; color: var(--text-secondary);';
-            qtyWrap.appendChild(qtyLabel);
-            qtyWrap.appendChild(qtySpin.element);
+            this._qtyCtrl = qtySpin;
+            const qtyWrap = createLabelWrap('Quantity', qtySpin.element);
+            qtyWrap.style.display = 'none';
+            qtyWrap.style.width = '120px';
             nameWrap.appendChild(nameInput.element);
             nameWrap.appendChild(qtyWrap);
 
             const modeToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Single Profile', value: 'single' }, { label: 'Bulk Create', value: 'bulk' }],
-                value: 'single', fullWidth: true,
+                value: 'single',
                 onChange: (val) => {
                     qtyWrap.style.display = val === 'bulk' ? 'block' : 'none';
+                    this._modeCtrl = modeToggle;
                     const lbl = nameInput.element.querySelector('.ui-label-sm');
                     const inp = nameInput.element.querySelector('input');
                     if (val === 'bulk') { if (lbl) lbl.textContent = 'Profile Prefix'; if (inp) inp.placeholder = 'Enter prefix...'; }
                     else { if (lbl) lbl.textContent = 'Profile Name'; if (inp) inp.placeholder = 'Enter profile name...'; }
                 }
             });
+            this._modeCtrl = modeToggle;
             row1.appendChild(createLabelWrap('Creation Mode', modeToggle.element));
             row1.appendChild(nameWrap);
             stickyHeader.appendChild(row1);
@@ -634,18 +999,13 @@
             overviewTitle.textContent = 'Overview';
             summaryHeader.appendChild(overviewTitle);
             
-            const btnRandom = window.DuckControls.Button.create(null, { 
-                text: 'New', 
-                variant: 'surface', 
-                size: 'sm', 
+            const btnRandom = window.DuckControls.Button.create(null, {
+                text: 'New',
+                variant: 'surface',
+                size: 'sm',
                 icon: 'refresh',
                 onClick: async () => {
                     const tabValues = this._collectTabValues();
-                    const genTab = window.ProfileModals.CreateProfile.GeneralTab;
-                    const hwTab = window.ProfileModals.CreateProfile.HardwareTab;
-                    const netTab = window.ProfileModals.CreateProfile.NetworkTab;
-                    const secTab = window.ProfileModals.CreateProfile.SecurityTab;
-
                     this._modal.setLoading(true, 'Generating new fingerprint...');
                     try {
                         const fp = await DuckBridge.call('profile.generateFingerprint', {
@@ -653,64 +1013,10 @@
                             browser:  tabValues.browser || 'chromium',
                             model:    tabValues.osModel || null
                         });
-
-                        if (hwTab) {
-                            hwTab._randomizeTier?.();
-                            hwTab._randomizeResolution?.();
-                            hwTab._randomizeWebGL?.();
-                            hwTab.canvasToggle?.setValue?.('noise');
-                            hwTab.webglImgToggle?.setValue?.('noise');
-                            hwTab.pluginsToggle?.setValue?.('noise');
-                            hwTab.webglMetaToggle?.setValue?.('custom');
-                        }
-
-                        if (genTab) {
-                            genTab.browserVersion?.setValue?.(fp?.browserVersion || tabValues.browserVersion || '138');
-                            if (genTab.uaModeToggle?.getValue?.() === 'custom') {
-                                genTab.uaInput?.setValue?.(fp?.userAgent || '');
-                            }
-                        }
-
-                        if (fp?.screen && hwTab?.resToggle) {
-                            const parts = String(fp.screen).split('x');
-                            if (parts.length >= 2) {
-                                const width = parseInt(parts[0], 10);
-                                const height = parseInt(parts[1], 10);
-                                const presets = hwTab._currentOsBlock?.ScreenPresets || [];
-                                const matched = presets.find(p => p.Width === width && p.Height === height);
-                                if (matched) {
-                                    hwTab.resToggle.setValue('custom');
-                                    hwTab.resChipSelect?.setValue?.(`${matched.Width}x${matched.Height}x${matched.PixelRatio}`);
-                                }
-                            }
-                        }
-
-                        if (fp?.webglVendor && hwTab?._webglVendorSelect) {
-                            hwTab.webglMetaToggle?.setValue?.('custom');
-                            hwTab._webglVendorSelect.setValue(fp.webglVendor);
-                            const osBlock = hwTab._currentOsBlock;
-                            const renderers = osBlock?.WebGL?.VendorGPUs?.[fp.webglVendor] || [];
-                            if (hwTab._rendererSelect) {
-                                hwTab._rendererSelect.setOptions(renderers.map(r => ({ label: r, value: r })));
-                                hwTab._rendererSelect.setValue(fp.webglRenderer || renderers[0] || '');
-                            }
-                        }
-
-                        if (fp?.languages && netTab?.langTagInput) {
-                            netTab.langTagInput.setValues(String(fp.languages).split(',').map(x => x.trim()).filter(Boolean));
-                        }
-                        if (fp?.timezone && netTab?.tzSelect) {
-                            netTab.tzSelect.setValue(fp.timezone);
-                        }
-                        if (secTab?.rectsToggle) {
-                            secTab.rectsToggle.setValue('noise');
-                        }
-
+                        this._applyFingerprintResponse(fp);
                         this._modal.setLoading(false);
-                        this._syncSummary();
                     } catch (e) {
-                        this._modal.setLoading(false);
-                        console.warn('[NewFingerprint]', e);
+                        // toast handled by DuckBridge
                     }
                 }
             });
@@ -804,4 +1110,7 @@
         'th-TH': 'Thai', 'vi-VN': 'Vietnamese', 'id-ID': 'Indonesian',
         'ms-MY': 'Malay', 'tl-PH': 'Filipino'
     };
+
+    // Auto-init
+    window.ProfileModals.CreateProfile._init();
 })();

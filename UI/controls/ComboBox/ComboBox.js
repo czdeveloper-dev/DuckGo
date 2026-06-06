@@ -52,7 +52,15 @@
             if (currentOptions.length === 0) {
                 currentOptions = [{ label: 'No records found', icon: 'inbox', disabled: true }];
             }
-            
+            let _handlers = [];
+            if (options.onChange) _handlers.push(options.onChange);
+
+            const _emit = (val) => {
+                currentValue = val;
+                updateDisplay();
+                _handlers.forEach(h => { try { h({ target: { value: val } }); } catch (e) { console.error(e); } });
+            };
+
             const updateDisplay = () => {
                 const selectedOpt = originalOptions.find(o => o.value == currentValue);
                 displaySpan.textContent = selectedOpt ? selectedOpt.label : (options.placeholder || 'Select...');
@@ -77,11 +85,7 @@
                     value: currentValue,
                     items: currentOptions,
                     onChange: (item) => {
-                        currentValue = item.value;
-                        updateDisplay();
-                        if (options.onChange) {
-                            options.onChange({ target: { value: item.value } });
-                        }
+                        _emit(item.value);
                     }
                 });
                 
@@ -132,6 +136,10 @@
                     }
                     updateDisplay();
                     if (dropdown) dropdown.setItems(currentOptions);
+                },
+                onChange: {
+                    get: () => _handlers[0] || null,
+                    set: (fn) => { if (fn) { _handlers = [fn]; } else { _handlers = []; } }
                 },
                 destroy: () => {
                     if (dropdown) dropdown.destroy();

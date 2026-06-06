@@ -9,8 +9,12 @@ public class ConfigBuilder
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = false
+    };
+
+    private static readonly JsonSerializerOptions ReadOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
     };
 
     public string BuildConfigJson(Profile profile)
@@ -72,7 +76,7 @@ public class ConfigBuilder
     {
         try
         {
-            return JsonSerializer.Deserialize<ProfileDataConfig>(json, JsonOptions) ?? ProfileDataConfig.Default;
+            return JsonSerializer.Deserialize<ProfileDataConfig>(json, ReadOptions) ?? ProfileDataConfig.Default;
         }
         catch
         {
