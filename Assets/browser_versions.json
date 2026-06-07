@@ -6,7 +6,7 @@
         {
           "version": "150.0.7849.0",
           "description": "Chrome 150 Stable",
-          "downloadUrl": "https://storage.googleapis.com/chrome-for-testing-public/138.0.7204.12/win64/chrome-win64.zip",
+          "downloadUrl": "http://127.0.0.1:8081/150.0.7849.0.zip",
           "md5": ""
         }
       ]
