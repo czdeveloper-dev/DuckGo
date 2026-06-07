@@ -28,3 +28,6 @@ packages/
 # Local configuration (if any)
 *.local
 appsettings.local.json
+
+# Browser binaries
+Browser/
