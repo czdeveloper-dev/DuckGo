@@ -48,9 +48,10 @@ public class DatabaseService : IDisposable
                 Notes TEXT DEFAULT '',
                 CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
                 LastOpened TEXT,
+                Message TEXT DEFAULT '',
+                Status TEXT DEFAULT 'stopped',
                 FOREIGN KEY (GroupId) REFERENCES Groups(Id) ON DELETE SET NULL
             )");
-
 
         await RunNonQueryAsync(conn, @"
             CREATE TABLE IF NOT EXISTS Proxies (
@@ -73,7 +74,25 @@ public class DatabaseService : IDisposable
                 DisplayOrder INTEGER NOT NULL DEFAULT 0
             )");
 
+        await RunNonQueryAsync(conn, @"
+            CREATE TABLE IF NOT EXISTS InstalledBrowsers (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                BrowserType TEXT NOT NULL,
+                BrowserVersion TEXT NOT NULL,
+                InstallPath TEXT NOT NULL,
+                ExecutablePath TEXT NOT NULL,
+                InstalledAt TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(BrowserType, BrowserVersion)
+            )");
+
         await SeedProxyTypesAsync(conn);
+        await MigrateProfilesColumnsAsync(conn);
+    }
+
+    private static async Task MigrateProfilesColumnsAsync(SqliteConnection conn)
+    {
+        await EnsureColumnExistsAsync(conn, "Profiles", "Message", "ALTER TABLE Profiles ADD COLUMN Message TEXT DEFAULT ''");
+        await EnsureColumnExistsAsync(conn, "Profiles", "Status", "ALTER TABLE Profiles ADD COLUMN Status TEXT DEFAULT 'stopped'");
     }
 
     private static async Task SeedProxyTypesAsync(SqliteConnection conn)

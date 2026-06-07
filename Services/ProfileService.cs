@@ -68,7 +68,8 @@ public class ProfileService
                 Cookies = p.Cookies,
                 Status = p.Status,
                 CreatedAt = p.CreatedAt,
-                LastOpened = p.LastOpened
+                LastOpened = p.LastOpened,
+                Message = p.Message
             };
         }).ToList();
 
@@ -97,6 +98,7 @@ public class ProfileService
             Notes = p.Notes,
             Cookies = p.Cookies,
             Status = p.Status,
+            Message = p.Message,
             CreatedAt = p.CreatedAt,
             LastOpened = p.LastOpened
         };
@@ -128,7 +130,7 @@ public class ProfileService
             );
 
             ApplyFingerprintOverrides(cfg, normalizedReq);
-            profileData = JsonSerializer.Serialize(cfg, NoScientificNotationOptions);
+            profileData = SerializeProfileData(cfg);
         }
 
         var profile = new Profile
@@ -149,7 +151,7 @@ public class ProfileService
         profile.Id = id;
 
         var hydrated = HydrateProfileMetadata(profile.ProfileData, profile, normalizedReq.StartUrl);
-        profile.ProfileData = JsonSerializer.Serialize(hydrated, NoScientificNotationOptions);
+        profile.ProfileData = SerializeProfileData(hydrated);
         await _profileRepo.UpdateAsync(profile);
 
         return (await GetProfileAsync(id))!;
@@ -395,10 +397,25 @@ public class ProfileService
 
         public override void Write(Utf8JsonWriter writer, double value, JsonSerializerOptions options)
         {
-            if (Math.Abs(value) < 1e-15)
+            if (double.IsNaN(value) || double.IsInfinity(value) || value == 0)
+            {
                 writer.WriteNumberValue(0);
-            else
-                writer.WriteNumberValue(value);
+                return;
+            }
+            writer.WriteNumberValue(value);
         }
+    }
+
+    public static string SerializeProfileData(object obj)
+    {
+        var json = JsonSerializer.Serialize(obj, NoScientificNotationOptions);
+        // Replace scientific notation with decimal format
+        return System.Text.RegularExpressions.Regex.Replace(json,
+            @"-?\d+\.?\d*E-?\d+",
+            m => {
+                if (double.TryParse(m.Value, out double val))
+                    return val.ToString("F15").TrimEnd('0').TrimEnd('.');
+                return m.Value;
+            });
     }
 }

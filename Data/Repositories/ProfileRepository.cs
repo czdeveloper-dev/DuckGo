@@ -177,6 +177,28 @@ public class ProfileRepository : IProfileRepository
         await cmd.ExecuteNonQueryAsync();
     }
 
+    public async Task UpdateMessageAsync(int id, string message)
+    {
+        await using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE Profiles SET Message = @message WHERE Id = @id";
+        cmd.Parameters.AddWithValue("@id", id);
+        cmd.Parameters.AddWithValue("@message", message);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    public async Task UpdateStatusAsync(int id, string status)
+    {
+        await using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE Profiles SET Status = @status WHERE Id = @id";
+        cmd.Parameters.AddWithValue("@id", id);
+        cmd.Parameters.AddWithValue("@status", status);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
     private static Profile ReadProfile(SqliteDataReader reader)
     {
         // DB column is still named "Tags" in existing databases; once a migration runs it will be "TagIds"
@@ -200,7 +222,9 @@ public class ProfileRepository : IProfileRepository
             Notes = reader.IsDBNull(reader.GetOrdinal("Notes")) ? "" : reader.GetString(reader.GetOrdinal("Notes")),
             Cookies = reader.IsDBNull(reader.GetOrdinal("Cookies")) ? "[]" : reader.GetString(reader.GetOrdinal("Cookies")),
             CreatedAt = reader.IsDBNull(reader.GetOrdinal("CreatedAt")) ? DateTime.Now : DateTime.Parse(reader.GetString(reader.GetOrdinal("CreatedAt"))),
-            LastOpened = reader.IsDBNull(reader.GetOrdinal("LastOpened")) ? null : DateTime.Parse(reader.GetString(reader.GetOrdinal("LastOpened")))
+            LastOpened = reader.IsDBNull(reader.GetOrdinal("LastOpened")) ? null : DateTime.Parse(reader.GetString(reader.GetOrdinal("LastOpened"))),
+            Message = reader.IsDBNull(reader.GetOrdinal("Message")) ? "" : reader.GetString(reader.GetOrdinal("Message")),
+            Status = reader.IsDBNull(reader.GetOrdinal("Status")) ? "stopped" : reader.GetString(reader.GetOrdinal("Status"))
         };
     }
 }

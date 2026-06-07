@@ -11,6 +11,7 @@ using Microsoft.Web.WebView2.Core;
 using DuckGo.Data;
 using DuckGo.Data.Repositories;
 using DuckGo.Infrastructure.API;
+using DuckGo.Pipes;
 using DuckGo.Services;
 
 namespace DuckGo;
@@ -20,13 +21,21 @@ public partial class MainWindow : Window
     private string? _uiFolder;
     private string? _assetFolder;
 
-    // Services & Dispatcher (unified message pipeline)
-    private DatabaseService?   _db;
-    private ProfileService?   _profileService;
-    private GroupService?     _groupService;
-    private TagService?       _tagService;
-    private ProxyService?     _proxyService;
+    private DatabaseService? _db;
+    private ProfileService? _profileService;
+    private GroupService? _groupService;
+    private TagService? _tagService;
+    private ProxyService? _proxyService;
     private MessageDispatcher? _dispatcher;
+
+    private BrowserCatalogService? _browserCatalogService;
+    private BrowserProvisioningService? _browserProvisioningService;
+    private BrowserLifecycleService? _browserLifecycleService;
+    private ProfileStatusService? _profileStatusService;
+    private ToastService? _toastService;
+    private DuckPipeClient? _pipeClient;
+
+    private IProfileRepository? _profileRepo;
 
     public MainWindow()
     {
@@ -39,30 +48,63 @@ public partial class MainWindow : Window
         Debug.WriteLine("[DuckGo] OnLoaded started");
         try
         {
-            // ── Init services ─────────────────────────────────────────────────
             _db = new DatabaseService();
             await _db.InitializeAsync();
             Debug.WriteLine("[DuckGo] Database initialized");
 
-            var groupRepo   = new GroupRepository(_db);
-            var tagRepo     = new TagRepository(_db);
-            var proxyRepo   = new ProxyRepository(_db);
-            var profileRepo = new ProfileRepository(_db);
+            var groupRepo = new GroupRepository(_db);
+            var tagRepo = new TagRepository(_db);
+            var proxyRepo = new ProxyRepository(_db);
+            _profileRepo = new ProfileRepository(_db);
             var proxyTypeRepo = new ProxyTypeRepository(_db);
+            var installedBrowserRepo = new InstalledBrowserRepository(_db);
 
-            _groupService   = new GroupService(groupRepo);
-            _tagService     = new TagService(tagRepo);
-            _proxyService   = new ProxyService(proxyRepo);
+            _groupService = new GroupService(groupRepo);
+            _tagService = new TagService(tagRepo);
+            _proxyService = new ProxyService(proxyRepo);
             var fingerprintSvc = new FingerprintService();
-            var browserVersionSvc = new BrowserVersionService();
-            _profileService = new ProfileService(
-                profileRepo, groupRepo, tagRepo, proxyRepo, fingerprintSvc);
+            _profileService = new ProfileService(_profileRepo, groupRepo, tagRepo, proxyRepo, fingerprintSvc);
             Debug.WriteLine("[DuckGo] Services created");
 
-            // ── Unified dispatcher ───────────────────────────────────────────
+            _pipeClient = new DuckPipeClient(AppConfig.PipeName, AppConfig.PipeConnectTimeoutMs);
+            _browserCatalogService = new BrowserCatalogService();
+
+            Action<Models.DTOs.ProfileMessageUpdate> onMessageUpdate = msg =>
+            {
+                Debug.WriteLine($"[DuckGo] ProfileMessage: profileId={msg.ProfileId} msg={msg.Message} status={msg.Status}");
+            };
+
+            Action<string, object> onPush = (channel, payload) =>
+            {
+                Debug.WriteLine($"[DuckGo] Push: channel={channel}");
+            };
+
+            Action<Models.DTOs.ToastPayload> onToast = toast =>
+            {
+                Debug.WriteLine($"[DuckGo] Toast: type={toast.Type} title={toast.Title} progress={toast.ProgressValue}");
+                var json = System.Text.Json.JsonSerializer.Serialize(
+                    new { type = "push", channel = "toast", payload = toast });
+                WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({json})");
+            };
+
+            Action<int, string> onProfileMessage = (profileId, message) =>
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(
+                    new { type = "push", channel = "profile.message", payload = new { profileId, message } });
+                WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({json})");
+            };
+
+            _profileStatusService = new ProfileStatusService(_profileRepo, onMessageUpdate, onPush);
+            _browserProvisioningService = new BrowserProvisioningService(
+                _browserCatalogService, installedBrowserRepo, onToast, onMessageUpdate, onProfileMessage);
+            _browserLifecycleService = new BrowserLifecycleService(
+                _profileRepo, _browserCatalogService, _browserProvisioningService,
+                _profileStatusService, _pipeClient, onToast, msg => { });
+            _toastService = new ToastService(onToast);
+
             _dispatcher = new MessageDispatcher(new IDispatcher[]
             {
-                new BrowserDispatcher(browserVersionSvc),
+                new BrowserDispatcher(_browserLifecycleService!),
                 new FingerprintDispatcher(fingerprintSvc),
                 new ProfileDispatcher(_profileService!, fingerprintSvc),
                 new GroupDispatcher(_groupService!),
@@ -72,7 +114,6 @@ public partial class MainWindow : Window
             });
             Debug.WriteLine("[DuckGo] Dispatcher created");
 
-            // ── WebView2 setup ───────────────────────────────────────────────
             WebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(255, 244, 246, 248);
             await WebView.EnsureCoreWebView2Async();
             Debug.WriteLine("[DuckGo] WebView2 ready");
@@ -82,7 +123,6 @@ public partial class MainWindow : Window
             WebView.CoreWebView2.Settings.IsStatusBarEnabled = false;
             WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
 
-            // ── Extract & host UI + Assets ───────────────────────────────────────
             _uiFolder = ExtractResources("DuckGo.UI.", "UI");
             _assetFolder = ExtractResources("DuckGo.Assets.", "Assets");
             if (_uiFolder == null)
@@ -160,32 +200,16 @@ public partial class MainWindow : Window
         }
     }
 
-    // ── Unified message handler ─────────────────────────────────────────────
-    // Protocol:  JS →  { type: "request", id, action, payload }
-    //            C# →  { type: "response", id, success, error, data }
-    //            C# →  { type: "push", channel, payload }   (server-initiated)
     private async void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
         try
         {
             var raw = e.WebMessageAsJson;
-            if (string.IsNullOrWhiteSpace(raw))
-            {
-                return;
-            }
+            if (string.IsNullOrWhiteSpace(raw)) return;
 
-            if (raw.Contains("\"type\"") && raw.Contains("\"request\""))
-            {
-                if (_dispatcher == null) return;
-                var responseJson = await _dispatcher!.DispatchAsync(raw);
-                WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({responseJson})");
-            }
-            else
-            {
-                if (_dispatcher == null) return;
-                var responseJson = await _dispatcher!.DispatchAsync(raw);
-                WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({responseJson})");
-            }
+            if (_dispatcher == null) return;
+            var responseJson = await _dispatcher!.DispatchAsync(raw);
+            WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({responseJson})");
         }
         catch (Exception ex)
         {
@@ -200,21 +224,19 @@ public partial class MainWindow : Window
         }
     }
 
-    // ── Push notification helper ────────────────────────────────────────────
-    // Call this from anywhere in the C# backend to push data to JS without a request.
     public void Push(string channel, object payload)
     {
         try
         {
-            var json = System.Text.Json.JsonSerializer.Serialize(
-                new { type = "push", channel, payload });
+            var json = System.Text.Json.JsonSerializer.Serialize(new { type = "push", channel, payload });
             WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({json})");
         }
-            catch { }
+        catch { }
     }
 
     protected override void OnClosed(EventArgs e)
     {
+        _pipeClient?.Dispose();
         if (!string.IsNullOrEmpty(_uiFolder) && Directory.Exists(_uiFolder))
         {
             try { Directory.Delete(_uiFolder, true); } catch { }
@@ -252,7 +274,7 @@ public partial class MainWindow : Window
                 DwmSetWindowAttribute(source.Handle, DWMWINDOWATTRIBUTE.DWMWA_TEXT_COLOR,
                     ref textColor, Marshal.SizeOf(typeof(int)));
             }
-            catch { /* Ignore on older Windows */ }
+            catch { }
         }
     }
 }

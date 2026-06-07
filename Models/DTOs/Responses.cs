@@ -49,6 +49,7 @@ public class ProfileListItem
     public string Notes { get; set; } = "";
     public string Cookies { get; set; } = "[]";
     public string Status { get; set; } = "stopped";
+    public string Message { get; set; } = "";
     public DateTime CreatedAt { get; set; }
     public DateTime? LastOpened { get; set; }
 }

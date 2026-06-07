@@ -16,9 +16,8 @@ public class Profile
     public string Cookies { get; set; } = "[]";
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime? LastOpened { get; set; }
-
-    [JsonIgnore]
-    public string Status { get; set; } = "ready";
+    public string Message { get; set; } = "";
+    public string Status { get; set; } = "stopped";
 
     [JsonIgnore]
     public string? GroupName { get; set; }

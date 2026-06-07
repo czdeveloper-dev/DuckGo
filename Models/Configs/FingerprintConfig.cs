@@ -225,6 +225,13 @@ public class WebGLConfig
     public string Renderer { get; set; } = "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0, D3D11)";
     public string NoiseSeed { get; set; } = Guid.NewGuid().ToString("N")[..12];
     public double NoiseLevel { get; set; } = 0.0001;
+    public ImageSpoofingConfig? ImageSpoofing { get; set; }
+}
+
+public class ImageSpoofingConfig
+{
+    public string TextureSeed { get; set; } = Guid.NewGuid().ToString("N")[..12];
+    public string Pattern { get; set; } = "default";
 }
 
 public class CanvasConfig

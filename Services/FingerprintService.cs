@@ -188,7 +188,12 @@ public class FingerprintService
                         Vendor     = gpuVendor,
                         Renderer   = gpuRenderer,
                         NoiseSeed  = webglSeed,
-                        NoiseLevel = webglNoiseLevel
+                        NoiseLevel = webglNoiseLevel,
+                        ImageSpoofing = new ImageSpoofingConfig
+                        {
+                            TextureSeed = Guid.NewGuid().ToString("N")[..12],
+                            Pattern = "default"
+                        }
                     },
                     Canvas = new CanvasConfig
                     {
@@ -387,10 +392,12 @@ public class FingerprintService
             CanvasMode: "Noise",
             CanvasNoiseLevel: cfg.Fingerprint?.Canvas.NoiseLevel,
             WebGLImageMode: "Noise",
+            ImageSpoofingTextureSeed: cfg.Fingerprint?.WebGL.ImageSpoofing?.TextureSeed,
+            ImageSpoofingPattern: cfg.Fingerprint?.WebGL.ImageSpoofing?.Pattern ?? "default",
             PluginsMode: "Noise",
             FontsMode: "Random",
             Fonts: cfg.Fingerprint?.Fonts ?? new List<string>(),
-            WebRtcMode: "Alter",
+            WebRTcMode: "Alter",
             SslMode: "Noise",
             PortScan: "Protect",
             PortBlockMode: "BlockDefault",
