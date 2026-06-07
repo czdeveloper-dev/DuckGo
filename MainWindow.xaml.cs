@@ -26,7 +26,6 @@ public partial class MainWindow : Window
     private GroupService?     _groupService;
     private TagService?       _tagService;
     private ProxyService?     _proxyService;
-    private AssetServer?      _assetServer;
     private MessageDispatcher? _dispatcher;
 
     public MainWindow()
@@ -44,12 +43,6 @@ public partial class MainWindow : Window
             _db = new DatabaseService();
             await _db.InitializeAsync();
             Debug.WriteLine("[DuckGo] Database initialized");
-
-            // ── Start asset server (serves browser_versions + fingerprint templates) ─
-            _assetServer = new AssetServer(AppConfig.BaseDir);
-            _assetServer.Start();
-            AppConfig.AssetServerUrl = _assetServer.BaseUrl;
-            Debug.WriteLine($"[DuckGo] Asset server: {AppConfig.AssetServerUrl}");
 
             var groupRepo   = new GroupRepository(_db);
             var tagRepo     = new TagRepository(_db);
@@ -97,8 +90,6 @@ public partial class MainWindow : Window
                 MessageBox.Show("Failed to extract UI files", "DuckGo Error");
                 return;
             }
-            // Register extracted Assets folder path so services can read local files
-            if (_assetFolder != null) AppConfig.AssetFolder = _assetFolder;
             Debug.WriteLine($"[DuckGo] UI folder: {_uiFolder}");
             if (_assetFolder != null) Debug.WriteLine($"[DuckGo] Asset folder: {_assetFolder}");
 
@@ -224,7 +215,6 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
-        _assetServer?.Dispose();
         if (!string.IsNullOrEmpty(_uiFolder) && Directory.Exists(_uiFolder))
         {
             try { Directory.Delete(_uiFolder, true); } catch { }

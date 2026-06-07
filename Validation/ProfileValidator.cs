@@ -41,6 +41,7 @@ public class ProfileValidator : IValidator
         else if (!NormalizeBrowserType(bt, out _))
             r.WithError("browserType", "Browser type must be Chromium or Firefox");
 
+        ValidateUserAgent(p.Value, r);
         ValidateProxy(p.Value, r);
         return r;
     }
@@ -61,6 +62,7 @@ public class ProfileValidator : IValidator
         if (string.IsNullOrWhiteSpace(bt))
             r.WithError("browserType", "Browser type is required");
 
+        ValidateUserAgent(p.Value, r);
         ValidateProxy(p.Value, r);
         return r;
     }
@@ -115,6 +117,32 @@ public class ProfileValidator : IValidator
             if (!new[] { "http", "https", "socks4", "socks5" }.Contains(t))
                 r.WithError("proxy.type", "Proxy type must be http, https, socks4, or socks5");
         }
+    }
+
+    private void ValidateUserAgent(JsonElement p, ValidationResult r)
+    {
+        if (!p.TryGetProperty("fingerprint", out var fp)) return;
+
+        // Check if using custom mode - UserAgent is required
+        var uaMode = fp.TryGetProperty("uaMode", out var uaModeEl)
+            ? (uaModeEl.GetString() ?? "random").ToLowerInvariant()
+            : "random";
+
+        if (uaMode == "custom")
+        {
+            if (!fp.TryGetProperty("userAgent", out var ua) ||
+                string.IsNullOrWhiteSpace(ua.GetString()))
+            {
+                r.WithError("userAgent", "User-Agent is required when using Custom mode");
+            }
+            else
+            {
+                var uaStr = ua.GetString()!;
+                if (!uaStr.Contains("Chrome") && !uaStr.Contains("Firefox"))
+                    r.WithError("userAgent", "User-Agent must contain Chrome or Firefox");
+            }
+        }
+        // Real mode (useRealUserAgent=true) and Random mode (uaMode=random) are valid without UA
     }
 
     private static bool NormalizeBrowserType(string? input, out string normalized)

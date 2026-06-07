@@ -10,6 +10,8 @@ public class FingerprintTemplate
     public List<string> Timezones { get; set; } = new();
     public List<string> Languages { get; set; } = new();
     public Dictionary<string, GeoBounds> TimezoneGeo { get; set; } = new();
+    public Dictionary<string, List<ConnectionPreset>> ConnectionTypes { get; set; } = new();
+    public long StorageQuota { get; set; } = 549755813888; // Default 512GB
 
     /// <summary>
     /// Deserializes from a JSON string that has OS keys (Windows, macOS, Linux...)
@@ -23,12 +25,10 @@ public class FingerprintTemplate
 
         var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-        if (node?["Timezones"] is JsonArray tzArr)
-            tmpl.Timezones = tzArr.Select(x => x!.GetValue<string>()).ToList();
-
         if (node?["Languages"] is JsonArray langArr)
             tmpl.Languages = langArr.Select(x => x!.GetValue<string>()).ToList();
 
+        // TimezoneGeo: read timezone→bounds mapping
         if (node?["TimezoneGeo"] is JsonObject geoObj)
         {
             foreach (var kvp in geoObj)
@@ -46,18 +46,49 @@ public class FingerprintTemplate
             }
         }
 
+        // Derive Timezones list from TimezoneGeo keys (for frontend dropdown)
+        tmpl.Timezones = tmpl.TimezoneGeo.Keys.OrderBy(k => k).ToList();
+
         if (node is JsonObject obj)
         {
             foreach (var kvp in obj)
             {
                 // Skip arrays and metadata sections
-                if (kvp.Value is JsonArray || kvp.Key is "Timezones" or "Languages" or "TimezoneGeo")
+                if (kvp.Value is JsonArray || kvp.Key is "Timezones" or "Languages" or "TimezoneGeo" or "StorageQuota")
                     continue;
                 // Everything else is treated as an OS block (Windows, macOS, Linux...)
                 if (kvp.Value is JsonObject osBlock)
                 {
+                    // First deserialize to get the OsTemplate object
                     var osJson = JsonSerializer.Serialize(osBlock);
                     var osTemplate = JsonSerializer.Deserialize<OsTemplate>(osJson, opts);
+
+                    // Check if this OS block has ConnectionTypes (OS-specific)
+                    if (osTemplate != null && osBlock.TryGetPropertyValue("ConnectionTypes", out var osConnTypes) && osConnTypes is JsonObject connObj)
+                    {
+                        // This OS has its own ConnectionTypes - parse them into OsTemplate
+                        foreach (var cKvp in connObj)
+                        {
+                            if (cKvp.Value is JsonArray presets)
+                            {
+                                var list = new List<ConnectionPreset>();
+                                foreach (var preset in presets)
+                                {
+                                    if (preset is JsonObject p)
+                                    {
+                                        list.Add(new ConnectionPreset
+                                        {
+                                            EffectiveType = p["EffectiveType"]?.GetValue<string>() ?? "4g",
+                                            Downlink = p["Downlink"]?.GetValue<double>() ?? 10.0,
+                                            Rtt = p["Rtt"]?.GetValue<int>() ?? 50
+                                        });
+                                    }
+                                }
+                                osTemplate.ConnectionTypes[cKvp.Key] = list;
+                            }
+                        }
+                    }
+
                     if (osTemplate != null)
                     {
                         // Parse Architecture/Bitness per model (OsModel uses default case-sensitive deserialize)
@@ -74,6 +105,9 @@ public class FingerprintTemplate
                                 }
                             }
                         }
+                        // Parse OS-specific StorageQuota
+                        if (osBlock["StorageQuota"] is JsonValue osSq && osSq.TryGetValue<long>(out var osSqVal))
+                            osTemplate.StorageQuota = osSqVal;
                         tmpl.OS[kvp.Key] = osTemplate;
                     }
                 }
@@ -91,6 +125,15 @@ public class OsTemplate
     public List<ScreenPreset> ScreenPresets { get; set; } = new();
     public List<HardwareTier> HardwareTiers { get; set; } = new();
     public WebGLTemplate WebGL { get; set; } = new();
+    public long StorageQuota { get; set; } = 549755813888;
+    public Dictionary<string, List<ConnectionPreset>> ConnectionTypes { get; set; } = new();
+}
+
+public class ConnectionPreset
+{
+    public string EffectiveType { get; set; } = "4g";
+    public double Downlink { get; set; } = 10.0;
+    public int Rtt { get; set; } = 50;
 }
 
 public class OsModel

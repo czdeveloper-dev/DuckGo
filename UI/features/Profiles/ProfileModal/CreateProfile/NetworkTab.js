@@ -203,7 +203,7 @@
             this._customProxyForm = customProxyForm;
 
             const hostPortRow = document.createElement('div');
-            hostPortRow.style.cssText = 'display: grid; grid-template-columns: 220px 1fr 140px; gap: 12px; align-items: end;';
+            hostPortRow.style.cssText = 'display: grid; grid-template-columns: 140px 1fr 120px; gap: 12px; align-items: end;';
             this.pType = window.DuckControls.Select.create({
                 label: 'Protocol',
                 options: [],
@@ -231,13 +231,13 @@
 
             this.pUser = window.DuckControls.Input.create({
                 label: 'Username',
-                placeholder: 'user',
+                placeholder: 'Username',
                 icon: 'person',
                 onInput: () => window.ProfileModals?.CreateProfile?._scheduleSync?.()
             });
             this.pPass = window.DuckControls.Input.create({
                 label: 'Password',
-                placeholder: 'pass',
+                placeholder: 'Password',
                 icon: 'key',
                 onInput: () => window.ProfileModals?.CreateProfile?._scheduleSync?.()
             });

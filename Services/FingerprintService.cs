@@ -1,8 +1,7 @@
 using System.IO;
+using System.Net;
 using System.Net.Http;
-using System.Reflection;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using DuckGo.Models.Configs;
 using DuckGo.Models.DTOs;
 
@@ -10,75 +9,63 @@ namespace DuckGo.Services;
 
 public class FingerprintService
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
+    private static readonly HttpClient _geoClient;
+    private static readonly HttpClient _assetClient;
 
-    private static readonly HttpClient _geoClient = new() { Timeout = TimeSpan.FromSeconds(5) };
+    static FingerprintService()
+    {
+        var assetHandler = new HttpClientHandler
+        {
+            UseProxy = true,
+            Proxy = WebRequest.DefaultWebProxy
+        };
+        var geoHandler = new HttpClientHandler
+        {
+            UseProxy = true,
+            Proxy = WebRequest.DefaultWebProxy
+        };
+        _geoClient = new HttpClient(geoHandler) { Timeout = TimeSpan.FromSeconds(5) };
+        _assetClient = new HttpClient(assetHandler) { Timeout = TimeSpan.FromSeconds(30) };
+    }
+
     private static (double Lat, double Lng)? _cachedGeo = null;
     private static DateTime _geoCacheExpiry = DateTime.MinValue;
 
-    private readonly string _assetPath;
     private FingerprintTemplate? _templates;
 
-    public FingerprintService()
-    {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        _assetPath = Path.Combine(appData, "DuckGo", "fingerprint", "default_fingerprint.json");
-    }
+    /// <summary>
+    /// Create a service that fetches fingerprint template from HTTP.
+    /// </summary>
+    public FingerprintService() { }
 
-    // Allow injection of path for testing
-    public FingerprintService(string assetPath)
+    /// <summary>
+    /// Create a service with a pre-loaded template (useful for testing).
+    /// </summary>
+    public FingerprintService(FingerprintTemplate templates)
     {
-        _assetPath = assetPath;
+        _templates = templates;
     }
 
     private async Task<FingerprintTemplate> LoadTemplatesAsync()
     {
-        if (_templates != null) return _templates;
-
-        var dir = Path.GetDirectoryName(_assetPath);
-        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-            Directory.CreateDirectory(dir);
-
-        if (!File.Exists(_assetPath))
-        {
-            // 1. Try load from extracted Assets folder
-            var assetFile = AppConfig.FingerprintTemplatePath;
-            if (!string.IsNullOrEmpty(assetFile) && File.Exists(assetFile))
-            {
-                var assetJson = await File.ReadAllTextAsync(assetFile);
-                await File.WriteAllTextAsync(_assetPath, assetJson);
-            }
-            else
-            {
-                // 2. Fallback: copy from embedded resource
-                var assembly = Assembly.GetExecutingAssembly();
-                var resourceName = "DuckGo.Assets.default_fingerprint.json";
-                using var stream = assembly.GetManifestResourceStream(resourceName);
-                if (stream != null)
-                {
-                    using var outStream = File.Create(_assetPath);
-                    await stream.CopyToAsync(outStream);
-                }
-                else
-                {
-                    throw new FileNotFoundException(
-                        $"Fingerprint template not found at {_assetPath} and embedded resource '{resourceName}' not found.");
-                }
-            }
+        if (_templates != null) {
+            FSLog("CACHE_HIT", $"_templates already loaded: {_templates.OS.Count} OSes");
+            return _templates;
         }
-
-        var json = await File.ReadAllTextAsync(_assetPath);
-        _templates = FingerprintTemplate.FromJson(json);
-        return _templates;
-    }
-
-    public FingerprintService(FingerprintTemplate templates)
-    {
-        _assetPath = "";
-        _templates = templates;
+        try
+        {
+            FSLog("FETCH_START", $"Fetching {AppConfig.FingerprintTemplateUrl}");
+            var json = await _assetClient.GetStringAsync(AppConfig.FingerprintTemplateUrl);
+            FSLog("JSON_RECEIVED", $"JSON len={json.Length}, first 80: {json.Substring(0, Math.Min(80, json.Length))}");
+            _templates = FingerprintTemplate.FromJson(json);
+            FSLog("PARSE_SUCCESS", $"_templates={_templates.Timezones.Count} TZs, {_templates.Languages.Count} LGs, {_templates.OS.Count} OSes");
+            return _templates;
+        }
+        catch (Exception ex)
+        {
+            FSLog("PARSE_FAIL", $"Error: {ex.Message}");
+            throw;
+        }
     }
 
     public async Task<FingerprintTemplate> GetTemplatesAsync() => await LoadTemplatesAsync();
@@ -135,7 +122,6 @@ public class FingerprintService
         string gpuRenderer;
         if (webglRenderer != null)
         {
-            // Find the vendor that owns this renderer
             gpuVendor = osTmpl.WebGL.VendorGPUs
                 .FirstOrDefault(kvp => kvp.Value.Contains(webglRenderer))
                 .Key ?? osTmpl.WebGL.VendorGPUs.Keys.ElementAt(Random.Shared.Next(osTmpl.WebGL.VendorGPUs.Count));
@@ -143,7 +129,6 @@ public class FingerprintService
         }
         else if (webglVendor != null)
         {
-            // Match by vendor name fragment (case-insensitive)
             gpuVendor = osTmpl.WebGL.VendorGPUs.Keys
                 .FirstOrDefault(v => v.Contains(webglVendor, StringComparison.OrdinalIgnoreCase))
                 ?? osTmpl.WebGL.VendorGPUs.Keys.ElementAt(Random.Shared.Next(osTmpl.WebGL.VendorGPUs.Count));
@@ -152,7 +137,6 @@ public class FingerprintService
         }
         else
         {
-            // Full random: pick vendor weighted by renderers, then pick renderer from that vendor
             var vendors = osTmpl.WebGL.VendorGPUs.Keys.ToList();
             gpuVendor = vendors[Random.Shared.Next(vendors.Count)];
             var renderers = osTmpl.WebGL.VendorGPUs[gpuVendor];
@@ -166,85 +150,135 @@ public class FingerprintService
         var rectsSeed = Guid.NewGuid().ToString("N")[..12];
         var webglSeed = Guid.NewGuid().ToString("N")[..12];
 
-        return new ProfileDataConfig
+            // Randomize noise levels within reasonable ranges to make each profile unique
+            var webglNoiseLevel = RandomizeNoiseLevel(0.0001, 0.00005, 0.0002);    // ±50% around 0.0001
+            var canvasNoiseLevel = RandomizeNoiseLevel(0.00008, 0.00004, 0.00015);   // ±50% around 0.00008
+            var audioNoiseLevel = RandomizeNoiseLevel(0.000001, 0.0000005, 0.000002); // ±50% around 0.000001
+            var fontNoiseLevel = RandomizeNoiseLevel(0.0001, 0.00005, 0.0002);       // ±50% around 0.0001
+            var rectsNoiseLevel = RandomizeNoiseLevel(0.000025, 0.00001, 0.00005);   // ±50% around 0.000025
+
+            return new ProfileDataConfig
+            {
+                System = new SystemConfig
+                {
+                    Platform              = osModel.PlatformString,
+                    Language             = langs.FirstOrDefault() ?? "en-US",
+                    UserAgent           = ua,
+                    AcceptLanguage      = acceptLang,
+                    Timezone            = tz,
+                    HardwareConcurrency = hwTier.Concurrency,
+                    DeviceMemory        = hwTier.Memory,
+                    Architecture        = osModel.Architecture,
+                    Bitness             = osModel.Bitness,
+                    Screen = new ScreenConfig
+                    {
+                        Width      = screenPreset.Width,
+                        Height     = screenPreset.Height,
+                        ColorDepth = 24,
+                        PixelRatio = screenPreset.PixelRatio
+                    }
+                },
+                Fingerprint = new FingerprintConfig
+                {
+                    TLSOSMatch  = osModel.TLSOSMatch,
+                    Fonts       = osTmpl.Fonts.Take(Random.Shared.Next(osTmpl.Fonts.Count / 2, osTmpl.Fonts.Count)).ToList(),
+                    WebGL = new WebGLConfig
+                    {
+                        Mode       = "Noise",
+                        Vendor     = gpuVendor,
+                        Renderer   = gpuRenderer,
+                        NoiseSeed  = webglSeed,
+                        NoiseLevel = webglNoiseLevel
+                    },
+                    Canvas = new CanvasConfig
+                    {
+                        Mode       = "Noise",
+                        NoiseSeed  = canvasSeed,
+                        NoiseLevel = canvasNoiseLevel
+                    },
+                    Audio = new AudioConfig
+                    {
+                        Mode       = "Noise",
+                        NoiseSeed  = audioSeed,
+                        NoiseLevel = audioNoiseLevel
+                    },
+                    FontMetrics = new FontMetricsConfig
+                    {
+                        Mode       = "Noise",
+                        NoiseSeed  = fontSeed,
+                        NoiseLevel = fontNoiseLevel
+                    },
+                    ClientRects = new ClientRectsConfig
+                    {
+                        Mode       = "Noise",
+                        NoiseSeed  = rectsSeed,
+                        NoiseLevel = rectsNoiseLevel
+                    },
+                    MediaDevices = new MediaDevicesConfig
+                    {
+                        Mode         = "Noise",
+                        VideoInputs  = Random.Shared.Next(1, 3), // 1-2 cameras
+                        AudioInputs  = Random.Shared.Next(1, 3), // 1-2 microphones
+                        AudioOutputs = Random.Shared.Next(1, 3)  // 1-2 speakers
+                    },
+                    Connection = PickRandomConnectionPreset(osTmpl),
+                    StorageQuota = osTmpl.StorageQuota,
+                    DoNotTrack   = "1"
+                },
+                Network  = new NetworkConfig(),
+                Security = new SecurityConfig(),
+                Location = await BuildLocationConfigAsync(tz)
+            };
+        }
+
+        private static double RandomizeNoiseLevel(double baseValue, double min, double max)
         {
-            System = new SystemConfig
+            // Randomize within ±50% of base value, clamped to min/max
+            var variation = (Random.Shared.NextDouble() - 0.5) * baseValue; // ±50% variation
+            var result = baseValue + variation;
+            return Math.Clamp(result, min, max);
+        }
+
+        private static ConnectionConfig PickRandomConnectionPreset(OsTemplate osTmpl)
+        {
+            if (osTmpl.ConnectionTypes == null || osTmpl.ConnectionTypes.Count == 0)
             {
-                Platform              = osModel.PlatformString,
-                Language             = langs.FirstOrDefault() ?? "en-US",
-                UserAgent           = ua,
-                AcceptLanguage      = acceptLang,
-                Timezone            = tz,
-                HardwareConcurrency = hwTier.Concurrency,
-                DeviceMemory        = hwTier.Memory,
-                Architecture        = osModel.Architecture,
-                Bitness             = osModel.Bitness,
-                Screen = new ScreenConfig
+                // Fallback if no connection types defined
+                return new ConnectionConfig
                 {
-                    Width      = screenPreset.Width,
-                    Height     = screenPreset.Height,
-                    ColorDepth = 24,
-                    PixelRatio = screenPreset.PixelRatio
-                }
-            },
-            Fingerprint = new FingerprintConfig
+                    Mode = "Noise",
+                    EffectiveType = "wifi",
+                    Downlink = 50.0,
+                    Rtt = 20
+                };
+            }
+
+            // Pick random connection type category (wifi, 4g, 3g, etc.)
+            var categories = osTmpl.ConnectionTypes.Keys.ToList();
+            var selectedCategory = categories[Random.Shared.Next(categories.Count)];
+            var presets = osTmpl.ConnectionTypes[selectedCategory];
+
+            if (presets == null || presets.Count == 0)
             {
-                TLSOSMatch  = osModel.TLSOSMatch,
-                Fonts       = osTmpl.Fonts.Take(Random.Shared.Next(osTmpl.Fonts.Count / 2, osTmpl.Fonts.Count)).ToList(),
-                WebGL = new WebGLConfig
+                return new ConnectionConfig
                 {
-                    Mode       = "Noise",
-                    Vendor     = gpuVendor,
-                    Renderer   = gpuRenderer,
-                    NoiseSeed  = webglSeed,
-                    NoiseLevel = 0.0001
-                },
-                Canvas = new CanvasConfig
-                {
-                    Mode       = "Noise",
-                    NoiseSeed  = canvasSeed,
-                    NoiseLevel = 0.00008
-                },
-                Audio = new AudioConfig
-                {
-                    Mode       = "Noise",
-                    NoiseSeed  = audioSeed,
-                    NoiseLevel = 0.000001
-                },
-                FontMetrics = new FontMetricsConfig
-                {
-                    Mode       = "Noise",
-                    NoiseSeed  = fontSeed,
-                    NoiseLevel = 0.0001
-                },
-                ClientRects = new ClientRectsConfig
-                {
-                    Mode       = "Noise",
-                    NoiseSeed  = rectsSeed,
-                    NoiseLevel = 0.000025
-                },
-                MediaDevices = new MediaDevicesConfig
-                {
-                    Mode         = "Noise",
-                    VideoInputs  = 1,
-                    AudioInputs  = 1,
-                    AudioOutputs = 1
-                },
-                Connection = new ConnectionConfig
-                {
-                    Mode           = "Noise",
-                    EffectiveType  = "4g",
-                    Downlink       = 10.0,
-                    Rtt            = 50
-                },
-                StorageQuota = 549755813888,
-                DoNotTrack   = "1"
-            },
-            Network  = new NetworkConfig(),
-            Security = new SecurityConfig(),
-            Location = await BuildLocationConfigAsync(tz)
-        };
-    }
+                    Mode = "Noise",
+                    EffectiveType = selectedCategory,
+                    Downlink = 10.0,
+                    Rtt = 50
+                };
+            }
+
+            // Pick random preset within that category
+            var preset = presets[Random.Shared.Next(presets.Count)];
+            return new ConnectionConfig
+            {
+                Mode = "Noise",
+                EffectiveType = preset.EffectiveType,
+                Downlink = preset.Downlink,
+                Rtt = preset.Rtt
+            };
+        }
 
     private async Task<LocationConfig> BuildLocationConfigAsync(string timezone)
     {
@@ -304,9 +338,6 @@ public class FingerprintService
                 Math.Round(Random.Shared.NextDouble() * 360 - 180, 6));
     }
 
-    /// <summary>
-    /// Generate a fingerprint and return it as a JSON-serializable summary for the UI.
-    /// </summary>
     public async Task<object> GenerateSummaryAsync(
         string? platform = null,
         string? browserType = null,
@@ -327,9 +358,6 @@ public class FingerprintService
         };
     }
 
-    /// <summary>
-    /// Generate a complete structured fingerprint summary for the UI modal.
-    /// </summary>
     public async Task<FingerprintSummaryResponse> GenerateStructuredAsync(
         string? platform = null,
         string? browserType = null,
@@ -355,7 +383,9 @@ public class FingerprintService
             WebGLVendor: cfg.Fingerprint?.WebGL.Vendor ?? "",
             WebGLRenderer: cfg.Fingerprint?.WebGL.Renderer ?? "",
             WebGLMode: "Noise",
+            WebGLNoiseLevel: cfg.Fingerprint?.WebGL.NoiseLevel,
             CanvasMode: "Noise",
+            CanvasNoiseLevel: cfg.Fingerprint?.Canvas.NoiseLevel,
             WebGLImageMode: "Noise",
             PluginsMode: "Noise",
             FontsMode: "Random",
@@ -366,10 +396,36 @@ public class FingerprintService
             PortBlockMode: "BlockDefault",
             PortBlockList: new List<string>(),
             MediaDevicesMode: "Noise",
+            MediaVideoInputs: cfg.Fingerprint?.MediaDevices.VideoInputs,
+            MediaAudioInputs: cfg.Fingerprint?.MediaDevices.AudioInputs,
+            MediaAudioOutputs: cfg.Fingerprint?.MediaDevices.AudioOutputs,
             SpeechVoicesMode: "Noise",
             ClientRectsMode: "Noise",
+            ClientRectsNoiseLevel: cfg.Fingerprint?.ClientRects.NoiseLevel,
             PlatformString: cfg.System?.Platform ?? "Win32",
-            TLSOSMatch: cfg.Fingerprint?.TLSOSMatch ?? ""
+            TLSOSMatch: cfg.Fingerprint?.TLSOSMatch ?? "",
+            ConnectionType: cfg.Fingerprint?.Connection?.EffectiveType ?? "4g",
+            ConnectionDownlink: cfg.Fingerprint?.Connection?.Downlink,
+            ConnectionRtt: cfg.Fingerprint?.Connection?.Rtt,
+            StorageQuota: cfg.Fingerprint?.StorageQuota
         );
+    }
+
+    private static void FSLog(string evt, string msg)
+    {
+        try
+        {
+            var log = new
+            {
+                sessionId = "971020",
+                ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                evt,
+                msg,
+                src = "FingerprintService"
+            };
+            var path = @"d:\Software\DuckAutomation\DuckGo\fs-log-971020.log";
+            File.AppendAllText(path, JsonSerializer.Serialize(log) + "\n");
+        }
+        catch { }
     }
 }

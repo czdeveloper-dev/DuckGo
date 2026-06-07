@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text.Json;
 using DuckGo.Models.DTOs;
 using DuckGo.Services;
@@ -21,11 +22,14 @@ public class BrowserDispatcher : IDispatcher
     {
         try
         {
+            BDLog("START", $"action={action}");
             var catalog = await _service.GetBrowserCatalogAsync();
+            BDLog("OK", $"catalog.Browsers.Count={catalog.Browsers.Count}");
             return (true, null, WrapInElement(catalog));
         }
         catch (Exception ex)
         {
+            BDLog("FAIL", $"Error: {ex.Message}");
             return (false, ex.Message, null);
         }
     }
@@ -34,5 +38,23 @@ public class BrowserDispatcher : IDispatcher
     {
         var json = JsonSerializer.Serialize(obj);
         return JsonDocument.Parse(json).RootElement;
+    }
+
+    private static void BDLog(string evt, string msg)
+    {
+        try
+        {
+            var log = new
+            {
+                sessionId = "971020",
+                ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                evt,
+                msg,
+                src = "BrowserDispatcher"
+            };
+            var path = @"d:\Software\DuckAutomation\DuckGo\bd-log-971020.log";
+            File.AppendAllText(path, System.Text.Json.JsonSerializer.Serialize(log) + "\n");
+        }
+        catch { }
     }
 }

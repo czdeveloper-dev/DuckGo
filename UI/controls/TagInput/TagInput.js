@@ -61,6 +61,8 @@
 
             renderTags();
 
+            let _errorLabel = null;
+
             container.addEventListener('click', () => {
                 input.focus();
             });
@@ -112,6 +114,28 @@
                 setValues: (newTags) => {
                     tags = Array.isArray(newTags) ? [...newTags] : [];
                     renderTags();
+                },
+                setError: (message) => {
+                    container.style.borderColor = 'var(--danger, #ef4444)';
+                    container.style.background = 'rgba(239, 68, 68, 0.05)';
+                    container.classList.add('is-error');
+
+                    if (!_errorLabel) {
+                        _errorLabel = document.createElement('div');
+                        _errorLabel.className = 'field-error-label';
+                        _errorLabel.style.cssText = 'font-size: 12px; color: var(--danger, #ef4444); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; font-weight: 500;';
+                        wrap.insertBefore(_errorLabel, container);
+                    }
+                    _errorLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:var(--danger,#ef4444)">error</span> ' + message;
+                    _errorLabel.style.display = 'flex';
+                },
+                clearError: () => {
+                    container.style.borderColor = '';
+                    container.style.background = '';
+                    container.classList.remove('is-error');
+                    if (_errorLabel) {
+                        _errorLabel.style.display = 'none';
+                    }
                 }
             };
         }

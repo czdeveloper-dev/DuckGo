@@ -1,13 +1,4 @@
 {
-  "Timezones": [
-    "America/New_York", "America/Los_Angeles", "America/Chicago", "America/Denver", "America/Phoenix", "America/Anchorage", "America/Adak",
-    "America/Toronto", "America/Vancouver", "America/Mexico_City", "America/Sao_Paulo", "America/Buenos_Aires",
-    "Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Madrid", "Europe/Rome", "Europe/Amsterdam", "Europe/Stockholm",
-    "Europe/Warsaw", "Europe/Prague", "Europe/Vienna", "Europe/Brussels", "Europe/Zurich", "Europe/Dublin", "Europe/Lisbon",
-    "Asia/Tokyo", "Asia/Seoul", "Asia/Shanghai", "Asia/Hong_Kong", "Asia/Taipei", "Asia/Singapore", "Asia/Bangkok",
-    "Asia/Jakarta", "Asia/Manila", "Asia/Ho_Chi_Minh", "Asia/Kolkata", "Asia/Dubai", "Asia/Riyadh",
-    "Australia/Sydney", "Australia/Melbourne", "Australia/Brisbane", "Pacific/Auckland"
-  ],
   "Languages": [
     "en-US", "en-GB", "en-AU", "en-CA", "en-IN",
     "de-DE", "de-AT", "de-CH", "fr-FR", "fr-CA", "fr-BE",
@@ -189,7 +180,25 @@
           "ANGLE (Intel, Intel(R) HD Graphics 530 Direct3D11 vs_5_0 ps_5_0, D3D11)"
         ]
       }
-    }
+    },
+    "ConnectionTypes": {
+      "wifi": [
+        { "EffectiveType": "wifi", "Downlink": 50.0, "Rtt": 20 },
+        { "EffectiveType": "wifi", "Downlink": 30.0, "Rtt": 30 },
+        { "EffectiveType": "wifi", "Downlink": 20.0, "Rtt": 40 }
+      ],
+      "4g": [
+        { "EffectiveType": "4g", "Downlink": 10.0, "Rtt": 50 },
+        { "EffectiveType": "4g", "Downlink": 8.0, "Rtt": 60 },
+        { "EffectiveType": "4g", "Downlink": 6.0, "Rtt": 70 }
+      ],
+      "3g": [
+        { "EffectiveType": "3g", "Downlink": 1.5, "Rtt": 150 },
+        { "EffectiveType": "3g", "Downlink": 1.0, "Rtt": 200 },
+        { "EffectiveType": "3g", "Downlink": 0.75, "Rtt": 250 }
+      ]
+    },
+    "StorageQuota": 549755813888
   },
 
   "macOS": {
@@ -259,10 +268,26 @@
           "ANGLE (Intel, Intel(R) UHD Graphics 617)"
         ]
       }
-    }
-  },
-
-  "Linux": {
+    },
+    "StorageQuota": 549755813888,
+    "ConnectionTypes": {
+      "wifi": [
+        { "EffectiveType": "wifi", "Downlink": 50.0, "Rtt": 20 },
+        { "EffectiveType": "wifi", "Downlink": 30.0, "Rtt": 30 },
+        { "EffectiveType": "wifi", "Downlink": 20.0, "Rtt": 40 }
+      ],
+      "4g": [
+        { "EffectiveType": "4g", "Downlink": 10.0, "Rtt": 50 },
+        { "EffectiveType": "4g", "Downlink": 8.0, "Rtt": 60 },
+        { "EffectiveType": "4g", "Downlink": 6.0, "Rtt": 70 }
+      ],
+      "3g": [
+        { "EffectiveType": "3g", "Downlink": 1.5, "Rtt": 150 },
+        { "EffectiveType": "3g", "Downlink": 1.0, "Rtt": 200 },
+        { "EffectiveType": "3g", "Downlink": 0.75, "Rtt": 250 }
+      ]
+    },
+    "Fonts": ["SF Pro Display", "SF Pro Text", "Helvetica Neue", "Helvetica", "Arial", "Times New Roman", "Times", "Courier New", "Courier", "Verdana", "Georgia", "Palatino", "Roboto", "Menlo", "Monaco", "Consolas"],
     "Models": [
       { "Name": "Ubuntu 24.04 LTS", "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux", "Architecture": "x86", "Bitness": "64" },
       { "Name": "Ubuntu 22.04 LTS", "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux", "Architecture": "x86", "Bitness": "64" },
@@ -327,6 +352,24 @@
           "llvmpipe (LLVM 17.0.6, 256 bits)"
         ]
       }
+    },
+    "StorageQuota": 274877906944,
+    "ConnectionTypes": {
+      "wifi": [
+        { "EffectiveType": "wifi", "Downlink": 50.0, "Rtt": 20 },
+        { "EffectiveType": "wifi", "Downlink": 30.0, "Rtt": 30 },
+        { "EffectiveType": "wifi", "Downlink": 20.0, "Rtt": 40 }
+      ],
+      "4g": [
+        { "EffectiveType": "4g", "Downlink": 10.0, "Rtt": 50 },
+        { "EffectiveType": "4g", "Downlink": 8.0, "Rtt": 60 },
+        { "EffectiveType": "4g", "Downlink": 6.0, "Rtt": 70 }
+      ],
+      "3g": [
+        { "EffectiveType": "3g", "Downlink": 1.5, "Rtt": 150 },
+        { "EffectiveType": "3g", "Downlink": 1.0, "Rtt": 200 },
+        { "EffectiveType": "3g", "Downlink": 0.75, "Rtt": 250 }
+      ]
     }
   },
 
@@ -352,34 +395,6 @@
       { "Name": "Samsung Galaxy A35",        "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; SM-A356E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",   "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
       { "Name": "Xiaomi Redmi Note 14 Pro", "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; 24094PC4AG) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",  "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" },
       { "Name": "POCO F6 Pro",               "UserAgentTemplate": "Mozilla/5.0 (Linux; Android 14; 23113RKB6G) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Mobile Safari/537.36",      "PlatformString": "Linux aarch64", "TLSOSMatch": "android", "Architecture": "arm", "Bitness": "64" }
-    ],
-    "Fonts": ["Roboto", "Noto Sans", "Droid Sans", "Droid Sans Mono", "Droid Serif", "Nunito", "Open Sans", "Helvetica", "Arial", "sans-serif"],
-    "ScreenPresets": [
-      { "Width": 1440, "Height": 3200, "PixelRatio": 3.5 },
-      { "Width": 1440, "Height": 3088, "PixelRatio": 3.5 },
-      { "Width": 1440, "Height": 2960, "PixelRatio": 3.5 },
-      { "Width": 1440, "Height": 2840, "PixelRatio": 3.5 },
-      { "Width": 1440, "Height": 2712, "PixelRatio": 3.5 },
-      { "Width": 1080, "Height": 2400, "PixelRatio": 2.8 },
-      { "Width": 1080, "Height": 2340, "PixelRatio": 2.8 },
-      { "Width": 1080, "Height": 2280, "PixelRatio": 2.8 },
-      { "Width": 1080, "Height": 2201, "PixelRatio": 2.8 },
-      { "Width": 1080, "Height": 2160, "PixelRatio": 2.8 },
-      { "Width": 1080, "Height": 2400, "PixelRatio": 2.5 },
-      { "Width": 1080, "Height": 2340, "PixelRatio": 2.5 },
-      { "Width": 1080, "Height": 2280, "PixelRatio": 2.5 },
-      { "Width": 1080, "Height": 2201, "PixelRatio": 2.5 },
-      { "Width": 1080, "Height": 2160, "PixelRatio": 2.5 },
-      { "Width": 1080, "Height": 2400, "PixelRatio": 2.0 },
-      { "Width": 1080, "Height": 2340, "PixelRatio": 2.0 },
-      { "Width": 1080, "Height": 2280, "PixelRatio": 2.0 },
-      { "Width": 1080, "Height": 2160, "PixelRatio": 2.0 },
-      { "Width": 1080, "Height": 1920, "PixelRatio": 2.0 },
-      { "Width": 720,  "Height": 1600, "PixelRatio": 2.0 },
-      { "Width": 720,  "Height": 1520, "PixelRatio": 2.0 },
-      { "Width": 720,  "Height": 1440, "PixelRatio": 2.0 },
-      { "Width": 720,  "Height": 1280, "PixelRatio": 2.0 },
-      { "Width": 480,  "Height": 960,  "PixelRatio": 1.5 }
     ],
     "HardwareTiers": [
       { "Concurrency": 4,  "Memory": 6  },
@@ -438,10 +453,30 @@
           "WebGL OpenGL ES 3.0 (Samsung, Mali-G71 MP18)"
         ]
       }
-    }
-  },
-
-  "iOS": {
+    },
+    "StorageQuota": 137573171586,
+    "ConnectionTypes": {
+      "wifi": [
+        { "EffectiveType": "wifi", "Downlink": 50.0, "Rtt": 20 },
+        { "EffectiveType": "wifi", "Downlink": 30.0, "Rtt": 30 },
+        { "EffectiveType": "wifi", "Downlink": 20.0, "Rtt": 40 }
+      ],
+      "4g": [
+        { "EffectiveType": "4g", "Downlink": 10.0, "Rtt": 50 },
+        { "EffectiveType": "4g", "Downlink": 8.0, "Rtt": 60 },
+        { "EffectiveType": "4g", "Downlink": 6.0, "Rtt": 70 }
+      ],
+      "3g": [
+        { "EffectiveType": "3g", "Downlink": 1.5, "Rtt": 150 },
+        { "EffectiveType": "3g", "Downlink": 1.0, "Rtt": 200 },
+        { "EffectiveType": "3g", "Downlink": 0.75, "Rtt": 250 }
+      ],
+      "2g": [
+        { "EffectiveType": "2g", "Downlink": 0.4, "Rtt": 400 },
+        { "EffectiveType": "slow-2g", "Downlink": 0.2, "Rtt": 500 }
+      ]
+    },
+    "Fonts": ["Roboto", "Noto Sans", "Droid Sans", "Droid Sans Mono", "Droid Serif", "Nunito", "Open Sans", "Helvetica", "Arial", "sans-serif"],
     "Models": [
       { "Name": "iPhone 16 Pro Max", "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
       { "Name": "iPhone 16 Pro",    "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
@@ -508,6 +543,28 @@
           "WebGL OpenGL ES 3.0 (Apple GPU A10 Fusion)"
         ]
       }
+    },
+    "StorageQuota": 1099511627776,
+    "ConnectionTypes": {
+      "wifi": [
+        { "EffectiveType": "wifi", "Downlink": 50.0, "Rtt": 20 },
+        { "EffectiveType": "wifi", "Downlink": 30.0, "Rtt": 30 },
+        { "EffectiveType": "wifi", "Downlink": 20.0, "Rtt": 40 }
+      ],
+      "4g": [
+        { "EffectiveType": "4g", "Downlink": 10.0, "Rtt": 50 },
+        { "EffectiveType": "4g", "Downlink": 8.0, "Rtt": 60 },
+        { "EffectiveType": "4g", "Downlink": 6.0, "Rtt": 70 }
+      ],
+      "3g": [
+        { "EffectiveType": "3g", "Downlink": 1.5, "Rtt": 150 },
+        { "EffectiveType": "3g", "Downlink": 1.0, "Rtt": 200 },
+        { "EffectiveType": "3g", "Downlink": 0.75, "Rtt": 250 }
+      ],
+      "2g": [
+        { "EffectiveType": "2g", "Downlink": 0.4, "Rtt": 400 },
+        { "EffectiveType": "slow-2g", "Downlink": 0.2, "Rtt": 500 }
+      ]
     }
   }
 }

@@ -8,7 +8,6 @@ public class ProfileDataConfig
     public NetworkConfig? Network { get; set; }
     public SecurityConfig? Security { get; set; }
     public LocationConfig? Location { get; set; }
-    public CookiesImportConfig? Cookies { get; set; }
 
     public static ProfileDataConfig Default => new()
     {
@@ -17,8 +16,7 @@ public class ProfileDataConfig
         Fingerprint = FingerprintConfig.Default,
         Network = new NetworkConfig(),
         Security = new SecurityConfig(),
-        Location = new LocationConfig { Mode = "Noise", Latitude = 40.7128, Longitude = -74.0060, Accuracy = 100 },
-        Cookies = new CookiesImportConfig()
+        Location = new LocationConfig { Mode = "Noise", Latitude = 40.7128, Longitude = -74.0060, Accuracy = 100 }
     };
 }
 
@@ -27,10 +25,4 @@ public class ProfileMetadataConfig
     public string ProfileID { get; set; } = "";
     public string ProfileName { get; set; } = "";
     public string StartURL { get; set; } = "";
-}
-
-public class CookiesImportConfig
-{
-    public string? FileName { get; set; }
-    public string? RawData { get; set; }
 }

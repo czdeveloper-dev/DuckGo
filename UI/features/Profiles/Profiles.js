@@ -287,6 +287,7 @@
 
             // Reload table when profiles are created (single or bulk)
             window.addEventListener('profile-created', async () => {
+                console.log('[Profiles] profile-created event received! Refreshing...');
                 await Promise.all([this.loadGroups(), this.loadTags(), this.loadProfiles()]);
             });
 

@@ -111,7 +111,7 @@
                 options: [{ label: 'Noise', value: 'noise' }, { label: 'Real', value: 'real' }],
                 value: 'noise'
             });
-            emuSec.appendChild(window.DuckControls.SettingRow.create({ title: 'WebGL Image', desc: 'Add noise to WebGL renderings', control: this.webglImgToggle.element, alignTop: false }).element);
+            emuSec.appendChild(window.DuckControls.SettingRow.create({ title: 'WebGL Image', desc: 'Add noise to WebGL rendering fingerprints', control: this.webglImgToggle.element, alignTop: false }).element);
 
             this.webglMetaToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Real', value: 'real' }, { label: 'Random', value: 'random' }, { label: 'Custom', value: 'custom' }],
@@ -197,9 +197,25 @@
             if (!vendors.length) return;
             const vendor = vendors[Math.floor(Math.random() * vendors.length)];
             const renderers = osBlock.WebGL.VendorGPUs[vendor];
+
+            // Update renderer options FIRST, then pick a random one
+            if (this._rendererSelect) {
+                this._rendererSelect.setOptions(renderers.map(r => ({ label: r, value: r })));
+            }
+
             const renderer = renderers[Math.floor(Math.random() * renderers.length)];
+
+            // Set vendor - this will trigger onChange which may overwrite the renderer
+            // So we set both values and then restore renderer if needed
             if (this._webglVendorSelect) this._webglVendorSelect.setValue(vendor);
             if (this._rendererSelect) this._rendererSelect.setValue(renderer);
+
+            // If onChange overwrote renderer with a different random value, restore ours
+            const currentRenderer = this._rendererSelect?.getValue?.() || '';
+            if (currentRenderer !== renderer && renderers.includes(currentRenderer) === false) {
+                this._rendererSelect.setValue(renderer);
+            }
+
             return { vendor, renderer };
         },
 

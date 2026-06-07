@@ -195,6 +195,8 @@
                         updateDropdown();
                     }
                 },
+                setError: (message) => inputCtrl.setError(message),
+                clearError: () => inputCtrl.clearError(),
                 destroy: () => {
                     if (dropdown) dropdown.destroy();
                 }

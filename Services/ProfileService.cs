@@ -223,7 +223,6 @@ public class ProfileService
         cfg.Location ??= new LocationConfig();
         cfg.Network ??= new NetworkConfig();
         cfg.Security ??= new SecurityConfig();
-        cfg.Cookies ??= new CookiesImportConfig();
 
         cfg.Profile.ProfileName = req.Name;
         cfg.Profile.StartURL = req.StartUrl?.Trim() ?? "";
@@ -231,16 +230,21 @@ public class ProfileService
         var fp = req.Fingerprint;
         if (fp == null)
         {
-            if (!string.IsNullOrWhiteSpace(req.CookiesFileName) || !string.IsNullOrWhiteSpace(req.CookiesData))
-            {
-                cfg.Cookies.FileName = req.CookiesFileName;
-                cfg.Cookies.RawData = req.CookiesData;
-            }
             return;
         }
 
         if (!string.IsNullOrWhiteSpace(fp.Language)) cfg.System.Language = fp.Language;
-        if (!string.IsNullOrWhiteSpace(fp.UserAgent)) cfg.System.UserAgent = fp.UserAgent;
+        // UseRealUserAgent = true means Real mode (browser uses real UA - clear any generated UA)
+        if (fp.UseRealUserAgent)
+        {
+            cfg.System.UserAgent = null;
+        }
+        else if (!string.IsNullOrWhiteSpace(fp.UserAgent))
+        {
+            // Custom mode: use the provided UserAgent
+            cfg.System.UserAgent = fp.UserAgent;
+        }
+        // Random mode (UseRealUserAgent=false, UserAgent=null): keep the generated UA from FingerprintService
         if (!string.IsNullOrWhiteSpace(fp.BrowserVersion)) cfg.System.BrowserVersion = fp.BrowserVersion;
         if (!string.IsNullOrWhiteSpace(fp.AcceptLanguage)) cfg.System.AcceptLanguage = fp.AcceptLanguage;
         else if (fp.Languages?.Count > 0) cfg.System.AcceptLanguage = string.Join(",", fp.Languages);
@@ -262,9 +266,14 @@ public class ProfileService
         if (!string.IsNullOrWhiteSpace(fp.CanvasMode)) cfg.Fingerprint.Canvas.Mode = NormalizeMode(fp.CanvasMode);
         if (!string.IsNullOrWhiteSpace(fp.ClientRectsMode)) cfg.Fingerprint.ClientRects.Mode = NormalizeMode(fp.ClientRectsMode);
         if (!string.IsNullOrWhiteSpace(fp.MediaDevicesMode)) cfg.Fingerprint.MediaDevices.Mode = NormalizeMode(fp.MediaDevicesMode);
-        if (!string.IsNullOrWhiteSpace(fp.PluginsMode))
+        if (!string.IsNullOrWhiteSpace(fp.DoNotTrack))
         {
-            // no dedicated mode field exists, keep plugin data and store intent in DoNotTrack-free area not available
+            cfg.Fingerprint.DoNotTrack = fp.DoNotTrack switch
+            {
+                "enabled" => "1",
+                "disabled" => "0",
+                _ => null
+            };
         }
         if (fp.Fonts?.Count > 0) cfg.Fingerprint.Fonts = fp.Fonts;
 
@@ -309,12 +318,6 @@ public class ProfileService
 
         if (!string.IsNullOrWhiteSpace(fp.PortBlockMode)) cfg.Security.PortBlockMode = fp.PortBlockMode;
         cfg.Security.PortBlockList = fp.PortBlockList ?? new List<string>();
-
-        if (!string.IsNullOrWhiteSpace(req.CookiesFileName) || !string.IsNullOrWhiteSpace(req.CookiesData))
-        {
-            cfg.Cookies.FileName = req.CookiesFileName;
-            cfg.Cookies.RawData = req.CookiesData;
-        }
     }
 
     private static ProfileDataConfig HydrateProfileMetadata(string profileData, Profile profile, string? startUrl)
@@ -324,13 +327,6 @@ public class ProfileService
         cfg.Profile.ProfileID = profile.Id.ToString();
         cfg.Profile.ProfileName = profile.Name;
         cfg.Profile.StartURL = startUrl?.Trim() ?? cfg.Profile.StartURL ?? "";
-
-        if (cfg.Cookies != null
-            && string.IsNullOrWhiteSpace(cfg.Cookies.FileName)
-            && string.IsNullOrWhiteSpace(cfg.Cookies.RawData))
-        {
-            cfg.Cookies = null;
-        }
 
         return cfg;
     }
@@ -400,9 +396,9 @@ public class ProfileService
         public override void Write(Utf8JsonWriter writer, double value, JsonSerializerOptions options)
         {
             if (Math.Abs(value) < 1e-15)
-                writer.WriteRawValue("0");
+                writer.WriteNumberValue(0);
             else
-                writer.WriteRawValue(value.ToString("G17", CultureInfo.InvariantCulture));
+                writer.WriteNumberValue(value);
         }
     }
 }

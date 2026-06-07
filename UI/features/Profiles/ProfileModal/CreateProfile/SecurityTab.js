@@ -118,6 +118,12 @@
             });
             privSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Speech Voices', desc: 'Mask Web Speech API Voices', control: this.speechToggle.element, alignTop: false }).element);
 
+            this.doNotTrackToggle = window.DuckControls.ToggleGroup.create({
+                options: [{ label: 'Default', value: 'default' }, { label: 'Enabled', value: 'enabled' }, { label: 'Disabled', value: 'disabled' }],
+                value: 'default'
+            });
+            privSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Do Not Track', desc: 'Send Do Not Track header to websites', control: this.doNotTrackToggle.element, alignTop: false }).element);
+
             this.rectsToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Noise', value: 'noise' }, { label: 'Real', value: 'real' }],
                 value: 'noise'
@@ -183,6 +189,7 @@
                 clientRects: this.rectsToggle ? this.rectsToggle.getValue() : 'noise',
                 fontsMode: fontsMode,
                 customFonts: fontsMode === 'custom' && this._fontTagInput ? this._fontTagInput.getValues() : [],
+                doNotTrack: this.doNotTrackToggle ? this.doNotTrackToggle.getValue() : 'default',
             };
         }
     };

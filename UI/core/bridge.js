@@ -22,6 +22,10 @@
         _callbackId: 0,
         _webViewReady: false,
         _pushHandlers: {},
+        _middleware: [],
+
+        /** Add middleware that runs before resolve/reject */
+        use(fn) { this._middleware.push(fn); },
 
         /** Auto-detect WebView2 and set up message routing. */
         init() {
@@ -68,6 +72,7 @@
 
             const id = ++this._callbackId;
             const envelope = { type: 'request', id, action, payload };
+            console.log(`[DuckBridge] → ${action}`, payload);
 
             return new Promise((resolve, reject) => {
                 this._callbacks[id] = { resolve, reject };
@@ -104,32 +109,41 @@
                 if (payload.type === 'response') {
                     try {
                         const { id, success, error, data, toast } = payload;
+
                         const cb = this._callbacks[id];
-                        if (!cb) return;
+                        if (!cb) {
+                            console.warn(`[DuckBridge] Response for unknown id=${id}`);
+                            return;
+                        }
 
                         delete this._callbacks[id];
 
-                        // Auto-show toast only for genuine backend errors
-                        if (success === false && toast && window.DuckControls?.Toast) {
-                            try {
-                                let msg = toast.message;
-                                if (msg == null) msg = '';
-                                else if (typeof msg !== 'string') msg = JSON.stringify(msg);
-                                if (msg.length > 500) msg = msg.substring(0, 500) + '...';
-                                window.DuckControls.Toast[toast.type || 'error'](toast.title || 'Error', msg);
-                            } catch (_) {}
+                        // Apply middleware (before resolve/reject)
+                        let finalData = data;
+                        let finalError = error;
+                        for (const mw of this._middleware) {
+                            const result = mw(id, { success, error, data }, 'response');
+                            if (result) {
+                                if (result.data !== undefined) finalData = result.data;
+                                if (result.error !== undefined) finalError = result.error;
+                            }
                         }
 
-                        if ((success === undefined || success === true) && !error) {
-                            cb.resolve(data ?? null);
+                        // NOTE: Toast handling is delegated to individual components via error rejection.
+                        // Do NOT auto-show toasts here - middleware or component-level code handles UI feedback.
+
+                        if ((success === undefined || success === true) && !finalError) {
+                            console.log(`[DuckBridge] ✓ id=${id} resolved`, finalData);
+                            cb.resolve(finalData ?? null);
                         } else {
-                            const errMsg = (error === null || error === undefined || error === 'null' || error === '') ? 'Unknown error' : String(error);
+                            const errMsg = (finalError === null || finalError === undefined || finalError === 'null' || finalError === '') ? 'Unknown error' : String(finalError);
                             const err = new Error(errMsg);
-                            const fieldMatch = (error || '').match(/^\[([^\]]+)\]\s*(.*)/);
+                            const fieldMatch = (finalError || '').match(/^\[([^\]]+)\]\s*(.*)/);
                             if (fieldMatch) {
                                 err._field = fieldMatch[1];
                                 err._message = fieldMatch[2];
                             }
+                            console.error(`[DuckBridge] ✗ id=${id} rejected:`, errMsg);
                             cb.reject(err);
                         }
                     } catch (parseErr) {
@@ -203,6 +217,27 @@
                         resolve({ Items: [], Total: 0 });
                     } else if (action === 'profile.get') {
                         resolve(null);
+                    } else if (action === 'profile.getFingerprintTemplate') {
+                        resolve({
+                            Timezones: ['America/New_York', 'America/Los_Angeles', 'Europe/London', 'Asia/Tokyo'],
+                            Languages: ['en-US', 'en-GB', 'zh-CN', 'ja-JP'],
+                            OS: {
+                                'Windows': {
+                                    Models: [{ Name: 'Windows 10', PlatformString: 'Win64' }],
+                                    Fonts: ['Arial', 'Segoe UI'],
+                                    ScreenPresets: [{ Width: 1920, Height: 1080, PixelRatio: 1 }],
+                                    HardwareTiers: [{ Concurrency: 8, Memory: 16 }]
+                                }
+                            },
+                            TimezoneGeo: {}
+                        });
+                    } else if (action === 'browser.listVersions') {
+                        resolve({
+                            Browsers: [
+                                { BrowserType: 'chrome', Versions: [{ Version: '120.0', Description: 'Chrome 120' }] },
+                                { BrowserType: 'firefox', Versions: [{ Version: '121.0', Description: 'Firefox 121' }] }
+                            ]
+                        });
                     } else {
                         resolve(null);
                     }

@@ -18,21 +18,31 @@ public record FingerprintSummaryResponse(
     string WebGLVendor,
     string WebGLRenderer,
     string WebGLMode,
+    double? WebGLNoiseLevel,
     string CanvasMode,
+    double? CanvasNoiseLevel,
     string WebGLImageMode,
     string PluginsMode,
     string FontsMode,
     List<string> Fonts,
     string WebRtcMode,
     string SslMode,
+    string ConnectionType,
+    double? ConnectionDownlink,
+    int? ConnectionRtt,
     string PortScan,
     string PortBlockMode,
     List<string> PortBlockList,
     string MediaDevicesMode,
+    int? MediaVideoInputs,
+    int? MediaAudioInputs,
+    int? MediaAudioOutputs,
     string SpeechVoicesMode,
     string ClientRectsMode,
+    double? ClientRectsNoiseLevel,
     string PlatformString,
-    string TLSOSMatch
+    string TLSOSMatch,
+    long? StorageQuota
 );
 
 public record ProfileCreateRequest(
@@ -53,7 +63,9 @@ public record ProfileCreateRequest(
 public record FingerprintOptions(
     string? Platform,
     string? OSModel,
+    bool UseRealUserAgent,
     string? UserAgent,
+    string? UaMode,
     string? BrowserVersion,
     string? Language,
     string? AcceptLanguage,
@@ -84,6 +96,7 @@ public record FingerprintOptions(
     string? MediaDevicesMode,
     string? SpeechVoicesMode,
     string? ClientRectsMode,
+    string? DoNotTrack,
     ProfileProxyOptions? Proxy
 );
 

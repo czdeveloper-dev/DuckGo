@@ -128,6 +128,33 @@ window.DuckControls.Select = {
 
         wrap.appendChild(triggerBtn);
 
+        let _errorLabel = null;
+
+        const setError = (message) => {
+            triggerBtn.style.borderColor = 'var(--danger, #ef4444)';
+            triggerBtn.style.background = 'rgba(239, 68, 68, 0.05)';
+            triggerBtn.classList.add('is-error');
+
+            if (!_errorLabel) {
+                _errorLabel = document.createElement('div');
+                _errorLabel.className = 'field-error-label';
+                _errorLabel.style.cssText = 'font-size: 12px; color: var(--danger, #ef4444); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; font-weight: 500;';
+                // Insert BEFORE the trigger button (at the top of the control)
+                wrap.insertBefore(_errorLabel, triggerBtn);
+            }
+            _errorLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:var(--danger,#ef4444)">error</span> ' + message;
+            _errorLabel.style.display = 'flex';
+        };
+
+        const clearError = () => {
+            triggerBtn.style.borderColor = '';
+            triggerBtn.style.background = '';
+            triggerBtn.classList.remove('is-error');
+            if (_errorLabel) {
+                _errorLabel.style.display = 'none';
+            }
+        };
+
         return {
             element: wrap,
             trigger: triggerBtn,
@@ -139,6 +166,7 @@ window.DuckControls.Select = {
                 const opt = getOptionsArr().find(o => o.value === val);
                 textSpan.textContent = opt ? opt.label : (initialOptions.label || initialOptions.placeholder || 'Select...');
                 if (_menuCtrl) _menuCtrl.setSelectedValue(val);
+                clearError();
             },
 
             /** Rebuild dropdown items when the options list changes (e.g. after CRUD) */
@@ -152,7 +180,10 @@ window.DuckControls.Select = {
                 textSpan.textContent = opt ? opt.label : (initialOptions.placeholder || 'Select...');
             },
 
-            getOptions() { return getOptionsArr(); }
+            getOptions() { return getOptionsArr(); },
+
+            setError: setError,
+            clearError: clearError
         };
     }
 };

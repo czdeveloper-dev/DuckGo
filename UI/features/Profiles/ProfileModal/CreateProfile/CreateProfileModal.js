@@ -20,11 +20,15 @@
         _fpTemplate: null,
         _syncTimer: null,
         _browserCatalog: null,
+        _isSubmitting: false,
 
         // Listen for profile-created so Group/Tag dropdowns stay fresh
         _initProfileCreatedListener() {
             window.removeEventListener('profile-created', this._onProfileCreatedBound);
-            this._onProfileCreatedBound = () => this._refreshEntityData();
+            this._onProfileCreatedBound = () => {
+                console.log('[CreateProfile] profile-created event received!');
+                this._refreshEntityData();
+            };
             window.addEventListener('profile-created', this._onProfileCreatedBound);
         },
 
@@ -62,7 +66,6 @@
                 this._groups.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
                 this._tags.sort((a, b)   => (a.Name || '').localeCompare(b.Name || ''));
             } catch (e) {
-                console.error('[CreateProfileModal] Failed to load entity data:', e);
                 this._groups = [];
                 this._tags   = [];
             }
@@ -73,7 +76,6 @@
             try {
                 this._fpTemplate = await DuckBridge.call('profile.getFingerprintTemplate');
             } catch (e) {
-                console.error('[CreateProfileModal] Failed to load fingerprint template:', e);
                 this._fpTemplate = null;
             }
             return this._fpTemplate;
@@ -84,7 +86,6 @@
             try {
                 this._browserCatalog = await DuckBridge.call('browser.listVersions');
             } catch (e) {
-                console.error('[CreateProfileModal] Failed to load browser catalog:', e);
                 this._browserCatalog = null;
             }
             return this._browserCatalog;
@@ -137,8 +138,10 @@
                 ? (this._browserCatalog?.Browsers?.find(b => String(b.BrowserType || '').toLowerCase() === String(v.browser).toLowerCase())?.BrowserType || v.browser)
                 : 'Chromium';
             set('Browser', `${browserLabel} ${v.browserVersion || '138'}`);
-            // User-Agent: show actual generated UA in auto mode, custom value in custom mode
-            if (v.autoGenerateUa) {
+            // User-Agent: show based on mode
+            const uaMode = window.ProfileModals?.CreateProfile?.GeneralTab?.uaModeToggle?.getValue?.() || 'random';
+            if (uaMode === 'random') {
+                // Show what UA will be generated from template
                 const osVal = v.os || 'Windows';
                 const modelVal = v.osModel || null;
                 const version = v.browserVersion || '138';
@@ -147,8 +150,10 @@
                 const ua = modelDef?.UserAgentTemplate?.replace('{VERSION}', version)
                     || `Generated for ${osVal} ${modelVal || ''}`.trim();
                 set('User Agent', ua);
-            } else {
+            } else if (uaMode === 'custom') {
                 set('User Agent', v.userAgent || '—');
+            } else {
+                set('User Agent', 'Real (system)');
             }
             set('Screen Resolution', this._fmtResolution(v));
             set('Timezone', v.timezone || 'Auto (Match IP)');
@@ -279,6 +284,8 @@
             const groupId = groupValue ? parseInt(groupValue, 10) : null;
             const tagValues = this._tagCtrl?.getValues?.() || [];
             const tagIds = tagValues.map(t => parseInt(t, 10)).filter(n => !isNaN(n));
+            const uaMode = window.ProfileModals?.CreateProfile?.GeneralTab?.uaModeToggle?.getValue?.() || 'random';
+            const useRealUserAgent = uaMode === 'real';
 
             return {
                 name,
@@ -287,14 +294,13 @@
                 browserType: (v.browser || 'chromium').charAt(0).toUpperCase() + (v.browser || 'chromium').slice(1),
                 startUrl: v.startUrl || '',
                 notes: v.notes || '',
-                cookies: v.cookies || null,
-                cookiesData:    v.cookiesData    || null,
-                cookiesFileName: v.cookiesFileName || null,
                 fingerprint: {
                     platform: v.os || 'Windows',
                     osModel: v.osModel || null,
+                    useRealUserAgent,
+                    uaMode,
+                    userAgent: (!useRealUserAgent && uaMode === 'custom') ? (v.userAgent || '') : null,
                     browserVersion: v.browserVersion || '138',
-                    userAgent: v.autoGenerateUa ? null : (v.userAgent || null),
                     languages: v.languages || ['en-US', 'en'],
                     timezone: v.timezone || 'auto',
                     screenWidth: v.screenWidth ? parseInt(v.screenWidth, 10) : null,
@@ -318,6 +324,7 @@
                     mediaDevicesMode: v.mediaDevices || 'noise',
                     speechVoicesMode: v.speechVoices || 'noise',
                     clientRectsMode: v.clientRects || 'noise',
+                    doNotTrack: v.doNotTrack || 'default',
                     locationMode: v.locationMode || 'noise',
                     latitude: v.customCoordinates?.lat || null,
                     longitude: v.customCoordinates?.lng || null,
@@ -332,6 +339,8 @@
             const groupId = groupValue ? parseInt(groupValue, 10) : null;
             const tagValues = this._tagCtrl?.getValues?.() || [];
             const tagIds = tagValues.map(t => parseInt(t, 10)).filter(n => !isNaN(n));
+            const uaMode = window.ProfileModals?.CreateProfile?.GeneralTab?.uaModeToggle?.getValue?.() || 'random';
+            const useRealUserAgent = uaMode === 'real';
 
             return {
                 quantity: qty,
@@ -343,8 +352,10 @@
                 fingerprint: {
                     platform: v.os || 'Windows',
                     osModel: v.osModel || null,
+                    useRealUserAgent,
+                    uaMode,
+                    userAgent: (!useRealUserAgent && uaMode === 'custom') ? (v.userAgent || '') : null,
                     browserVersion: v.browserVersion || '138',
-                    userAgent: v.autoGenerateUa ? null : (v.userAgent || null),
                     languages: v.languages || ['en-US', 'en'],
                     timezone: v.timezone || 'auto',
                     screenWidth: v.screenWidth ? parseInt(v.screenWidth, 10) : null,
@@ -368,6 +379,7 @@
                     mediaDevicesMode: v.mediaDevices || 'noise',
                     speechVoicesMode: v.speechVoices || 'noise',
                     clientRectsMode: v.clientRects || 'noise',
+                    doNotTrack: v.doNotTrack || 'default',
                     locationMode: v.locationMode || 'noise',
                     latitude: v.customCoordinates?.lat || null,
                     longitude: v.customCoordinates?.lng || null,
@@ -376,41 +388,185 @@
             };
         },
 
-        _clearFieldError() {
-            this._modal?.container?.querySelectorAll('.field-error-label').forEach(el => el.remove());
-            this._modal?.container?.querySelectorAll('.is-error').forEach(el => el.classList.remove('is-error'));
+        _clearFieldError(field) {
+            if (field) {
+                const ctrl = this._getFieldControl(field);
+                if (ctrl && typeof ctrl.clearError === 'function') {
+                    ctrl.clearError();
+                }
+            } else {
+                const fields = ['userAgent', 'proxy.host', 'proxy.port', 'proxy.saved', 'location.lat', 'location.lng', 'webgl.vendor', 'webgl.renderer', 'display.resolution', 'portBlock.list'];
+                fields.forEach(f => {
+                    const ctrl = this._getFieldControl(f);
+                    if (ctrl && typeof ctrl.clearError === 'function') {
+                        ctrl.clearError();
+                    }
+                });
+            }
         },
 
         _showFieldError(field, message) {
-            if (!this._modal?.container) return;
-            const ctrl = this._fieldErrorTarget(field);
-            if (!ctrl) { window.DuckControls.Toast?.warning?.(message); return; }
-
-            // Mark control as error
-            ctrl.classList.add('is-error');
-
-            // Find or create error label
-            let errLabel = ctrl.parentElement?.querySelector('.field-error-label');
-            if (!errLabel) {
-                errLabel = document.createElement('div');
-                errLabel.className = 'field-error-label';
-                errLabel.style.cssText = 'font-size: 11px; color: var(--danger); margin-top: 4px; display: flex; align-items: center; gap: 4px;';
-                ctrl.parentElement?.appendChild(errLabel);
+            const ctrl = this._getFieldControl(field);
+            if (!ctrl) {
+                window.DuckControls.Toast?.error?.(message);
+                return;
             }
-            errLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:12px">error</span> ' + message;
+            if (typeof ctrl.setError === 'function') {
+                ctrl.setError(message);
+            } else {
+                window.DuckControls.Toast?.error?.(message);
+            }
         },
 
-        _fieldErrorTarget(field) {
+        _clearFieldError(field) {
+            if (field) {
+                const ctrl = this._getFieldControl(field);
+                if (ctrl && typeof ctrl.clearError === 'function') {
+                    ctrl.clearError();
+                }
+            } else {
+                const fields = ['userAgent', 'proxy.host', 'proxy.port', 'proxy.saved', 'location.lat', 'location.lng', 'webgl.vendor', 'webgl.renderer', 'display.resolution', 'portBlock.list'];
+                fields.forEach(f => {
+                    const ctrl = this._getFieldControl(f);
+                    if (ctrl && typeof ctrl.clearError === 'function') {
+                        ctrl.clearError();
+                    }
+                });
+            }
+        },
+
+        _getFieldControl(field) {
+            const genTab = window.ProfileModals?.CreateProfile?.GeneralTab;
+            const netTab = window.ProfileModals?.CreateProfile?.NetworkTab;
+            const hwTab = window.ProfileModals?.CreateProfile?.HardwareTab;
+            const secTab = window.ProfileModals?.CreateProfile?.SecurityTab;
+
             const map = {
-                browserType: () => this.browserSelect?.element || document.querySelector('[data-field="browserType"]'),
-                prefix:     () => this._nameInput?.querySelector?.('input'),
-                quantity:   () => this._qtyCtrl?.element?.querySelector?.('input'),
-                'proxy.host': () => document.querySelector('[data-field="proxy.host"]'),
-                'proxy.port': () => document.querySelector('[data-field="proxy.port"]'),
-                'proxy.type': () => document.querySelector('[data-field="proxy.type"]'),
+                userAgent: () => genTab?.uaInput,
+                'proxy.host': () => netTab?.pHost,
+                'proxy.port': () => netTab?.pPort,
+                'proxy.saved': () => netTab?.sProxy,
+                'location.lat': () => netTab?.latIn,
+                'location.lng': () => netTab?.lngIn,
+                'webgl.vendor': () => hwTab?._webglVendorSelect,
+                'webgl.renderer': () => hwTab?._rendererSelect,
+                'display.resolution': () => hwTab?.resChipSelect,
+                'portBlock.list': () => secTab?.portBlockListInput,
             };
+
             const finder = map[field];
             return finder ? finder() : null;
+        },
+
+        _validateBeforeSubmit() {
+            const genTab = window.ProfileModals?.CreateProfile?.GeneralTab;
+            const netTab = window.ProfileModals?.CreateProfile?.NetworkTab;
+            const hwTab = window.ProfileModals?.CreateProfile?.HardwareTab;
+            const secTab = window.ProfileModals?.CreateProfile?.SecurityTab;
+            // #region debug log
+            fetch('http://127.0.0.1:7838/ingest/b23e979e-49e7-4b7a-9d09-e180b500a667',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'971020'},body:JSON.stringify({sessionId:'971020',location:'CreateProfileModal.js:452',message:'validate tabs',data:{
+                uaMode:genTab?.uaModeToggle?.getValue?.(),
+                proxyMode:netTab?.proxyTypeToggle?.getValue?.(),
+                locMode:netTab?.locationModeToggle?.getValue?.(),
+                webglMode:hwTab?.webglMetaToggle?.getValue?.(),
+                resMode:hwTab?.resToggle?.getValue?.(),
+                portBlockMode:secTab?.portBlockModeSelect?.getValue?.()
+            },timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
+
+            const errors = [];
+
+            // Validate userAgent is required when using custom mode
+            const uaMode = genTab?.uaModeToggle?.getValue?.() || 'random';
+            if (uaMode === 'custom') {
+                const uaValue = genTab?.uaInput?.getValue?.()?.trim?.() || '';
+                if (!uaValue) {
+                    errors.push({ field: 'userAgent', message: 'User-Agent is required when using Custom mode' });
+                }
+            }
+
+            // Validate Connection Type (Custom proxy)
+            const proxyMode = netTab?.proxyTypeToggle?.getValue?.() || 'none';
+            if (proxyMode === 'custom') {
+                const host = netTab?.pHost?.getValue?.()?.trim();
+                const port = netTab?.pPort?.getValue?.()?.trim();
+
+                if (!host) {
+                    errors.push({ field: 'proxy.host', message: 'IP address is required' });
+                }
+                if (!port) {
+                    errors.push({ field: 'proxy.port', message: 'Port is required' });
+                } else {
+                    const portNum = parseInt(port, 10);
+                    if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+                        errors.push({ field: 'proxy.port', message: 'Port must be between 1 and 65535' });
+                    }
+                }
+            }
+
+            // Validate Connection Type (Saved proxy)
+            if (proxyMode === 'saved') {
+                const savedProxyId = netTab?.sProxy?.getValue?.() || '';
+                if (!savedProxyId) {
+                    errors.push({ field: 'proxy.saved', message: 'Please select a saved proxy' });
+                }
+            }
+
+            // Validate Location Mode (Custom coordinates)
+            const locationMode = netTab?.locationModeToggle?.getValue?.() || 'noise';
+            if (locationMode === 'custom') {
+                const lat = netTab?.latIn?.getValue?.()?.trim?.() || '';
+                const lng = netTab?.lngIn?.getValue?.()?.trim?.() || '';
+                if (!lat) {
+                    errors.push({ field: 'location.lat', message: 'Latitude is required for Custom location mode' });
+                } else {
+                    const latNum = parseFloat(lat);
+                    if (isNaN(latNum) || latNum < -90 || latNum > 90) {
+                        errors.push({ field: 'location.lat', message: 'Latitude must be between -90 and 90' });
+                    }
+                }
+                if (!lng) {
+                    errors.push({ field: 'location.lng', message: 'Longitude is required for Custom location mode' });
+                } else {
+                    const lngNum = parseFloat(lng);
+                    if (isNaN(lngNum) || lngNum < -180 || lngNum > 180) {
+                        errors.push({ field: 'location.lng', message: 'Longitude must be between -180 and 180' });
+                    }
+                }
+            }
+
+            // Validate WebGL Metadata (Custom mode)
+            const webglMode = hwTab?.webglMetaToggle?.getValue?.() || 'random';
+            if (webglMode === 'custom') {
+                const vendor = hwTab?._webglVendorSelect?.getValue?.() || '';
+                const renderer = hwTab?._rendererSelect?.getValue?.() || '';
+                if (!vendor) {
+                    errors.push({ field: 'webgl.vendor', message: 'GPU Vendor is required for Custom WebGL mode' });
+                }
+                if (!renderer) {
+                    errors.push({ field: 'webgl.renderer', message: 'GPU Renderer is required for Custom WebGL mode' });
+                }
+            }
+
+            // Validate Display & Graphics (Custom mode)
+            const resMode = hwTab?.resToggle?.getValue?.() || 'random';
+            if (resMode === 'custom') {
+                const resolution = hwTab?.resChipSelect?.getValue?.() || '';
+                if (!resolution) {
+                    errors.push({ field: 'display.resolution', message: 'Please select a resolution preset' });
+                }
+            }
+
+            // Validate Port Block Mode (allow_list or custom)
+            const portBlockMode = secTab?.portBlockModeSelect?.getValue?.() || 'block_default';
+            if (['allow_list', 'custom'].includes(portBlockMode)) {
+                const portList = secTab?.portBlockListInput?.getValues?.() || [];
+                if (!portList || portList.length === 0) {
+                    errors.push({ field: 'portBlock.list', message: 'Port list is required for this Port Block mode' });
+                }
+            }
+
+            return errors.length > 0 ? errors : null;
         },
 
         _fmtLanguages(langs) {
@@ -680,16 +836,53 @@
                     {
                         text: 'Create Profile', class: 'duck-btn-primary', isDefault: true, icon: 'add', disabled: true,
                         onClick: async () => {
+                            // #region debug log
+                            const selfRef = window.ProfileModals.CreateProfile;
+                            fetch('http://127.0.0.1:7838/ingest/b23e979e-49e7-4b7a-9d09-e180b500a667',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'971020'},body:JSON.stringify({sessionId:'971020',location:'CreateProfileModal.js:738',message:'onClick',data:{isSubmitting:this._isSubmitting,modalExists:!!this._modal,thisIsSameAsGlobal:this===selfRef,globalIsSubmitting:selfRef._isSubmitting},timestamp:Date.now()})}).catch(()=>{});
+                            // #endregion
+                            // Prevent double-click - check FIRST before any other action
+                            if (this._isSubmitting) {
+                                // #region debug log
+                                fetch('http://127.0.0.1:7838/ingest/b23e979e-49e7-4b7a-9d09-e180b500a667',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'971020'},body:JSON.stringify({sessionId:'971020',location:'CreateProfileModal.js:742',message:'BLOCKED: isSubmitting=true',data:{},timestamp:Date.now()})}).catch(()=>{});
+                                // #endregion
+                                return;
+                            }
+                            // #region debug log
+                            fetch('http://127.0.0.1:7838/ingest/b23e979e-49e7-4b7a-9d09-e180b500a667',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'971020'},body:JSON.stringify({sessionId:'971020',location:'CreateProfileModal.js:750',message:'Setting isSubmitting=true',data:{before:this._isSubmitting,thisIsSameAsGlobal:this===selfRef,globalIsSubmitting:selfRef._isSubmitting},timestamp:Date.now()})}).catch(()=>{});
+                            // #endregion
+                            this._isSubmitting = true;
+
+                            const submitBtn = this._modal?.container?.querySelector('.duck-btn-primary');
+                            if (submitBtn) submitBtn.disabled = true;
+
                             const mode = this._modeCtrl?.getValue?.() || 'single';
                             const qty = mode === 'bulk' ? (this._qtyCtrl?.getValue?.() || 1) : 1;
                             const prefixVal = this._nameInput?.querySelector('input')?.value?.trim() || null;
 
-                            if (qty > 1 && !prefixVal) {
-                                window.DuckControls.Toast?.warning?.('Please enter a prefix for bulk creation.');
+                            // Validate before submitting
+                            const validationError = this._validateBeforeSubmit();
+                            // #region debug log
+                            fetch('http://127.0.0.1:7838/ingest/b23e979e-49e7-4b7a-9d09-e180b500a667',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'971020'},body:JSON.stringify({sessionId:'971020',location:'CreateProfileModal.js:834',message:'Validation result',data:{validationError:validationError},timestamp:Date.now()})}).catch(()=>{});
+                            // #endregion
+                            if (validationError) {
+                                if (submitBtn) submitBtn.disabled = false;
+                                this._isSubmitting = false;
+                                // Clear all previous errors first
+                                this._clearFieldError();
+                                // Handle both single error and array of errors
+                                if (Array.isArray(validationError)) {
+                                    validationError.forEach(err => this._showFieldError(err.field, err.message));
+                                } else {
+                                    this._showFieldError(validationError.field, validationError.message);
+                                }
                                 return;
                             }
+                            this._clearFieldError();
 
                             try {
+                                // #region debug log
+                                fetch('http://127.0.0.1:7838/ingest/b23e979e-49e7-4b7a-9d09-e180b500a667',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'971020'},body:JSON.stringify({sessionId:'971020',location:'CreateProfileModal.js:851',message:'Calling setLoading(true)',data:{},timestamp:Date.now()})}).catch(()=>{});
+                                // #endregion
                                 this._modal.setLoading(true, qty > 1 ? `Creating ${qty} profiles...` : 'Creating profile...');
                                 let results;
 
@@ -703,8 +896,15 @@
                                 }
 
                                 this._modal.setLoading(false);
+                                this._isSubmitting = false;
                                 this._modal.close();
-                                window.DispatchEvent?.(new CustomEvent('profile-created', { detail: results }));
+                                console.log('[CreateProfile] Dispatching profile-created event with', Array.isArray(results) ? results.length : 1, 'profiles');
+                                try {
+                                    window.dispatchEvent(new CustomEvent('profile-created', { detail: results }));
+                                    console.log('[CreateProfile] Event dispatched successfully!');
+                                } catch (e) {
+                                    console.error('[CreateProfile] Event dispatch failed:', e);
+                                }
                                 if (this._onCreated) this._onCreated(results);
                             } catch (err) {
                                 this._modal.setLoading(false);
@@ -712,10 +912,27 @@
                                 const field = err?._field || '';
                                 console.error('[CreateProfile] create failed:', msg, 'field:', field);
 
-                                // Show error label on the relevant field
+                                // Re-enable submit button
+                                if (submitBtn) submitBtn.disabled = false;
+                                this._isSubmitting = false;
+
+                                // Clear existing errors and show new error
                                 this._clearFieldError();
-                                if (field) this._showFieldError(field, msg);
-                                // else toast handled by DuckBridge
+                                if (field) {
+                                    this._showFieldError(field, msg);
+                                    // Scroll to the field with error
+                                    setTimeout(() => {
+                                        const errorEl = this._modal?.container?.querySelector('.is-error');
+                                        if (errorEl) {
+                                            errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                            const input = errorEl.querySelector?.('input, select') || errorEl;
+                                            if (input?.focus) input.focus();
+                                        }
+                                    }, 100);
+                                } else {
+                                    // Show toast for non-field errors
+                                    window.DuckControls.Toast?.error?.(msg);
+                                }
                             }
                         }
                     }
@@ -728,6 +945,7 @@
                     this._rendererSelect = null;
                     this._langTagInput = null;
                     this._fontTagInput = null;
+                    this._isSubmitting = false;
                     if (this._syncTimer) clearTimeout(this._syncTimer);
                 }
             });
@@ -787,9 +1005,6 @@
                 if (tab?._setBrowserCatalog) tab._setBrowserCatalog(browserCatalog);
             });
 
-            // Cascade OS defaults so all tab controls are populated before first render
-            this._cascadeOsChange('Windows');
-
             // ── Build form and replace skeleton ─────────────────────────────
             const container = this._buildFormContainer(template, browserCatalog);
 
@@ -800,7 +1015,7 @@
                 modalBody.style.cssText = 'display:flex;flex-direction:column;overflow:hidden;padding:0;';
             }
 
-            // Cascade OS defaults AFTER tabs are rendered so all controls exist in DOM
+            // Cascade OS defaults — controls now exist in DOM after form build
             this._cascadeOsChange('Windows');
 
             // Enable submit button now that form is ready

@@ -180,13 +180,18 @@
 
             const uaModeToggle = window.DuckControls.ToggleGroup.create({
                 options: [
-                    { label: 'Auto', value: 'auto' },
+                    { label: 'Real', value: 'real' },
+                    { label: 'Random', value: 'random' },
                     { label: 'Custom', value: 'custom' }
                 ],
-                value: 'auto',
+                value: 'random',
                 onChange: (val) => {
                     uaManualRow.style.display = val === 'custom' ? 'flex' : 'none';
-                    if (val === 'custom') this._syncUaPreview();
+                    if (val === 'random') this._syncUaPreview();
+                    else if (val === 'real') {
+                        // Real mode: clear the input, don't save UA to DB
+                        this.uaInput?.setValue?.('');
+                    }
                     window.ProfileModals?.CreateProfile?._scheduleSync?.();
                 }
             });
@@ -208,6 +213,7 @@
                 onInput: () => window.ProfileModals?.CreateProfile?._scheduleSync?.()
             });
             this.uaInput.element.style.flex = '1';
+            this.uaInput.element.dataset.field = 'userAgent';
 
             const btnUseCurrentUa = window.DuckControls.Button.create(null, {
                 text: 'Use Current',
@@ -246,13 +252,17 @@
         },
 
         getValues() {
-            const uaMode = this.uaModeToggle ? this.uaModeToggle.getValue() : 'auto';
+            const uaMode = this.uaModeToggle ? this.uaModeToggle.getValue() : 'random';
+            // Real = browser uses real UA (no UA saved to DB)
+            // Random = auto-generate from template (save generated UA to DB)
+            // Custom = user provides UA (save custom UA to DB)
+            const useRealUserAgent = uaMode === 'real';
             return {
                 os: this.osSelect ? this.osSelect.getValue() : null,
                 osModel: this.osModelSelect ? this.osModelSelect.getValue() : null,
                 browser: this.browserSelect ? this.browserSelect.getValue() : null,
                 browserVersion: this.browserVersion ? this.browserVersion.getValue() : null,
-                autoGenerateUa: uaMode === 'auto',
+                useRealUserAgent,
                 userAgent: uaMode === 'custom' && this.uaInput ? this.uaInput.getValue() : '',
                 startUrl: this.startUrlInput ? this.startUrlInput.getValue() : this._defaultStartUrl
             };
