@@ -286,8 +286,10 @@
         { "EffectiveType": "3g", "Downlink": 1.0, "Rtt": 200 },
         { "EffectiveType": "3g", "Downlink": 0.75, "Rtt": 250 }
       ]
-    },
-    "Fonts": ["SF Pro Display", "SF Pro Text", "Helvetica Neue", "Helvetica", "Arial", "Times New Roman", "Times", "Courier New", "Courier", "Verdana", "Georgia", "Palatino", "Roboto", "Menlo", "Monaco", "Consolas"],
+    }
+  },
+
+  "Linux": {
     "Models": [
       { "Name": "Ubuntu 24.04 LTS", "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux", "Architecture": "x86", "Bitness": "64" },
       { "Name": "Ubuntu 22.04 LTS", "UserAgentTemplate": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{VERSION} Safari/537.36", "PlatformString": "Linux x86_64", "TLSOSMatch": "linux", "Architecture": "x86", "Bitness": "64" },
@@ -321,35 +323,19 @@
     "WebGL": {
       "VendorGPUs": {
         "Google Inc. (NVIDIA)": [
-          "ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 Direct3D11 vs_5_0 ps_5_0, D3D11)",
-          "ANGLE (NVIDIA, NVIDIA GeForce RTX 5080 Direct3D11 vs_5_0 ps_5_0, D3D11)",
-          "ANGLE (NVIDIA, NVIDIA GeForce RTX 5070 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)",
-          "ANGLE (NVIDIA, NVIDIA GeForce RTX 5070 Direct3D11 vs_5_0 ps_5_0, D3D11)",
           "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 Direct3D11 vs_5_0 ps_5_0, D3D11)",
-          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 SUPER Direct3D11 vs_5_0 ps_5_0, D3D11)",
           "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0, D3D11)",
-          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti SUPER Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)",
           "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0, D3D11)",
           "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Direct3D11 vs_5_0 ps_5_0, D3D11)"
         ],
         "Google Inc. (Mesa)": [
           "Mesa AMD Radeon RX 7900 XTX (RADV NAVI31)",
-          "Mesa AMD Radeon RX 7900 XT (RADV NAVI31)",
           "Mesa AMD Radeon RX 7800 XT (RADV NAVI23)",
           "Mesa AMD Radeon RX 7600 (RADV NAVI33)",
-          "Mesa AMD Radeon RX 6600 XT (RADV NAVI23)",
-          "Mesa AMD Radeon RX 5700 XT (RADV NAVI10)",
-          "Mesa AMD Radeon Vega 64 (RADV VEGA10)",
-          "Mesa AMD Radeon Vega 56 (RADV VEGA20)",
           "Mesa Intel(R) Arc A770 (RADV)",
-          "Mesa Intel(R) Arc A580 (RADV)",
-          "Mesa Intel(R) Arc A380 (RADV)",
           "Mesa Intel(R) UHD Graphics 770 (Gen12)",
-          "Mesa Intel(R) UHD Graphics 750 (Gen12)",
-          "Mesa Intel(R) UHD Graphics 620 (KBL GT2)",
-          "Mesa Intel(R) Iris(R) Xe Graphics (TGL GT2)",
-          "llvmpipe (LLVM 18.1.8, 256 bits)",
-          "llvmpipe (LLVM 17.0.6, 256 bits)"
+          "llvmpipe (LLVM 18.1.8, 256 bits)"
         ]
       }
     },
@@ -475,8 +461,10 @@
         { "EffectiveType": "2g", "Downlink": 0.4, "Rtt": 400 },
         { "EffectiveType": "slow-2g", "Downlink": 0.2, "Rtt": 500 }
       ]
-    },
-    "Fonts": ["Roboto", "Noto Sans", "Droid Sans", "Droid Sans Mono", "Droid Serif", "Nunito", "Open Sans", "Helvetica", "Arial", "sans-serif"],
+    }
+  },
+
+  "iOS": {
     "Models": [
       { "Name": "iPhone 16 Pro Max", "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },
       { "Name": "iPhone 16 Pro",    "UserAgentTemplate": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{VERSION}/Mobile Safari/604.1", "PlatformString": "iPhone", "TLSOSMatch": "ios", "Architecture": "arm", "Bitness": "64" },

@@ -54,66 +54,76 @@ public class FingerprintTemplate
             foreach (var kvp in obj)
             {
                 // Skip arrays and metadata sections
-                if (kvp.Value is JsonArray || kvp.Key is "Timezones" or "Languages" or "TimezoneGeo" or "StorageQuota")
+                if (kvp.Value is JsonArray || kvp.Key is "Timezones" or "Languages" or "TimezoneGeo")
                     continue;
+
                 // Everything else is treated as an OS block (Windows, macOS, Linux...)
                 if (kvp.Value is JsonObject osBlock)
                 {
-                    // First deserialize to get the OsTemplate object
-                    var osJson = JsonSerializer.Serialize(osBlock);
-                    var osTemplate = JsonSerializer.Deserialize<OsTemplate>(osJson, opts);
-
-                    // Check if this OS block has ConnectionTypes (OS-specific)
-                    if (osTemplate != null && osBlock.TryGetPropertyValue("ConnectionTypes", out var osConnTypes) && osConnTypes is JsonObject connObj)
+                    try
                     {
-                        // This OS has its own ConnectionTypes - parse them into OsTemplate
-                        foreach (var cKvp in connObj)
+                        // First deserialize to get the OsTemplate object
+                        var osJson = JsonSerializer.Serialize(osBlock);
+                        var osTemplate = JsonSerializer.Deserialize<OsTemplate>(osJson, opts);
+
+                        // Check if this OS block has ConnectionTypes (OS-specific)
+                        if (osTemplate != null && osBlock.TryGetPropertyValue("ConnectionTypes", out var osConnTypes) && osConnTypes is JsonObject connObj)
                         {
-                            if (cKvp.Value is JsonArray presets)
+                            // This OS has its own ConnectionTypes - parse them into OsTemplate
+                            foreach (var cKvp in connObj)
                             {
-                                var list = new List<ConnectionPreset>();
-                                foreach (var preset in presets)
+                                if (cKvp.Value is JsonArray presets)
                                 {
-                                    if (preset is JsonObject p)
+                                    var list = new List<ConnectionPreset>();
+                                    foreach (var preset in presets)
                                     {
-                                        list.Add(new ConnectionPreset
+                                        if (preset is JsonObject p)
                                         {
-                                            EffectiveType = p["EffectiveType"]?.GetValue<string>() ?? "4g",
-                                            Downlink = p["Downlink"]?.GetValue<double>() ?? 10.0,
-                                            Rtt = p["Rtt"]?.GetValue<int>() ?? 50
-                                        });
+                                            list.Add(new ConnectionPreset
+                                            {
+                                                EffectiveType = p["EffectiveType"]?.GetValue<string>() ?? "4g",
+                                                Downlink = p["Downlink"]?.GetValue<double>() ?? 10.0,
+                                                Rtt = p["Rtt"]?.GetValue<int>() ?? 50
+                                            });
+                                        }
+                                    }
+                                    osTemplate.ConnectionTypes[cKvp.Key] = list;
+                                }
+                            }
+                        }
+
+                        if (osTemplate != null)
+                        {
+                            // Parse Architecture/Bitness per model (OsModel uses default case-sensitive deserialize)
+                            if (osBlock["Models"] is JsonArray modelsArr)
+                            {
+                                for (int i = 0; i < modelsArr.Count; i++)
+                                {
+                                    if (modelsArr[i] is JsonObject modelObj && i < osTemplate.Models.Count)
+                                    {
+                                        if (modelObj.TryGetPropertyValue("Architecture", out var archNode))
+                                            osTemplate.Models[i].Architecture = archNode?.GetValue<string>() ?? "x86";
+                                        if (modelObj.TryGetPropertyValue("Bitness", out var bitsNode))
+                                            osTemplate.Models[i].Bitness = bitsNode?.GetValue<string>() ?? "64";
                                     }
                                 }
-                                osTemplate.ConnectionTypes[cKvp.Key] = list;
                             }
+                            // Parse OS-specific StorageQuota
+                            if (osBlock["StorageQuota"] is JsonValue osSq && osSq.TryGetValue<long>(out var osSqVal))
+                                osTemplate.StorageQuota = osSqVal;
+                            tmpl.OS[kvp.Key] = osTemplate;
                         }
                     }
-
-                    if (osTemplate != null)
+                    catch (Exception ex)
                     {
-                        // Parse Architecture/Bitness per model (OsModel uses default case-sensitive deserialize)
-                        if (osBlock["Models"] is JsonArray modelsArr)
-                        {
-                            for (int i = 0; i < modelsArr.Count; i++)
-                            {
-                                if (modelsArr[i] is JsonObject modelObj && i < osTemplate.Models.Count)
-                                {
-                                    if (modelObj.TryGetPropertyValue("Architecture", out var archNode))
-                                        osTemplate.Models[i].Architecture = archNode?.GetValue<string>() ?? "x86";
-                                    if (modelObj.TryGetPropertyValue("Bitness", out var bitsNode))
-                                        osTemplate.Models[i].Bitness = bitsNode?.GetValue<string>() ?? "64";
-                                }
-                            }
-                        }
-                        // Parse OS-specific StorageQuota
-                        if (osBlock["StorageQuota"] is JsonValue osSq && osSq.TryGetValue<long>(out var osSqVal))
-                            osTemplate.StorageQuota = osSqVal;
-                        tmpl.OS[kvp.Key] = osTemplate;
+                        Console.WriteLine($"[FingerprintConfig] Error parsing OS block '{kvp.Key}': {ex.Message}");
+                        throw;
                     }
                 }
             }
         }
 
+        Console.WriteLine($"[FingerprintConfig] Loaded {tmpl.OS.Count} OSes: {string.Join(", ", tmpl.OS.Keys)}");
         return tmpl;
     }
 }
