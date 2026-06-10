@@ -91,7 +91,7 @@
                 tags:       p.TagNames ?? p.tagNames ?? [],
                 proxy:      p.ProxyName ?? p.proxy ?? 'Direct',
                 notes:      p.Notes ?? p.notes ?? '',
-                status:    p.Status ?? p.status ?? 'stopped',
+                status:    p.Status ?? p.status ?? 'ready',
                 message:   p.Message ?? p.message ?? '-',
                 createdAt: p.CreatedAt ?? p.createdAt,
                 lastOpened: p.LastOpened ?? p.lastOpened,
@@ -287,8 +287,36 @@
 
             // Reload table when profiles are created (single or bulk)
             window.addEventListener('profile-created', async () => {
-                console.log('[Profiles] profile-created event received! Refreshing...');
                 await Promise.all([this.loadGroups(), this.loadTags(), this.loadProfiles()]);
+            });
+
+            // Listen for profile status updates from backend
+            window.addEventListener('profile-status-update', (e) => {
+                const { profileId, status, message } = e.detail || {};
+                if (!profileId) return;
+                
+                // Update the specific profile in our data
+                const profile = this._profilesData.find(p => p.id === profileId);
+                if (profile) {
+                    if (status) profile.status = status;
+                    if (message !== undefined) profile.message = message;
+                    // Update table row without full reload
+                    this._table?.updateRow?.(profileId, profile);
+                }
+            });
+
+            // Listen for profile message updates from backend
+            window.addEventListener('profile-message-update', (e) => {
+                const { profileId, message } = e.detail || {};
+                if (!profileId) return;
+                
+                // Update the specific profile in our data
+                const profile = this._profilesData.find(p => p.id === profileId);
+                if (profile && message !== undefined) {
+                    profile.message = message;
+                    // Update table row without full reload
+                    this._table?.updateRow?.(profileId, profile);
+                }
             });
 
             const colsEl = document.getElementById('ctrl-cols');
@@ -500,7 +528,7 @@
                 { id: 'proxy', label: 'PROXY', width: '25ch', minWidth: '25ch', maxWidth: '30ch', render: (r) => _this._renderProxyCell(r) },
                 { id: 'status', label: 'STATUS', width: '15ch', minWidth: '15ch', resizable: false, autoSize: true, render: (r) => _this._renderStatusBadge(r) },
                 { id: 'message', label: 'MESSAGE', width: '30ch', minWidth: '30ch', maxWidth: '50ch', render: (r) => _this._renderMessageCell(r) },
-                { id: 'note', label: 'NOTE', width: '30ch', minWidth: '30ch', maxWidth: '40ch', fillSpace: true, render: (r) => _this._renderNoteCell(r) },
+                { id: 'note', label: 'NOTE', width: '30ch', minWidth: '30ch', maxWidth: '40ch', resizable: true, render: (r) => _this._renderNoteCell(r) },
                 { id: 'created', label: 'CREATED TIME', width: '25ch', minWidth: '25ch', resizable: false, autoSize: true, render: (r) => _this._renderDateCell(r.createdAt) },
                 { id: 'lastopened', label: 'LAST OPENED', width: '25ch', minWidth: '25ch', resizable: false, autoSize: true, render: (r) => _this._renderDateCell(r.lastOpened) },
                 { id: 'action', label: 'CONTROL', width: '170px', locked: true, lockedPosition: 'right', resizable: false, render: (r) => _this._renderActionCell(r) }
@@ -522,11 +550,11 @@
 
         // ── Bulk / row actions ───────────────────────────────────────
         async _startProfile(id) {
-            try { await DuckBridge.call('profile.start', { id }); await this.loadProfiles(); }
+            try { await DuckBridge.call('browser.start', { id }); await this.loadProfiles(); }
             catch (e) { console.error('Failed to start profile:', e); }
         },
         async _stopProfile(id) {
-            try { await DuckBridge.call('profile.stop', { id }); await this.loadProfiles(); }
+            try { await DuckBridge.call('browser.stop', { id }); await this.loadProfiles(); }
             catch (e) { console.error('Failed to stop profile:', e); }
         },
         async _deleteProfile(id) {
@@ -541,37 +569,118 @@
                 catch (e) { console.error('Delete failed:', e); }
             }
         },
-        _bulkLaunch()  { console.log('Bulk launch:', [...this._selectedIds]); },
-        _bulkStop()    { console.log('Bulk stop:', [...this._selectedIds]); },
-        _bulkHealth()  { console.log('Bulk health check:', [...this._selectedIds]); },
+        async _bulkLaunch() {
+            if (this._selectedIds.size === 0) return;
+            const ids = [...this._selectedIds];
+            try {
+                await DuckBridge.call('browser.bulkStart', ids);
+                await this.loadProfiles();
+            } catch (e) { console.error('Bulk launch failed:', e); }
+        },
+        async _bulkStop() {
+            if (this._selectedIds.size === 0) return;
+            const ids = [...this._selectedIds];
+            try {
+                await DuckBridge.call('browser.bulkStop', ids);
+                await this.loadProfiles();
+            } catch (e) { console.error('Bulk stop failed:', e); }
+        },
+        _bulkHealth()  { },
         _bulkRename()  { if (this._selectedIds.size > 0) window.ProfileModals?.BulkRename?.show([...this._selectedIds].map(id => this._profilesData.find(p => p.id === id)).filter(Boolean)); },
-        _bulkDelete()  {
+        async _bulkDelete() {
             if (this._selectedIds.size === 0) return;
             window.ProfileModals?.DeleteProfiles.show(this._selectedIds, async (ids) => {
-                for (const id of ids) { try { await DuckBridge.call('profile.delete', { id }); } catch (e) { /* toast handled by DuckBridge */ } }
+                try {
+                    await DuckBridge.call('profile.bulkDelete', ids);
+                } catch (e) { /* toast handled by DuckBridge */ }
                 this._selectedIds.clear(); this._updateBulkActions(); await this.loadProfiles();
                 window.ProfileModals?.CreateProfile?._refreshEntityData?.();
             });
         },
-        _bulkRemoveProxy() { if (this._selectedIds.size > 0) window.ProfileModals?.RemoveProxy?.show(this._selectedIds, async (ids) => { console.log('Remove proxy:', ids); await this.loadProfiles(); }); },
+        _bulkRemoveProxy() { if (this._selectedIds.size > 0) window.ProfileModals?.RemoveProxy?.show(this._selectedIds, async (ids) => { await this.loadProfiles(); }); },
         _bulkCopyProxy() {
             if (this._selectedIds.size === 0) return;
             const proxies = [...this._selectedIds].map(id => this._profilesData.find(p => p.id === id)?.proxy).filter(p => p && p !== 'Direct');
             if (!proxies.length) return;
             this._copyToClipboard(proxies.join('\n'));
         },
-        _bulkCheckProxy() {
+        async _bulkCheckProxy() {
             if (this._selectedIds.size === 0) return;
-            let count = 0;
-            [...this._selectedIds].forEach(id => { const r = this._profilesData.find(p => p.id === id); if (r?.proxy && r.proxy !== 'Direct') { r.status = 'running'; r.message = 'Checking proxy...'; count++; } });
-            if (!count) return;
+            const idsWithProxy = [...this._selectedIds].filter(id => {
+                const r = this._profilesData.find(p => p.id === id);
+                return r?.proxy && r.proxy !== 'Direct';
+            });
+            if (!idsWithProxy.length) return;
+
+            for (const id of idsWithProxy) {
+                const r = this._profilesData.find(p => p.id === id);
+                if (r) { r.status = 'running'; r.message = 'Checking proxy...'; }
+            }
             this._table?.updateData(this._profilesData);
-            setTimeout(() => {
-                [...this._selectedIds].forEach(id => { const r = this._profilesData.find(p => p.id === id); if (r?.proxy && r.proxy !== 'Direct') { r.status = 'ready'; r.message = `Proxy alive - ${Math.floor(Math.random() * 200 + 50)}ms`; } });
-                this._table?.updateData(this._profilesData);
-            }, 1000);
+
+            for (const id of idsWithProxy) {
+                const r = this._profilesData.find(p => p.id === id);
+                if (!r) continue;
+                const proxyId = r.proxyId || r.proxyid;
+                if (!proxyId) { r.status = 'ready'; r.message = 'No proxy'; continue; }
+                try {
+                    const result = await DuckBridge.call('proxy.check', { id: proxyId });
+                    r.status = 'ready';
+                    r.message = result?.Status === 'alive'
+                        ? `Proxy alive - ${result.LatencyMs}ms`
+                        : 'Proxy dead';
+                } catch {
+                    r.status = 'ready';
+                    r.message = 'Proxy check failed';
+                }
+            }
+            this._table?.updateData(this._profilesData);
         },
-        _openModal(profileId) { console.log('[Profiles] Open modal for profile:', profileId); },
+        async _openModal(profileId) {
+            if (!window.ProfileModals?.CreateProfile) {
+                console.warn('[Profiles] CreateProfile modal not found');
+                return;
+            }
+            window.ProfileModals.CreateProfile.show(profileId);
+        },
+
+        async _checkSingleProxy(row) {
+            const proxyId = row.proxyId || row.proxyid;
+            if (!proxyId) {
+                window.DuckControls.Toast?.info?.('No Proxy', 'This profile has no proxy configured');
+                return;
+            }
+            try {
+                const result = await DuckBridge.call('proxy.check', { id: proxyId });
+                if (result?.Status === 'alive') {
+                    window.DuckControls.Toast?.success?.('Proxy Alive', `${result.LatencyMs}ms response time`);
+                } else {
+                    window.DuckControls.Toast?.error?.('Proxy Dead', 'Proxy is not responding');
+                }
+            } catch (e) {
+                window.DuckControls.Toast?.error?.('Proxy Check Failed', e?.message || 'Unknown error');
+            }
+        },
+
+        async _detectScreen(row) {
+            try {
+                const info = await DuckBridge.call('profile.detectScreen');
+                const msg = `Screen: ${info.width}×${info.height}\nWork area: ${info.workAreaWidth}×${info.workAreaHeight}\nVirtual: ${info.virtualScreenWidth}×${info.virtualScreenHeight}`;
+                window.DuckControls.Toast?.info?.('Screen Info', msg);
+            } catch (e) {
+                window.DuckControls.Toast?.error?.('Detect Failed', e?.message || 'Unknown error');
+            }
+        },
+
+        async _duplicateProfile(row) {
+            try {
+                const newProfile = await DuckBridge.call('profile.duplicate', { id: row.id, name: `${row.name} (Copy)` });
+                window.DuckControls.Toast?.success?.('Duplicated', `Profile "${row.name}" has been duplicated`);
+                if (window.ProfilesView?.loadProfiles) window.ProfilesView.loadProfiles();
+            } catch (e) {
+                window.DuckControls.Toast?.error?.('Duplicate Failed', e?.message || 'Unknown error');
+            }
+        },
 
         _handleCheckAll(e) { e.checked ? this._profilesData.forEach(p => this._selectedIds.add(p.id)) : this._selectedIds.clear(); this._updateBulkActions(); },
         _updateBulkActions() {
@@ -592,19 +701,72 @@
             badge.style.cssText = 'font-size:10px;font-weight:700;background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:4px;padding:2px 4px;margin-right:8px;flex-shrink:0;width:56px;text-align:center;box-sizing:border-box;';
             badge.textContent = bt.includes('mac') ? 'MacOS' : bt.includes('lin') ? 'Linux' : 'Windows';
             const cw = document.createElement('div');
-            cw.style.cssText = 'flex:1;min-width:0;';
+            cw.style.cssText = 'flex:1;min-width:0;display:flex;align-items:center;';
             const lbl = document.createElement('span');
-            lbl.style.cssText = 'font-weight:500;font-size:13px;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;display:block;';
+            lbl.style.cssText = 'font-weight:500;font-size:13px;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;display:block;flex:1;';
             lbl.textContent = (row.name && row.name.trim()) ? this._escapeHtml(row.name) : '-';
-            const inp = document.createElement('input');
-            inp.type = 'text'; inp.value = row.name;
-            inp.style.cssText = 'display:none;font-weight:500;font-size:13px;width:100%;border:2px solid var(--accent);border-radius:6px;padding:6px 8px;background:var(--bg-base);color:var(--text-primary);outline:none;box-sizing:border-box;';
-            lbl.addEventListener('dblclick', () => { lbl.style.display = 'none'; inp.style.display = 'block'; inp.focus(); });
-            const done = () => { inp.style.display = 'none'; lbl.style.display = 'block'; if (inp.value !== row.name) { row.name = inp.value; lbl.textContent = this._escapeHtml(row.name || '-'); } };
-            inp.addEventListener('blur', done);
-            inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') done(); if (e.key === 'Escape') { inp.value = row.name; done(); } });
-            cw.appendChild(lbl); cw.appendChild(inp);
-            nc.appendChild(badge); nc.appendChild(cw);
+            
+            // Create Input control for inline editing
+            const inputCtrl = DuckControls.Input.create({
+                placeholder: 'Enter name...',
+                value: row.name || ''
+            });
+            inputCtrl.element.style.display = 'none';
+            inputCtrl.element.style.flex = '1';
+            
+            lbl.addEventListener('dblclick', () => {
+                lbl.style.display = 'none';
+                inputCtrl.element.style.display = 'flex';
+                inputCtrl.input.focus();
+                inputCtrl.input.select();
+            });
+            
+            const done = async () => {
+                inputCtrl.element.style.display = 'none';
+                lbl.style.display = 'block';
+                const newName = inputCtrl.getValue();
+                if (newName !== row.name) {
+                    row.name = newName;
+                    lbl.textContent = this._escapeHtml(row.name || '-');
+                    // Persist to database using camelCase (backend uses JsonNamingPolicy.CamelCase)
+                    try {
+                        // Fetch profile first to preserve existing data
+                        const profile = await DuckBridge.call('profile.get', { id: row.id });
+                        await DuckBridge.call('profile.update', {
+                            id: row.id,
+                            name: newName,
+                            groupId: profile?.groupId ?? row.groupId ?? null,
+                            tagIds: profile?.tagIds ?? row.tagIds ?? null,
+                            proxyId: profile?.proxyId ?? row.proxyId ?? null,
+                            browserType: profile?.browserType ?? row.browserType ?? 'Chromium',
+                            browserVersion: profile?.browserVersion ?? '138',
+                            profileData: profile?.profileData ?? '{}',
+                            notes: profile?.notes ?? row.notes ?? '',
+                            cookies: profile?.cookies ?? null
+                        });
+                        // Refresh groups and tags in case name is used for grouping
+                        if (this.loadGroups) this.loadGroups();
+                        if (this.loadTags) this.loadTags();
+                    } catch (e) {
+                        console.error('Failed to update profile name:', e);
+                        window.DuckControls.Toast?.error?.('Update Failed', e?.message || 'Unknown error');
+                    }
+                }
+            };
+            
+            inputCtrl.input.addEventListener('blur', done);
+            inputCtrl.input.addEventListener('keydown', (e) => { 
+                if (e.key === 'Enter') done(); 
+                if (e.key === 'Escape') { 
+                    inputCtrl.setValue(row.name || ''); 
+                    done(); 
+                } 
+            });
+            
+            cw.appendChild(lbl);
+            cw.appendChild(inputCtrl.element);
+            nc.appendChild(badge);
+            nc.appendChild(cw);
             nc.addEventListener('click', (e) => e.stopPropagation());
             wrap.appendChild(nc);
             return wrap;
@@ -662,18 +824,67 @@
 
         _renderNoteCell(row) {
             const wrap = document.createElement('div');
-            wrap.style.cssText = 'width:100%;display:flex;align-items:center;';
+            wrap.style.cssText = 'width:100%;display:flex;align-items:center;position:relative;';
+
             const lbl = document.createElement('span');
-            lbl.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;width:100%;color:var(--text-tertiary);font-size:12px;';
-            lbl.textContent = this._escapeHtml(row.notes || '-');
-            const inp = document.createElement('input');
-            inp.type = 'text'; inp.value = row.notes || '';
-            inp.style.cssText = 'display:none;width:100%;border:2px solid var(--accent);border-radius:6px;padding:6px 8px;background:var(--bg-base);color:var(--text-primary);outline:none;';
-            lbl.addEventListener('dblclick', () => { lbl.style.display = 'none'; inp.style.display = 'block'; inp.focus(); });
-            const done = () => { inp.style.display = 'none'; lbl.style.display = 'block'; if (inp.value !== (row.notes || '')) { row.notes = inp.value; lbl.textContent = this._escapeHtml(row.notes || '-'); } };
-            inp.addEventListener('blur', done);
-            inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') done(); if (e.key === 'Escape') { inp.value = row.notes || ''; done(); } });
-            wrap.appendChild(lbl); wrap.appendChild(inp);
+            lbl.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;color:var(--text-secondary);font-size:12px;cursor:text;display:block;';
+            lbl.textContent = row.notes || '-';
+
+            // Create Input control for inline editing
+            const inputCtrl = window.DuckControls.Input.create({
+                placeholder: 'Enter note...',
+                value: row.notes || ''
+            });
+            inputCtrl.element.style.display = 'none';
+            inputCtrl.element.style.flex = '1';
+
+            lbl.addEventListener('dblclick', () => {
+                lbl.style.display = 'none';
+                inputCtrl.element.style.display = 'flex';
+                inputCtrl.input.focus();
+                inputCtrl.input.select();
+            });
+
+            const done = async () => {
+                inputCtrl.element.style.display = 'none';
+                lbl.style.display = 'block';
+                const newVal = inputCtrl.getValue();
+                if (newVal !== row.notes) {
+                    row.notes = newVal;
+                    lbl.textContent = newVal || '-';
+                    // Persist to database
+                    try {
+                        const profile = await DuckBridge.call('profile.get', { id: row.id });
+                        await DuckBridge.call('profile.update', {
+                            id: row.id,
+                            name: profile?.name ?? row.name ?? '',
+                            groupId: profile?.groupId ?? row.groupId ?? null,
+                            tagIds: profile?.tagIds ?? row.tagIds ?? null,
+                            proxyId: profile?.proxyId ?? row.proxyId ?? null,
+                            browserType: profile?.browserType ?? row.browserType ?? 'Chromium',
+                            browserVersion: profile?.browserVersion ?? '138',
+                            profileData: profile?.profileData ?? '{}',
+                            notes: newVal,
+                            cookies: profile?.cookies ?? null
+                        });
+                    } catch (e) {
+                        console.error('Failed to update note:', e);
+                        window.DuckControls.Toast?.error?.('Update Failed', e?.message || 'Unknown error');
+                    }
+                }
+            };
+
+            inputCtrl.input.addEventListener('blur', done);
+            inputCtrl.input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') done();
+                if (e.key === 'Escape') {
+                    inputCtrl.setValue(row.notes || '');
+                    done();
+                }
+            });
+
+            wrap.appendChild(lbl);
+            wrap.appendChild(inputCtrl.element);
             return wrap;
         },
 
@@ -743,12 +954,12 @@
                         { label: 'Start Profile', icon: 'play_arrow', onClick: () => this._startProfile(row.id) },
                         { label: 'Stop Profile', icon: 'stop_circle', onClick: () => this._stopProfile(row.id) },
                         'divider',
-                        { label: 'Check Proxy', icon: 'dns', onClick: () => {} },
+                        { label: 'Check Proxy', icon: 'dns', onClick: () => this._checkSingleProxy(row) },
                         { label: 'Manage Cookies', icon: 'cookie', onClick: () => window.ProfileModals?.ManageCookies?.show([row.id]) },
                         { label: 'Set Browser Version', icon: 'laptop', onClick: () => window.ProfileModals?.SetBrowserVersion?.show([row.id]) },
                         'divider',
-                        { label: 'Detect Screen', icon: 'monitor', onClick: () => {} },
-                        { label: 'Duplicate', icon: 'content_copy', onClick: () => {} },
+                        { label: 'Detect Screen', icon: 'monitor', onClick: () => this._detectScreen(row) },
+                        { label: 'Duplicate', icon: 'content_copy', onClick: () => this._duplicateProfile(row) },
                         { label: 'Delete Profile', icon: 'delete', danger: true, onClick: () => this._deleteProfile(row.id) }
                     ]
                 });
@@ -806,7 +1017,12 @@
         },
         _loadColPreferences() {
             const saved = localStorage.getItem('duck_profile_visible_cols');
-            if (saved) { try { const arr = JSON.parse(saved); if (Array.isArray(arr)) this._visibleCols = new Set(arr); } catch {} }
+            if (saved) { 
+                try { 
+                    const arr = JSON.parse(saved); 
+                    if (Array.isArray(arr)) this._visibleCols = new Set(arr); 
+                } catch {} 
+            }
         }
     };
 

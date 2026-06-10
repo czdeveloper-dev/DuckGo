@@ -12,6 +12,7 @@ public static class AppConfig
     public static string ProfilesDir => Path.Combine(BaseDir, "Profiles");
     public static string BrowserDir => Path.Combine(BaseDir, "Browser");
     public static string UpdatesDir => Path.Combine(BaseDir, "Updates");
+    public static string DownloadsDir => Path.Combine(BaseDir, "Downloads");
 
     public static string BrowserVersionsConfigUrl =>
         "https://raw.githubusercontent.com/czdeveloper-dev/DuckGo/refs/heads/master/Assets/browser_versions.json";
@@ -20,8 +21,8 @@ public static class AppConfig
         "https://raw.githubusercontent.com/czdeveloper-dev/DuckGo/refs/heads/master/Assets/default_fingerprint.json";
 
     public const string PipeName = "DuckBrowser_Control";
-    public const int PipeConnectTimeoutMs = 5000;
-    public const int PipeReadTimeoutMs = 5000;
+    public const int PipeConnectTimeoutMs = 300;
+    public const int PipeReadTimeoutMs = 300;
     public const string ChromeExeName = "chrome.exe";
 
     public static TimeSpan HeartbeatInterval => TimeSpan.FromSeconds(10);

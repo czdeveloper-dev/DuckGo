@@ -3,7 +3,8 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-// Template models mapped from default_fingerprint.json (data populated by FingerprintService at runtime)
+// ─── Template models (read from default_fingerprint.json at runtime) ────────────
+
 public class FingerprintTemplate
 {
     public Dictionary<string, OsTemplate> OS { get; set; } = new();
@@ -11,24 +12,17 @@ public class FingerprintTemplate
     public List<string> Languages { get; set; } = new();
     public Dictionary<string, GeoBounds> TimezoneGeo { get; set; } = new();
     public Dictionary<string, List<ConnectionPreset>> ConnectionTypes { get; set; } = new();
-    public long StorageQuota { get; set; } = 549755813888; // Default 512GB
+    public long StorageQuota { get; set; } = 549755813888; // 512 GB
 
-    /// <summary>
-    /// Deserializes from a JSON string that has OS keys (Windows, macOS, Linux...)
-    /// as top-level keys — not wrapped in an "OS" object.
-    /// Uses JsonNode to read the dynamic structure, then deserializes the OS sub-tree.
-    /// </summary>
     public static FingerprintTemplate FromJson(string json)
     {
         var node = JsonNode.Parse(json);
         var tmpl = new FingerprintTemplate();
-
         var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
         if (node?["Languages"] is JsonArray langArr)
             tmpl.Languages = langArr.Select(x => x!.GetValue<string>()).ToList();
 
-        // TimezoneGeo: read timezone→bounds mapping
         if (node?["TimezoneGeo"] is JsonObject geoObj)
         {
             foreach (var kvp in geoObj)
@@ -46,30 +40,24 @@ public class FingerprintTemplate
             }
         }
 
-        // Derive Timezones list from TimezoneGeo keys (for frontend dropdown)
         tmpl.Timezones = tmpl.TimezoneGeo.Keys.OrderBy(k => k).ToList();
 
         if (node is JsonObject obj)
         {
             foreach (var kvp in obj)
             {
-                // Skip arrays and metadata sections
                 if (kvp.Value is JsonArray || kvp.Key is "Timezones" or "Languages" or "TimezoneGeo")
                     continue;
 
-                // Everything else is treated as an OS block (Windows, macOS, Linux...)
                 if (kvp.Value is JsonObject osBlock)
                 {
                     try
                     {
-                        // First deserialize to get the OsTemplate object
                         var osJson = JsonSerializer.Serialize(osBlock);
                         var osTemplate = JsonSerializer.Deserialize<OsTemplate>(osJson, opts);
 
-                        // Check if this OS block has ConnectionTypes (OS-specific)
                         if (osTemplate != null && osBlock.TryGetPropertyValue("ConnectionTypes", out var osConnTypes) && osConnTypes is JsonObject connObj)
                         {
-                            // This OS has its own ConnectionTypes - parse them into OsTemplate
                             foreach (var cKvp in connObj)
                             {
                                 if (cKvp.Value is JsonArray presets)
@@ -92,27 +80,24 @@ public class FingerprintTemplate
                             }
                         }
 
-                        if (osTemplate != null)
+                        if (osTemplate != null && osBlock["Models"] is JsonArray modelsArr)
                         {
-                            // Parse Architecture/Bitness per model (OsModel uses default case-sensitive deserialize)
-                            if (osBlock["Models"] is JsonArray modelsArr)
+                            for (int i = 0; i < modelsArr.Count && i < osTemplate.Models.Count; i++)
                             {
-                                for (int i = 0; i < modelsArr.Count; i++)
+                                if (modelsArr[i] is JsonObject modelObj)
                                 {
-                                    if (modelsArr[i] is JsonObject modelObj && i < osTemplate.Models.Count)
-                                    {
-                                        if (modelObj.TryGetPropertyValue("Architecture", out var archNode))
-                                            osTemplate.Models[i].Architecture = archNode?.GetValue<string>() ?? "x86";
-                                        if (modelObj.TryGetPropertyValue("Bitness", out var bitsNode))
-                                            osTemplate.Models[i].Bitness = bitsNode?.GetValue<string>() ?? "64";
-                                    }
+                                    if (modelObj.TryGetPropertyValue("Architecture", out var archNode))
+                                        osTemplate.Models[i].Architecture = archNode?.GetValue<string>() ?? "x86";
+                                    if (modelObj.TryGetPropertyValue("Bitness", out var bitsNode))
+                                        osTemplate.Models[i].Bitness = bitsNode?.GetValue<string>() ?? "64";
                                 }
                             }
-                            // Parse OS-specific StorageQuota
-                            if (osBlock["StorageQuota"] is JsonValue osSq && osSq.TryGetValue<long>(out var osSqVal))
-                                osTemplate.StorageQuota = osSqVal;
-                            tmpl.OS[kvp.Key] = osTemplate;
                         }
+
+                        if (osTemplate != null && osBlock["StorageQuota"] is JsonValue osSq && osSq.TryGetValue<long>(out var osSqVal))
+                            osTemplate.StorageQuota = osSqVal;
+
+                        tmpl.OS[kvp.Key] = osTemplate!;
                     }
                     catch (Exception ex)
                     {
@@ -179,36 +164,160 @@ public class HardwareTier
 
 public class WebGLTemplate
 {
-    // Key = Vendor string, Value = list of Renderer strings
     public Dictionary<string, List<string>> VendorGPUs { get; set; } = new();
 }
 
-public class WebGLGpuCandidate
-{
-    public string Vendor { get; set; } = "";
-    public string Renderer { get; set; } = "";
-}
+// ─── Fingerprint Config (ProfileData stored in DB) ───────────────────────────
 
 public class FingerprintConfig
 {
+    /// <summary>WebGL fingerprinting — GPU Vendor, Renderer, canvas readPixels noise.</summary>
     public WebGLConfig WebGL { get; set; } = new();
+    /// <summary>Canvas 2D API fingerprinting — toDataURL/getImageData noise.</summary>
     public CanvasConfig Canvas { get; set; } = new();
+    /// <summary>AudioContext fingerprinting — AudioWorklet/AnalyserNode noise.</summary>
     public AudioConfig Audio { get; set; } = new();
+    /// <summary>Font metrics fingerprinting — measureText/getBoundingClientRect noise.</summary>
     public FontMetricsConfig FontMetrics { get; set; } = new();
+    /// <summary>DOM element getBoundingClientRect noise.</summary>
     public ClientRectsConfig ClientRects { get; set; } = new();
-    public List<string> Fonts { get; set; } = new() { "Arial", "Calibri", "Consolas" };
-    public List<PluginInfo> Plugins { get; set; } = new()
-    {
-        new() { Name = "PDF Viewer", Filename = "internal-pdf-viewer", Description = "Portable Document Format" },
-        new() { Name = "Chrome PDF Viewer", Filename = "internal-pdf-viewer", Description = "" }
-    };
+
+    /// <summary>Font enumeration — returns fake font list via SkFontMgr hook.</summary>
+    public FontsConfig Fonts { get; set; } = new();
+    /// <summary>Browser plugin enumeration — returns fake plugin list.</summary>
+    public PluginsConfig Plugins { get; set; } = new();
+    /// <summary>WebRTC fingerprinting behavior.</summary>
+    public string WebRTcMode { get; set; } = "disable";
+    /// <summary>SSL/TLS fingerprinting — JA3 cipher suites.</summary>
+    public string SslMode { get; set; } = "noise";
+    /// <summary>Speech Synthesis API — voice enumeration.</summary>
+    public string SpeechVoicesMode { get; set; } = "noise";
+    /// <summary>MediaDevices — webcam/microphone/speaker enumeration.</summary>
     public MediaDevicesConfig MediaDevices { get; set; } = new();
+    /// <summary>Network Information API — effectiveType, downlink, rtt.</summary>
     public ConnectionConfig Connection { get; set; } = new();
-    public long StorageQuota { get; set; } = 549755813888;
-    public string TLSOSMatch { get; set; } = "Windows";
-    public string? DoNotTrack { get; set; }
+    /// <summary>navigator.storage.estimate() — fake disk quota.</summary>
+    public TypedConfig<long> StorageQuota { get; set; } = new();
+    /// <summary>TLS OS fingerprint — controls JA3 cipher suite ordering.</summary>
+    public TypedConfig<string> TLSOSMatch { get; set; } = new();
+    /// <summary>DoNotTrack HTTP header.</summary>
+    public DoNotTrackConfig DoNotTrack { get; set; } = new();
 
     public static FingerprintConfig Default => new();
+}
+
+// ─── Typed configs ────────────────────────────────────────────────────────────
+
+/// <summary>
+/// Generic config with mode + typed value.
+/// Used for: StorageQuota, TLSOSMatch.
+/// </summary>
+/// <typeparam name="T">Value type: string, int, long, bool</typeparam>
+public class TypedConfig<T>
+{
+    /// <summary>
+    /// Mode: "noise" (use Value), "real" (use real device), "default" (use Chromium default).
+    /// null is treated as "real" by DuckBrowser.
+    /// </summary>
+    public string? Mode { get; set; }
+    public T? Value { get; set; }
+
+    public TypedConfig() { }
+    public TypedConfig(string? mode, T? value) { Mode = mode; Value = value; }
+    /// <summary>Constructor with mode only — Value defaults to null.</summary>
+    public TypedConfig(string? mode) { Mode = mode; Value = default; }
+}
+
+public class DoNotTrackConfig
+{
+    /// <summary>
+    /// Mode: "real" (don't set header), "noise" (set header with Value).
+    /// null is treated as "real".
+    /// </summary>
+    public string? Mode { get; set; }
+    /// <summary>Value: "1" (enabled), "0" (disabled), null (don't set header).</summary>
+    public string? Value { get; set; }
+}
+
+// ─── WebGL ────────────────────────────────────────────────────────────────────
+
+public class WebGLConfig
+{
+    /// <summary>WebGL mode: "noise" (fake + noise), "real" (real GPU), "default" (Chromium), "block" (return null).</summary>
+    public string? Mode { get; set; }
+    public string? Vendor { get; set; }
+    public string? Renderer { get; set; }
+    public string? NoiseSeed { get; set; }
+    public double? NoiseLevel { get; set; }
+    public ImageSpoofingConfig? ImageSpoofing { get; set; }
+}
+
+public class ImageSpoofingConfig
+{
+    /// <summary>Image spoofing mode: "noise" (texture noise), "real", "default", "block". null = "noise".</summary>
+    public string? Mode { get; set; }
+    public string? TextureSeed { get; set; }
+    /// <summary>Pattern: "default" (gradient), "noise" (random pixels), "solid".</summary>
+    public string Pattern { get; set; } = "default";
+}
+
+// ─── Canvas ───────────────────────────────────────────────────────────────────
+
+public class CanvasConfig
+{
+    /// <summary>Canvas mode: "noise" (fake + noise), "real", "default", "block". null = "real".</summary>
+    public string? Mode { get; set; }
+    public string? NoiseSeed { get; set; }
+    public double? NoiseLevel { get; set; }
+}
+
+// ─── Audio ────────────────────────────────────────────────────────────────────
+
+public class AudioConfig
+{
+    /// <summary>Audio mode: "noise" (fake + noise), "real", "default", "block". null = "real".</summary>
+    public string? Mode { get; set; }
+    public string? NoiseSeed { get; set; }
+    public double? NoiseLevel { get; set; }
+}
+
+// ─── FontMetrics ──────────────────────────────────────────────────────────────
+
+public class FontMetricsConfig
+{
+    /// <summary>FontMetrics mode: "noise" (fake + noise), "real" (use real metrics), "default". null = "real".</summary>
+    public string? Mode { get; set; }
+    public string? NoiseSeed { get; set; }
+    public double? NoiseLevel { get; set; }
+}
+
+// ─── ClientRects ─────────────────────────────────────────────────────────────
+
+public class ClientRectsConfig
+{
+    /// <summary>ClientRects mode: "noise" (fake + noise), "real", "default", "block". null = "real".</summary>
+    public string? Mode { get; set; }
+    public string? NoiseSeed { get; set; }
+    public double? NoiseLevel { get; set; }
+}
+
+// ─── Fonts ────────────────────────────────────────────────────────────────────
+
+public class FontsConfig
+{
+    /// <summary>Fonts mode: "noise" (use FontList), "real" (real fonts), "default" (Chromium list), "block" (empty). null = "real".</summary>
+    public string? Mode { get; set; }
+    /// <summary>List of fake font names to return via SkFontMgr hook.</summary>
+    public List<string> FontList { get; set; } = new();
+}
+
+// ─── Plugins ──────────────────────────────────────────────────────────────────
+
+public class PluginsConfig
+{
+    /// <summary>Plugins mode: "noise", "real", "default", "block". null = "default".</summary>
+    public string? Mode { get; set; }
+    public List<PluginInfo> PluginList { get; set; } = new();
 }
 
 public class PluginInfo
@@ -218,61 +327,23 @@ public class PluginInfo
     public string Description { get; set; } = "";
 }
 
-public class WebGLConfig
-{
-    public string Mode { get; set; } = "Noise";
-    public string Vendor { get; set; } = "Google Inc. (NVIDIA)";
-    public string Renderer { get; set; } = "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0, D3D11)";
-    public string NoiseSeed { get; set; } = Guid.NewGuid().ToString("N")[..12];
-    public double NoiseLevel { get; set; } = 0.0001;
-    public ImageSpoofingConfig? ImageSpoofing { get; set; }
-}
-
-public class ImageSpoofingConfig
-{
-    public string TextureSeed { get; set; } = Guid.NewGuid().ToString("N")[..12];
-    public string Pattern { get; set; } = "default";
-}
-
-public class CanvasConfig
-{
-    public string Mode { get; set; } = "Noise";
-    public string NoiseSeed { get; set; } = Guid.NewGuid().ToString("N")[..12];
-    public double NoiseLevel { get; set; } = 0.00008;
-}
-
-public class AudioConfig
-{
-    public string Mode { get; set; } = "Noise";
-    public string NoiseSeed { get; set; } = Guid.NewGuid().ToString("N")[..12];
-    public double NoiseLevel { get; set; } = 0.000001;
-}
-
-public class FontMetricsConfig
-{
-    public string Mode { get; set; } = "Noise";
-    public string NoiseSeed { get; set; } = Guid.NewGuid().ToString("N")[..12];
-    public double NoiseLevel { get; set; } = 0.0001;
-}
-
-public class ClientRectsConfig
-{
-    public string Mode { get; set; } = "Noise";
-    public string NoiseSeed { get; set; } = Guid.NewGuid().ToString("N")[..12];
-    public double NoiseLevel { get; set; } = 0.000025;
-}
+// ─── MediaDevices ────────────────────────────────────────────────────────────
 
 public class MediaDevicesConfig
 {
-    public string Mode { get; set; } = "Noise";
-    public int VideoInputs { get; set; } = 1;
-    public int AudioInputs { get; set; } = 1;
-    public int AudioOutputs { get; set; } = 1;
+    /// <summary>MediaDevices mode: "noise" (use counts below), "real" (real devices), "default", "block". null = "real".</summary>
+    public string? Mode { get; set; }
+    public int? VideoInputs { get; set; }
+    public int? AudioInputs { get; set; }
+    public int? AudioOutputs { get; set; }
 }
+
+// ─── Connection ───────────────────────────────────────────────────────────────
 
 public class ConnectionConfig
 {
-    public string Mode { get; set; } = "Noise";
+    /// <summary>Connection mode: "noise" (use values below), "real", "default". null = "default".</summary>
+    public string? Mode { get; set; }
     public string EffectiveType { get; set; } = "4g";
     public double Downlink { get; set; } = 10.0;
     public int Rtt { get; set; } = 50;

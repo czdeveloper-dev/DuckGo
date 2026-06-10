@@ -73,6 +73,37 @@ public class ProfileValidator : IValidator
         if (!p.HasValue) return r.WithError("payload", "Request body is required");
         if (!p.Value.TryGetProperty("id", out var id) || id.GetInt32() <= 0)
             r.WithError("id", "Valid profile ID is required");
+
+        var bt = p.Value.TryGetProperty("browserType", out var btEl) ? btEl.GetString() : null;
+        if (string.IsNullOrWhiteSpace(bt))
+            r.WithError("browserType", "Browser type is required");
+        else if (!NormalizeBrowserType(bt, out _))
+            r.WithError("browserType", "Browser type must be Chromium or Firefox");
+
+        if (!p.Value.TryGetProperty("profileData", out var profileDataEl) || profileDataEl.ValueKind != JsonValueKind.String)
+        {
+            r.WithError("profileData", "ProfileData is required");
+        }
+        else
+        {
+            var profileData = profileDataEl.GetString();
+            if (string.IsNullOrWhiteSpace(profileData))
+            {
+                r.WithError("profileData", "ProfileData cannot be empty");
+            }
+            else
+            {
+                try
+                {
+                    JsonNode.Parse(profileData);
+                }
+                catch
+                {
+                    r.WithError("profileData", "ProfileData must be valid JSON");
+                }
+            }
+        }
+
         return r;
     }
 

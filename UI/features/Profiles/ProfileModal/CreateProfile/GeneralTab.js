@@ -11,10 +11,32 @@
 
         _setTemplate(template) {
             this._fpTemplate = template;
+            // Populate OS options after template is loaded
+            if (this.osSelect && this._fpTemplate) {
+                const osOptions = this._getOsOptions();
+                this.osSelect.setOptions(osOptions);
+            }
         },
 
         _setBrowserCatalog(browserCatalog) {
             this._browserCatalog = browserCatalog;
+            // Populate browser options after catalog is loaded
+            if (this.browserSelect && this._browserCatalog) {
+                const browserOptions = this._getBrowserOptions();
+                this.browserSelect.setOptions(browserOptions);
+                // Also update browser version options
+                const initialBrowser = browserOptions[0]?.value || 'chromium';
+                const versionOptions = this._getBrowserVersions(initialBrowser);
+                if (this.browserVersion) {
+                    this.browserVersion.setOptions(versionOptions);
+                }
+            }
+        },
+
+        _getOsOptions() {
+            if (!this._fpTemplate) return [];
+            const osBlock = this._fpTemplate.OS || {};
+            return Object.keys(osBlock).map(osKey => ({ label: osKey, value: osKey }));
         },
 
         _getOsModels(osValue) {
@@ -253,19 +275,137 @@
 
         getValues() {
             const uaMode = this.uaModeToggle ? this.uaModeToggle.getValue() : 'random';
+            // [DEBUG] general tab values
+            console.log('[DEBUG:GeneralTab.getValues]', JSON.stringify({
+                uaMode,
+                userAgent: uaMode === 'custom' && this.uaInput ? this.uaInput.getValue() : '(empty)',
+                os: this.osSelect ? this.osSelect.getValue() : null,
+                osModel: this.osModelSelect ? this.osModelSelect.getValue() : null,
+                browser: this.browserSelect ? this.browserSelect.getValue() : null,
+                browserVersion: this.browserVersion ? this.browserVersion.getValue() : null,
+                startUrl: this.startUrlInput ? this.startUrlInput.getValue() : '',
+            }, null, 2));
             // Real = browser uses real UA (no UA saved to DB)
             // Random = auto-generate from template (save generated UA to DB)
             // Custom = user provides UA (save custom UA to DB)
-            const useRealUserAgent = uaMode === 'real';
             return {
                 os: this.osSelect ? this.osSelect.getValue() : null,
                 osModel: this.osModelSelect ? this.osModelSelect.getValue() : null,
                 browser: this.browserSelect ? this.browserSelect.getValue() : null,
                 browserVersion: this.browserVersion ? this.browserVersion.getValue() : null,
-                useRealUserAgent,
+                uaMode,
                 userAgent: uaMode === 'custom' && this.uaInput ? this.uaInput.getValue() : '',
                 startUrl: this.startUrlInput ? this.startUrlInput.getValue() : this._defaultStartUrl
             };
+        },
+
+        /** Set values from loaded profile data */
+        setValues(values) {
+            console.log('[GeneralTab] setValues called with:', values);
+
+            // Force DOM update by waiting one tick
+            requestAnimationFrame(() => {
+                this._applyValuesInternal(values);
+            });
+        },
+
+        _applyValuesInternal(values) {
+            console.log('[GeneralTab] _applyValuesInternal called with:', values);
+
+            // Set Start URL
+            if (values.startUrl !== undefined && this.startUrlInput) {
+                this.startUrlInput.setValue(values.startUrl || '');
+            }
+
+            // Set OS (this will cascade to OS Model via _onOsChange callback)
+            if (values.os && this.osSelect) {
+                console.log('[GeneralTab] _applyValuesInternal setting OS:', values.os);
+                this.osSelect.setValue(values.os);
+                // Store OS Model value to preserve after cascade
+                // (it will be applied in _onOsChange callback after options are populated)
+                if (values.osModel) {
+                    this._preserveOsModelValue = values.osModel;
+                    console.log('[GeneralTab] Stored _preserveOsModelValue:', values.osModel);
+                }
+                // Trigger cascade to populate OS Model options
+                if (this._onOsChange) this._onOsChange(values.os);
+                // After cascade completes (options populated), apply preserved OS Model
+                // Use requestAnimationFrame to ensure onChange handler has completed
+                requestAnimationFrame(() => {
+                    if (this._preserveOsModelValue && this.osModelSelect) {
+                        console.log('[GeneralTab] Applying preserved _preserveOsModelValue:', this._preserveOsModelValue);
+                        this.osModelSelect.setValue(this._preserveOsModelValue);
+                        this._preserveOsModelValue = null; // Clear after use
+                    }
+                });
+            }
+
+            // Set Browser
+            console.log('[GeneralTab] _applyValuesInternal - browser check:', {
+                valuesBrowser: values.browser,
+                hasBrowserSelect: !!this.browserSelect
+            });
+            if (values.browser && this.browserSelect) {
+                const browserValue = String(values.browser).toLowerCase();
+                console.log('[GeneralTab] _applyValuesInternal setting browser to:', browserValue);
+                // Update version options FIRST before setting browser value
+                const versionOptions = this._getBrowserVersions(browserValue);
+                if (this.browserVersion) {
+                    if (versionOptions.length > 0) {
+                        this.browserVersion.setOptions(versionOptions);
+                        console.log('[GeneralTab] Set browserVersion options, count:', versionOptions.length);
+                    }
+                }
+                this.browserSelect.setValue(browserValue);
+                // Set browserVersion after options are loaded
+                if (values.browserVersion && this.browserVersion) {
+                    console.log('[GeneralTab] _applyValuesInternal setting browserVersion to:', values.browserVersion);
+                    this.browserVersion.setValue(values.browserVersion);
+                }
+            } else if (!this.browserSelect) {
+                console.warn('[GeneralTab] _applyValuesInternal - browserSelect NOT found on this!');
+            }
+
+            // Set Browser Version (if browser not set, but version is)
+            if (!values.browser && values.browserVersion && this.browserVersion && this.browserSelect) {
+                const browserValue = this.browserSelect.getValue() || 'chromium';
+                const versionOptions = this._getBrowserVersions(browserValue);
+                if (versionOptions.length > 0) {
+                    this.browserVersion.setOptions(versionOptions);
+                    this.browserVersion.setValue(values.browserVersion);
+                }
+            }
+
+            // Set User-Agent mode
+            if (values.uaMode && this.uaModeToggle) {
+                console.log('[GeneralTab] _applyValuesInternal setting uaMode:', values.uaMode);
+                this.uaModeToggle.setValue(values.uaMode);
+                // Show/hide custom UA input based on mode - find input then its parent row
+                const uaInputEl = this.uaModeToggle?.element?.closest('.duck-card-body')?.querySelector('[data-field="userAgent"]');
+                const uaManualRow = uaInputEl?.closest('[style*="display"]');
+                if (uaManualRow) {
+                    uaManualRow.style.display = values.uaMode === 'custom' ? 'flex' : 'none';
+                }
+            }
+
+            // Set custom User-Agent only when uaMode is 'custom'; clear otherwise
+            if (values.uaMode === 'custom' && values.userAgent && this.uaInput) {
+                this.uaInput.setValue(values.userAgent);
+            } else if (values.uaMode === 'real' && this.uaInput) {
+                this.uaInput.setValue('');
+            }
+            // Always set the custom UA input value when loading a profile in edit mode
+            // (so overview can display the concrete UA regardless of mode)
+            // Only override if not already set and we have a concrete value
+            if (values._dbUserAgent && this.uaInput && !this.uaInput.getValue?.()) {
+                this.uaInput.setValue(values._dbUserAgent);
+            }
+
+            console.log('[GeneralTab] _applyValuesInternal - control values after set:');
+            console.log('  browserSelect:', this.browserSelect?.getValue?.());
+            console.log('  browserVersion:', this.browserVersion?.getValue?.());
+            console.log('  osSelect:', this.osSelect?.getValue?.());
+            console.log('  uaModeToggle:', this.uaModeToggle?.getValue?.());
         }
     };
 })();

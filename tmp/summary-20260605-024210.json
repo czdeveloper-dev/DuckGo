@@ -1,0 +1,4 @@
+{
+  "summary": "Redesigned HardwareTab: CPU & Memory and Resolution now use ToggleGroup (Real/Random/Custom) pattern instead of bare Select controls. When Custom is selected, a Select dropdown appears with options populated from template (HardwareTiers for CPU/Memory combined as 'N Cores / M GB', ScreenPresets for Resolution). Cascade wiring updated in CreateProfileModal to wire hwTab controls directly. Linter: 0 errors.",
+  "current_status": "HardwareTab: CPU+Memory ToggleGroup + Resolution ToggleGroup fully functional with template data. All Select controls now use placeholder Loading pattern and are populated by cascade. Build 0 errors."
+}

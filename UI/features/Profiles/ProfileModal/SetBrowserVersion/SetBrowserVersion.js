@@ -44,7 +44,6 @@ window.ProfileModals.SetBrowserVersion = {
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
                 { text: 'Update Version', class: 'duck-btn-primary', onClick: (e, modal) => {
                     const version = versionCombo ? versionCombo.getValue() : '';
-                    console.log('Updating browser version to:', version, 'AutoUpdateUA:', autoUpdateUA, 'for profiles:', Array.from(selectedIds));
                     modal.close();
                 }}
             ],

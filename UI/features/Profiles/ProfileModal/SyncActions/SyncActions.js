@@ -324,13 +324,11 @@ window.ProfileModals.SyncActions = {
                 startBtn.classList.add('duck-btn-danger'); // Assuming danger class exists for red, else we can use inline style or just change text
                 startBtn.style.background = 'var(--danger, #dc3545)';
                 startBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">stop</span> Stop Sync';
-                console.log(`Starting Sync: Layout ${cols}x${rows}`);
             } else {
                 startBtn.classList.add('duck-btn-primary');
                 startBtn.classList.remove('duck-btn-danger');
                 startBtn.style.background = '';
                 startBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">play_arrow</span> Start Sync';
-                console.log('Stopping Sync');
             }
         });
         

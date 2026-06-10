@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -161,76 +162,94 @@ public class FingerprintService
             {
                 System = new SystemConfig
                 {
-                    Platform              = osModel.PlatformString,
-                    Language             = langs.FirstOrDefault() ?? "en-US",
-                    UserAgent           = ua,
-                    AcceptLanguage      = acceptLang,
-                    Timezone            = tz,
-                    HardwareConcurrency = hwTier.Concurrency,
-                    DeviceMemory        = hwTier.Memory,
-                    Architecture        = osModel.Architecture,
-                    Bitness             = osModel.Bitness,
+                    BrowserVersion = version,
+                    Platform = new TypedConfig<string>("noise", osModel.PlatformString),
+                    Language = new TypedConfig<string>("noise", langs.FirstOrDefault() ?? "en-US"),
+                    UserAgent = new TypedConfig<string>("noise", ua),
+                    AcceptLanguage = new TypedConfig<string>("noise", acceptLang),
+                    Timezone = new TypedConfig<string>("noise", tz),
+                    HardwareConcurrency = new TypedConfig<int>("noise", hwTier.Concurrency),
+                    DeviceMemory = new TypedConfig<int>("noise", hwTier.Memory),
+                    Architecture = new TypedConfig<string>("noise", osModel.Architecture),
+                    Bitness = new TypedConfig<string>("noise", osModel.Bitness),
                     Screen = new ScreenConfig
                     {
-                        Width      = screenPreset.Width,
-                        Height     = screenPreset.Height,
+                        Mode = "noise",
+                        Width = screenPreset.Width,
+                        Height = screenPreset.Height,
                         ColorDepth = 24,
                         PixelRatio = screenPreset.PixelRatio
                     }
                 },
                 Fingerprint = new FingerprintConfig
                 {
-                    TLSOSMatch  = osModel.TLSOSMatch,
-                    Fonts       = osTmpl.Fonts.Take(Random.Shared.Next(osTmpl.Fonts.Count / 2, osTmpl.Fonts.Count)).ToList(),
                     WebGL = new WebGLConfig
                     {
-                        Mode       = "Noise",
-                        Vendor     = gpuVendor,
-                        Renderer   = gpuRenderer,
-                        NoiseSeed  = webglSeed,
+                        Mode = "noise",
+                        Vendor = gpuVendor,
+                        Renderer = gpuRenderer,
+                        NoiseSeed = webglSeed,
                         NoiseLevel = webglNoiseLevel,
                         ImageSpoofing = new ImageSpoofingConfig
                         {
+                            Mode = "noise",
                             TextureSeed = Guid.NewGuid().ToString("N")[..12],
                             Pattern = "default"
                         }
                     },
                     Canvas = new CanvasConfig
                     {
-                        Mode       = "Noise",
-                        NoiseSeed  = canvasSeed,
+                        Mode = "noise",
+                        NoiseSeed = canvasSeed,
                         NoiseLevel = canvasNoiseLevel
                     },
                     Audio = new AudioConfig
                     {
-                        Mode       = "Noise",
-                        NoiseSeed  = audioSeed,
-                        NoiseLevel = audioNoiseLevel
+                        Mode = "real",
+                        NoiseSeed = null,
+                        NoiseLevel = null
                     },
                     FontMetrics = new FontMetricsConfig
                     {
-                        Mode       = "Noise",
-                        NoiseSeed  = fontSeed,
-                        NoiseLevel = fontNoiseLevel
+                        Mode = "real",
+                        NoiseSeed = null,
+                        NoiseLevel = null
                     },
                     ClientRects = new ClientRectsConfig
                     {
-                        Mode       = "Noise",
-                        NoiseSeed  = rectsSeed,
+                        Mode = "noise",
+                        NoiseSeed = rectsSeed,
                         NoiseLevel = rectsNoiseLevel
+                    },
+                    Fonts = new FontsConfig
+                    {
+                        Mode = "noise",
+                        FontList = osTmpl.Fonts
+                            .Take(Random.Shared.Next(osTmpl.Fonts.Count / 2, osTmpl.Fonts.Count))
+                            .ToList()
+                    },
+                    Plugins = new PluginsConfig
+                    {
+                        Mode = "default",
+                        PluginList = new List<PluginInfo>
+                        {
+                            new() { Name = "Chrome PDF Plugin", Filename = "internal-pdf-viewer", Description = "Portable Document Format" },
+                            new() { Name = "Chrome PDF Viewer", Filename = "mhjfbmdgcfjbbpaeojofohoefgiehjai", Description = "" }
+                        }
                     },
                     MediaDevices = new MediaDevicesConfig
                     {
-                        Mode         = "Noise",
-                        VideoInputs  = Random.Shared.Next(1, 3), // 1-2 cameras
-                        AudioInputs  = Random.Shared.Next(1, 3), // 1-2 microphones
-                        AudioOutputs = Random.Shared.Next(1, 3)  // 1-2 speakers
+                        Mode = "real",
+                        VideoInputs = null,
+                        AudioInputs = null,
+                        AudioOutputs = null
                     },
                     Connection = PickRandomConnectionPreset(osTmpl),
-                    StorageQuota = osTmpl.StorageQuota,
-                    DoNotTrack   = "1"
+                    StorageQuota = new TypedConfig<long>("noise", osTmpl.StorageQuota),
+                    TLSOSMatch = new TypedConfig<string>("noise", osModel.TLSOSMatch),
+                    DoNotTrack = new DoNotTrackConfig { Mode = "real", Value = null }
                 },
-                Network  = new NetworkConfig(),
+                Network = new NetworkConfig(),
                 Security = new SecurityConfig(),
                 Location = await BuildLocationConfigAsync(tz)
             };
@@ -240,8 +259,10 @@ public class FingerprintService
         {
             // Randomize within ±50% of base value, clamped to min/max
             var variation = (Random.Shared.NextDouble() - 0.5) * baseValue; // ±50% variation
-            var result = baseValue + variation;
-            return Math.Clamp(result, min, max);
+            var result = Math.Clamp(baseValue + variation, min, max);
+            // #region agent log
+            // #endregion
+            return result;
         }
 
         private static ConnectionConfig PickRandomConnectionPreset(OsTemplate osTmpl)
@@ -351,13 +372,13 @@ public class FingerprintService
         var cfg = await GenerateAsync(platform, browserType, osModelName);
         return new
         {
-            platform       = cfg.System?.Platform ?? "Win32",
+            platform       = cfg.System?.Platform?.Value ?? "Win32",
             browserVersion = "138",
-            userAgent     = cfg.System?.UserAgent ?? "",
+            userAgent     = cfg.System?.UserAgent?.Value ?? "",
             screen        = $"{cfg.System?.Screen.Width}x{cfg.System?.Screen.Height}",
-            timezone       = cfg.System?.Timezone ?? "",
-            languages      = cfg.System?.AcceptLanguage ?? "",
-            hardware       = $"{cfg.System?.HardwareConcurrency} Cores, {cfg.System?.DeviceMemory}GB RAM",
+            timezone       = cfg.System?.Timezone?.Value ?? "",
+            languages      = cfg.System?.AcceptLanguage?.Value ?? "",
+            hardware       = $"{cfg.System?.HardwareConcurrency?.Value} Cores, {cfg.System?.DeviceMemory?.Value}GB RAM",
             webglVendor    = cfg.Fingerprint?.WebGL.Vendor ?? "",
             webglRenderer  = cfg.Fingerprint?.WebGL.Renderer ?? "",
         };
@@ -369,52 +390,52 @@ public class FingerprintService
         string? osModelName = null)
     {
         var cfg = await GenerateAsync(platform, browserType, osModelName);
-        var langs = cfg.System?.AcceptLanguage?.Split(',').Select(l => l.Trim()).ToList() ?? new List<string> { "en-US" };
+        var langs = cfg.System?.AcceptLanguage?.Value?.Split(',').Select(l => l.Trim()).ToList() ?? new List<string> { "en-US" };
         return new FingerprintSummaryResponse(
-            Platform: cfg.System?.Platform ?? "Win32",
+            Platform: cfg.System?.Platform?.Value ?? "Win32",
             BrowserVersion: "138",
-            UserAgent: cfg.System?.UserAgent ?? "",
+            UserAgent: cfg.System?.UserAgent?.Value ?? "",
             Screen: $"{cfg.System?.Screen.Width}x{cfg.System?.Screen.Height}",
             ScreenWidth: cfg.System?.Screen.Width.ToString() ?? "1920",
             ScreenHeight: cfg.System?.Screen.Height.ToString() ?? "1080",
             ScreenPixelRatio: cfg.System?.Screen.PixelRatio ?? 1.0,
-            Timezone: cfg.System?.Timezone ?? "",
-            AcceptLanguage: cfg.System?.AcceptLanguage ?? "en-US, en",
+            Timezone: cfg.System?.Timezone?.Value ?? "",
+            AcceptLanguage: cfg.System?.AcceptLanguage?.Value ?? "en-US,en",
             Languages: langs,
-            HardwareConcurrency: cfg.System?.HardwareConcurrency ?? 8,
-            DeviceMemory: cfg.System?.DeviceMemory ?? 8,
-            Architecture: cfg.System?.Architecture ?? "x86",
-            Bitness: cfg.System?.Bitness ?? "64",
+            HardwareConcurrency: cfg.System?.HardwareConcurrency?.Value ?? 8,
+            DeviceMemory: cfg.System?.DeviceMemory?.Value ?? 8,
+            Architecture: cfg.System?.Architecture?.Value ?? "x86",
+            Bitness: cfg.System?.Bitness?.Value ?? "64",
             WebGLVendor: cfg.Fingerprint?.WebGL.Vendor ?? "",
             WebGLRenderer: cfg.Fingerprint?.WebGL.Renderer ?? "",
-            WebGLMode: "Noise",
+            WebGLMode: (cfg.Fingerprint?.WebGL.Mode ?? "noise").ToLowerInvariant(),
             WebGLNoiseLevel: cfg.Fingerprint?.WebGL.NoiseLevel,
-            CanvasMode: "Noise",
+            CanvasMode: (cfg.Fingerprint?.Canvas.Mode ?? "noise").ToLowerInvariant(),
             CanvasNoiseLevel: cfg.Fingerprint?.Canvas.NoiseLevel,
-            WebGLImageMode: "Noise",
+            WebGLImageMode: "noise",
             ImageSpoofingTextureSeed: cfg.Fingerprint?.WebGL.ImageSpoofing?.TextureSeed,
             ImageSpoofingPattern: cfg.Fingerprint?.WebGL.ImageSpoofing?.Pattern ?? "default",
-            PluginsMode: "Noise",
-            FontsMode: "Random",
-            Fonts: cfg.Fingerprint?.Fonts ?? new List<string>(),
-            WebRTcMode: "Alter",
-            SslMode: "Noise",
-            PortScan: "Protect",
-            PortBlockMode: "BlockDefault",
-            PortBlockList: new List<string>(),
-            MediaDevicesMode: "Noise",
+            PluginsMode: (cfg.Fingerprint?.Plugins?.Mode ?? "default").ToLowerInvariant(),
+            FontsMode: (cfg.Fingerprint?.Fonts?.Mode ?? "real").ToLowerInvariant(),
+            Fonts: cfg.Fingerprint?.Fonts?.FontList ?? new List<string>(),
+            WebRTcMode: (cfg.Fingerprint?.WebRTcMode ?? "disable").ToLowerInvariant(),
+            SslMode: (cfg.Fingerprint?.SslMode ?? "noise").ToLowerInvariant(),
+            PortScan: (cfg.Security?.PortScan ?? "protect").ToLowerInvariant(),
+            PortBlockMode: cfg.Security?.PortBlockMode ?? "block_default",
+            PortBlockList: cfg.Security?.PortBlockList ?? new List<string>(),
+            MediaDevicesMode: (cfg.Fingerprint?.MediaDevices?.Mode ?? "real").ToLowerInvariant(),
             MediaVideoInputs: cfg.Fingerprint?.MediaDevices.VideoInputs,
             MediaAudioInputs: cfg.Fingerprint?.MediaDevices.AudioInputs,
             MediaAudioOutputs: cfg.Fingerprint?.MediaDevices.AudioOutputs,
-            SpeechVoicesMode: "Noise",
-            ClientRectsMode: "Noise",
+            SpeechVoicesMode: (cfg.Fingerprint?.SpeechVoicesMode ?? "noise").ToLowerInvariant(),
+            ClientRectsMode: (cfg.Fingerprint?.ClientRects.Mode ?? "noise").ToLowerInvariant(),
             ClientRectsNoiseLevel: cfg.Fingerprint?.ClientRects.NoiseLevel,
-            PlatformString: cfg.System?.Platform ?? "Win32",
-            TLSOSMatch: cfg.Fingerprint?.TLSOSMatch ?? "",
+            PlatformString: cfg.System?.Platform?.Value ?? "Win32",
+            TLSOSMatch: cfg.Fingerprint?.TLSOSMatch?.Value ?? "",
             ConnectionType: cfg.Fingerprint?.Connection?.EffectiveType ?? "4g",
             ConnectionDownlink: cfg.Fingerprint?.Connection?.Downlink,
             ConnectionRtt: cfg.Fingerprint?.Connection?.Rtt,
-            StorageQuota: cfg.Fingerprint?.StorageQuota
+            StorageQuota: cfg.Fingerprint?.StorageQuota?.Value
         );
     }
 

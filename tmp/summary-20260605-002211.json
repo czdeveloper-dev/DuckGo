@@ -1,0 +1,4 @@
+{
+  "summary": "Fixed HardwareTab to use template data: resSelect (ScreenPresets), cpuSelect/memSelect (HardwareTiers) all populated from template via cascade. Select.setOptions now also syncs display text. HardwareTab controls start with placeholder 'Loading...' and are populated by modal's _cascadeOsChange. All cascade updates correctly wired in requestAnimationFrame. Build 0 errors.",
+  "current_status": "HardwareTab: all Select controls (CPU, Memory, Resolution, WebGL Vendor/Renderer) now populate from template fingerprint data when OS changes. Screen Resolution presets available for preview even in Random mode. Build 0 errors."
+}

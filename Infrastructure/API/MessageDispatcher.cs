@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using DuckGo.Models.DTOs;
@@ -45,7 +44,6 @@ public class MessageDispatcher
             if (root.TryGetProperty("action",  out var actProp))  action  = actProp.GetString() ?? "";
             if (root.TryGetProperty("payload", out var plProp))   payload = plProp;
 
-            Debug.WriteLine($"[MessageDispatcher] action={action} id={id}");
             Log($"MD_entry", action, id, null, null, null);
 
             // Validate before dispatching
@@ -70,13 +68,11 @@ public class MessageDispatcher
         }
         catch (JsonException ex)
         {
-            Debug.WriteLine($"[MessageDispatcher] JsonException for '{action}': {ex}");
             Log($"MD_exception", action, id, false, $"JsonException:{ex.Message}", null);
             return SerializeResponse(id, false, $"Invalid JSON: {ex.Message}", null);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[MessageDispatcher] Exception for '{action}': {ex}");
             Log($"MD_exception", action, id, false, $"Exception:{ex.Message}", null);
             return SerializeResponse(id, false, ex.Message, null, noToast: true);
         }

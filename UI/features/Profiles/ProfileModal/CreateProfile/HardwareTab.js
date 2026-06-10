@@ -6,6 +6,117 @@
 
     window.ProfileModals.CreateProfile.HardwareTab = {
         _currentOsBlock: null,
+        _isLoadingProfile: false,
+        _suppressRandomize: false,
+
+        _setTemplate(template) {
+            this._fpTemplate = template;
+            this._populateHardwareOptions(template);
+        },
+
+        _setOsBlock(block) {
+            this._currentOsBlock = block;
+        },
+
+        _populateHardwareOptions(tmpl, skipRandomize = false) {
+            if (!tmpl) return;
+            const genTab = window.ProfileModals?.CreateProfile?.GeneralTab;
+            const osVal = genTab?._osSelectCtrl?.getValue?.() || 'Windows';
+            const osBlock = tmpl.OS?.[osVal] || {};
+
+            // HardwareTiers → cpuChipSelect
+            const tiers = osBlock?.HardwareTiers || [];
+            const cpuTierOpts = tiers.map(t => ({
+                label: `${t.Concurrency} Cores / ${t.Memory} GB`,
+                value: `${t.Concurrency}-${t.Memory}`
+            }));
+            if (this.cpuChipSelect) {
+                this.cpuChipSelect.setOptions(cpuTierOpts);
+                if (!skipRandomize && cpuTierOpts.length > 0) {
+                    this.cpuChipSelect.setValue(cpuTierOpts[0].value);
+                }
+            }
+
+            // ScreenPresets → resChipSelect
+            const presets = osBlock?.ScreenPresets || [];
+            const resOpts = presets.map(p => ({
+                label: `${p.Width} × ${p.Height} @${p.PixelRatio}x`,
+                value: `${p.Width}x${p.Height}x${p.PixelRatio}`
+            }));
+            if (this.resChipSelect) {
+                this.resChipSelect.setOptions(resOpts);
+                if (!skipRandomize && resOpts.length > 0) {
+                    this.resChipSelect.setValue(resOpts[0].value);
+                }
+            }
+
+            // WebGL vendors
+            const vendors = osBlock?.WebGL?.VendorGPUs
+                ? Object.keys(osBlock.WebGL.VendorGPUs)
+                : ['Google Inc. (NVIDIA)'];
+            const vendorOpts = vendors.map(v => ({ label: v, value: v }));
+            if (this._webglVendorSelect) {
+                this._webglVendorSelect.setOptions(vendorOpts);
+                if (!skipRandomize && vendorOpts.length > 0) {
+                    const randomVendor = vendorOpts[Math.floor(Math.random() * vendorOpts.length)].value;
+                    this._webglVendorSelect.setValue(randomVendor);
+                }
+            }
+
+            // WebGL renderer for selected vendor
+            const selectedVendor = this._webglVendorSelect?.getValue?.() || vendorOpts[0]?.value;
+            if (this._rendererSelect && osBlock?.WebGL?.VendorGPUs?.[selectedVendor]) {
+                const renderers = osBlock.WebGL.VendorGPUs[selectedVendor];
+                const rendererOpts = renderers.map(r => ({ label: r, value: r }));
+                this._rendererSelect.setOptions(rendererOpts);
+                if (!skipRandomize && rendererOpts.length > 0) {
+                    const randomRenderer = rendererOpts[Math.floor(Math.random() * rendererOpts.length)].value;
+                    this._rendererSelect.setValue(randomRenderer);
+                }
+            }
+        },
+
+        _randomizeTier() {
+            if (this._suppressRandomize) return;
+            const tiers = this._currentOsBlock?.HardwareTiers || [];
+            if (!tiers.length) return;
+            const tier = tiers[Math.floor(Math.random() * tiers.length)];
+            if (this.cpuChipSelect) this.cpuChipSelect.setValue(`${tier.Concurrency}-${tier.Memory}`);
+            return tier;
+        },
+
+        _randomizeResolution() {
+            if (this._suppressRandomize) return;
+            const presets = this._currentOsBlock?.ScreenPresets || [];
+            if (!presets.length) return;
+            const p = presets[Math.floor(Math.random() * presets.length)];
+            if (this.resChipSelect) this.resChipSelect.setValue(`${p.Width}x${p.Height}x${p.PixelRatio}`);
+            return p;
+        },
+
+        _randomizeWebGL() {
+            if (this._suppressRandomize) return;
+            const osBlock = this._currentOsBlock;
+            if (!osBlock?.WebGL?.VendorGPUs) return;
+            const vendors = Object.keys(osBlock.WebGL.VendorGPUs);
+            if (!vendors.length) return;
+            const vendor = vendors[Math.floor(Math.random() * vendors.length)];
+            const renderers = osBlock.WebGL.VendorGPUs[vendor];
+
+            if (this._rendererSelect) {
+                this._rendererSelect.setOptions(renderers.map(r => ({ label: r, value: r })));
+            }
+
+            if (this._webglVendorSelect) this._webglVendorSelect.setValue(vendor);
+            if (this._rendererSelect) this._rendererSelect.setValue(renderers[Math.floor(Math.random() * renderers.length)]);
+
+            const currentRenderer = this._rendererSelect?.getValue?.() || '';
+            if (currentRenderer !== renderers[0] && !renderers.includes(currentRenderer)) {
+                this._rendererSelect?.setValue(renderers[0]);
+            }
+
+            return { vendor, renderer: renderers[0] };
+        },
 
         render() {
             const container = document.createElement('div');
@@ -35,6 +146,7 @@
             });
 
             const hwTierWrap = document.createElement('div');
+            hwTierWrap.setAttribute('data-cpu-tier', 'true');
             hwTierWrap.style.cssText = 'display: none; flex-direction: column; gap: 8px; margin-top: 4px; padding: 16px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 8px;';
             const hwTierLabel = document.createElement('div');
             hwTierLabel.style.cssText = 'font-size: 12px; font-weight: 600; color: var(--text-secondary); padding-left: 2px;';
@@ -73,6 +185,7 @@
             });
 
             const resChipWrap = document.createElement('div');
+            resChipWrap.setAttribute('data-res-chip', 'true');
             resChipWrap.style.cssText = 'display: none; flex-direction: column; gap: 8px; margin-top: 4px; padding: 16px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 8px;';
             const resChipLabel = document.createElement('div');
             resChipLabel.style.cssText = 'font-size: 12px; font-weight: 600; color: var(--text-secondary); padding-left: 2px;';
@@ -118,7 +231,8 @@
                 value: 'random',
                 onChange: (val) => {
                     // Show/hide WebGL custom box and randomize when switching to Custom
-                    webglCustomBox.style.display = val === 'custom' ? 'flex' : 'none';
+                    // Use this._webglCustomBox (set right after this toggle creation) to avoid closure issue
+                    if (this._webglCustomBox) this._webglCustomBox.style.display = val === 'custom' ? 'flex' : 'none';
                     if (val === 'custom') {
                         this._randomizeWebGL();
                     }
@@ -129,7 +243,9 @@
             emuSec.appendChild(window.DuckControls.SettingRow.create({ title: 'WebGL Metadata', desc: 'Spoof GPU vendor and renderer strings', control: this.webglMetaToggle.element, alignTop: false }).element);
 
             const webglCustomBox = document.createElement('div');
+            webglCustomBox.setAttribute('data-webgl-custom', 'true');
             webglCustomBox.style.cssText = 'display: none; flex-direction: column; gap: 16px; background: var(--bg-surface); padding: 20px; border-radius: 8px; border: 1px solid var(--border-default);';
+            this._webglCustomBox = webglCustomBox;
 
             this._webglVendorSelect = window.DuckControls.Select.create({
                 label: 'Vendor',
@@ -174,63 +290,15 @@
             return container;
         },
 
-        _randomizeTier() {
-            const tiers = this._currentOsBlock?.HardwareTiers || [];
-            if (!tiers.length) return;
-            const tier = tiers[Math.floor(Math.random() * tiers.length)];
-            if (this.cpuChipSelect) this.cpuChipSelect.setValue(`${tier.Concurrency}-${tier.Memory}`);
-            return tier;
-        },
-
-        _randomizeResolution() {
-            const presets = this._currentOsBlock?.ScreenPresets || [];
-            if (!presets.length) return;
-            const p = presets[Math.floor(Math.random() * presets.length)];
-            if (this.resChipSelect) this.resChipSelect.setValue(`${p.Width}x${p.Height}x${p.PixelRatio}`);
-            return p;
-        },
-
-        _randomizeWebGL() {
-            const osBlock = this._currentOsBlock;
-            if (!osBlock?.WebGL?.VendorGPUs) return;
-            const vendors = Object.keys(osBlock.WebGL.VendorGPUs);
-            if (!vendors.length) return;
-            const vendor = vendors[Math.floor(Math.random() * vendors.length)];
-            const renderers = osBlock.WebGL.VendorGPUs[vendor];
-
-            // Update renderer options FIRST, then pick a random one
-            if (this._rendererSelect) {
-                this._rendererSelect.setOptions(renderers.map(r => ({ label: r, value: r })));
-            }
-
-            const renderer = renderers[Math.floor(Math.random() * renderers.length)];
-
-            // Set vendor - this will trigger onChange which may overwrite the renderer
-            // So we set both values and then restore renderer if needed
-            if (this._webglVendorSelect) this._webglVendorSelect.setValue(vendor);
-            if (this._rendererSelect) this._rendererSelect.setValue(renderer);
-
-            // If onChange overwrote renderer with a different random value, restore ours
-            const currentRenderer = this._rendererSelect?.getValue?.() || '';
-            if (currentRenderer !== renderer && renderers.includes(currentRenderer) === false) {
-                this._rendererSelect.setValue(renderer);
-            }
-
-            return { vendor, renderer };
-        },
-
-        _setOsBlock(block) {
-            this._currentOsBlock = block;
-        },
-
         getValues() {
             const cpuMode = this.cpuToggle ? this.cpuToggle.getValue() : 'random';
             const resMode = this.resToggle ? this.resToggle.getValue() : 'random';
             const webglMode = this.webglMetaToggle ? this.webglMetaToggle.getValue() : 'random';
 
+            // Real mode = null (no spoofing). Custom mode = parse chip select. Random mode = null (no value).
             let concurrency = null, deviceMemory = null;
-            if (cpuMode === 'custom' && this.cpuChipSelect) {
-                const key = this.cpuChipSelect.getValue() || '';
+            if (cpuMode === 'custom') {
+                const key = this.cpuChipSelect ? this.cpuChipSelect.getValue() : '';
                 const parts = key.split('-');
                 concurrency = parseInt(parts[0], 10) || null;
                 deviceMemory = parseInt(parts[1], 10) || null;
@@ -248,6 +316,17 @@
                 }
             }
 
+            // [DEBUG] hardware values
+            console.log('[DEBUG:HardwareTab.getValues]', JSON.stringify({
+                cpuMode, concurrency, deviceMemory,
+                resMode, screenWidth, screenHeight, screenPixelRatio,
+                canvasMode: this.canvasToggle ? this.canvasToggle.getValue() : 'noise',
+                webglImageMode: this.webglImgToggle ? this.webglImgToggle.getValue() : 'noise',
+                webglMode, webglVendor: webglMode === 'custom' && this._webglVendorSelect ? this._webglVendorSelect.getValue() : null,
+                webglRenderer: webglMode === 'custom' && this._rendererSelect ? this._rendererSelect.getValue() : null,
+                pluginsMode: this.pluginsToggle ? this.pluginsToggle.getValue() : 'noise',
+            }, null, 2));
+
             return {
                 concurrency,
                 deviceMemory,
@@ -264,6 +343,80 @@
                 webglRenderer: webglMode === 'custom' && this._rendererSelect ? this._rendererSelect.getValue() : null,
                 pluginsMode: this.pluginsToggle ? this.pluginsToggle.getValue() : 'noise',
             };
+        },
+
+        /** Set values from loaded profile data */
+        setValues(values, fpTemplate) {
+            // Suppress _randomizeTier/_randomizeResolution/_randomizeWebGL during load
+            // to prevent them from overwriting the chip values we just set
+            this._suppressRandomize = true;
+
+            // Use skipRandomize=true to avoid randomizing controls before we apply loaded values
+            if (fpTemplate && values.os) {
+                this._currentOsBlock = fpTemplate.OS?.[values.os];
+                this._populateHardwareOptions(fpTemplate, true);
+            }
+
+            // ToggleGroup.setValue now triggers onChange, which handles:
+            // - visibility of hwTierWrap/resChipWrap/webglCustomBox
+            // - _randomizeTier() / _randomizeResolution() / _randomizeWebGL() for custom modes
+            // Suppress randomization during this sequence so only our explicit setValue sticks.
+            // Toggles first, then deferred chip values last.
+
+            // CPU settings
+            if (values.cpuMode && this.cpuToggle) {
+                this.cpuToggle.setValue(values.cpuMode);
+                // Manually show/hide CPU tier box (don't rely on click handler)
+                const cpuWrap = this.cpuToggle.element?.closest('.duck-card-body')?.querySelector('[data-cpu-tier]');
+                if (cpuWrap) cpuWrap.style.display = values.cpuMode === 'custom' ? 'flex' : 'none';
+                if (values.cpuMode === 'custom' && values.concurrency && values.deviceMemory && this.cpuChipSelect) {
+                    this.cpuChipSelect.setValue(`${values.concurrency}-${values.deviceMemory}`);
+                }
+            }
+
+            // Screen Resolution settings
+            if (values.screenMode && this.resToggle) {
+                this.resToggle.setValue(values.screenMode);
+                // Manually show/hide resolution chip box
+                const resWrap = this.resToggle.element?.closest('.duck-card-body')?.querySelector('[data-res-chip]');
+                if (resWrap) resWrap.style.display = values.screenMode === 'custom' ? 'flex' : 'none';
+                if (values.screenMode === 'custom' && values.screenWidth && values.screenHeight && values.screenPixelRatio && this.resChipSelect) {
+                    this.resChipSelect.setValue(`${values.screenWidth}x${values.screenHeight}x${values.screenPixelRatio}`);
+                }
+            }
+
+            // Canvas mode - handle null (Real mode) and other valid values
+            if (values.canvasMode !== undefined && this.canvasToggle) {
+                this.canvasToggle.setValue(values.canvasMode);
+            }
+
+            // WebGL Image mode
+            if (values.webglImageMode !== undefined && this.webglImgToggle) {
+                this.webglImgToggle.setValue(values.webglImageMode);
+            }
+
+            // WebGL Metadata settings
+            if (values.webglMode !== undefined && this.webglMetaToggle) {
+                this.webglMetaToggle.setValue(values.webglMode);
+                // Manually show/hide WebGL custom box
+                if (this._webglCustomBox) {
+                    this._webglCustomBox.style.display = values.webglMode === 'custom' ? 'flex' : 'none';
+                }
+                if (values.webglMode === 'custom' && values.webglVendor && this._webglVendorSelect) {
+                    this._webglVendorSelect.setValue(values.webglVendor);
+                    if (values.webglRenderer && this._rendererSelect) {
+                        this._rendererSelect.setValue(values.webglRenderer);
+                    }
+                }
+            }
+
+            // Plugins mode - handle null (Real mode) and other valid values
+            if (values.pluginsMode !== undefined && this.pluginsToggle) {
+                this.pluginsToggle.setValue(values.pluginsMode);
+            }
+
+            // Re-enable randomization for user interactions
+            this._suppressRandomize = false;
         }
     };
 })();

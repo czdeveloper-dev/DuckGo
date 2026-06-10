@@ -172,11 +172,6 @@ window.ProfileModals.Arrange = {
         arrangeBtn.className = 'duck-btn duck-btn-primary';
         arrangeBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px; margin-right: 4px;">grid_view</span> Arrange Windows';
         arrangeBtn.addEventListener('click', () => {
-            console.log('Arrange Windows initiated with config:', {
-                monitor: currentMonitor,
-                layoutMode: modeRadio.getValue(),
-                cols, rows, gap: gapSpin.getValue(), autoScale: scaleCb.isChecked()
-            });
             if (this._modal) this._modal.close();
         });
         

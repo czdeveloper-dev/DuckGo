@@ -1,0 +1,4 @@
+{
+  "summary": "ChipSelect control enhanced: added setOptions() for cascade population, added overridable onChange getter/setter for wiring. CSS updated with flex-wrap:wrap and gap:4px for overflow handling. HardwareTab redesigned: CPU & Memory uses ToggleGroup (Real/Random/Custom) + ChipSelect for HardwareTiers; Screen Resolution uses ToggleGroup + ChipSelect for ScreenPresets. Both chip selects wrap in grid. Cascade wiring updated in CreateProfileModal. Linter: 0 errors.",
+  "current_status": "HardwareTab: CPU Tier and Resolution now use ChipSelect (chips wrap, single-select). ToggleGroup Real/Random/Custom controls visibility. Cascade populates options from template. Build 0 errors."
+}

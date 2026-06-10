@@ -71,6 +71,8 @@ public record FingerprintOptions(
     string? BrowserVersion,
     string? Language,
     string? AcceptLanguage,
+    string? ScreenMode,
+    string? HardwareMode,
     int? ScreenWidth,
     int? ScreenHeight,
     double? ScreenPixelRatio,
@@ -78,6 +80,8 @@ public record FingerprintOptions(
     List<string>? Languages,
     int? HardwareConcurrency,
     int? DeviceMemory,
+    string? CpuMode,
+    string? AudioMode,
     string? LocationMode,
     double? Latitude,
     double? Longitude,
@@ -98,6 +102,9 @@ public record FingerprintOptions(
     string? MediaDevicesMode,
     string? SpeechVoicesMode,
     string? ClientRectsMode,
+    string? FontMetricsMode,
+    string? FontMetricsNoiseSeed,
+    double? FontMetricsNoiseLevel,
     string? DoNotTrack,
     ProfileProxyOptions? Proxy
 );
@@ -127,6 +134,7 @@ public record ProfileUpdateRequest(
     List<int>? TagIds,
     int? ProxyId,
     string BrowserType,
+    string? BrowserVersion,
     string ProfileData,
     string? Notes,
     string? Cookies

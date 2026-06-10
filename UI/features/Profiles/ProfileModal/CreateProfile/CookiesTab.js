@@ -98,6 +98,14 @@
                 cookiesData: data || null,
                 cookiesFileName: this._cookiesFileName || null,
             };
+        },
+
+        /** Set values from loaded profile data */
+        setValues(values) {
+            if (values.cookiesData && this._textArea) {
+                this._textArea.setValue(values.cookiesData);
+                this._cookiesRawData = values.cookiesData;
+            }
         }
     };
 })();

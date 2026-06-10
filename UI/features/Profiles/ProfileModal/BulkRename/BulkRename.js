@@ -14,11 +14,11 @@
             this._profiles = selectedProfiles;
             if (this._profiles.length === 0) return;
             
-            // Generate initial state mapping
+            // Generate initial state mapping (profile data uses Id, not id)
             this._computedNames = this._profiles.map(p => ({
-                id: p.id,
-                oldName: p.name,
-                newName: p.name
+                id: p.Id ?? p.id,
+                oldName: p.Name ?? p.name,
+                newName: p.Name ?? p.name
             }));
 
             if (this._modal) {
@@ -90,15 +90,9 @@
                 sLabel.style.fontSize = '12px';
             }
 
+            // Apply button will be created below after inputs
             const applyBtnWrap = document.createElement('div');
-            const applyBtn = document.createElement('button');
-            applyBtn.className = 'duck-btn duck-btn-surface';
-            applyBtn.textContent = 'Apply';
-            applyBtn.style.height = '36px'; // align with input height
-            applyBtn.style.padding = '0 16px';
-            applyBtn.style.fontWeight = '500';
-            applyBtnWrap.appendChild(applyBtn);
-
+            
             controlsWrap.appendChild(prefixContainer);
             controlsWrap.appendChild(startContainer);
             controlsWrap.appendChild(applyBtnWrap);
@@ -108,7 +102,7 @@
             const listWrap = document.createElement('div');
             listWrap.style.cssText = 'flex: 1; min-height: 0; border: 1px solid var(--border-default); background: var(--bg-subtle, #f8fafc); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;';
             
-            const inputElements = []; // Store input refs to update later
+            const inputControls = []; // Store Input control refs to update later
 
             this._computedNames.forEach((item) => {
                 const row = document.createElement('div');
@@ -116,7 +110,7 @@
                 
                 const oldNameDiv = document.createElement('div');
                 oldNameDiv.style.cssText = 'flex: 1; font-size: 13px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 4px;';
-                oldNameDiv.textContent = item.oldName;
+                oldNameDiv.textContent = item.oldName || '-';
                 oldNameDiv.title = item.oldName;
                 
                 const arrow = document.createElement('span');
@@ -127,25 +121,25 @@
                 const newNameContainer = document.createElement('div');
                 newNameContainer.style.cssText = 'flex: 1;';
                 
-                // Native input styled beautifully
-                const newNameInput = document.createElement('input');
-                newNameInput.type = 'text';
-                newNameInput.style.cssText = 'width: 100%; box-sizing: border-box; height: 32px; padding: 0 10px; border: 1px solid var(--border-default); border-radius: 6px; font-size: 13px; color: var(--text-primary); outline: none; background: var(--bg-base); box-shadow: 0 1px 2px rgba(0,0,0,0.02); transition: border-color 0.2s;';
-                newNameInput.value = item.newName;
+                // Use DuckControls Input instead of native input
+                const inputCtrl = window.DuckControls.Input.create({
+                    placeholder: 'New name...',
+                    value: item.newName
+                });
+                inputCtrl.element.style.flex = '1';
                 
-                newNameInput.addEventListener('focus', () => {
-                    newNameInput.style.borderColor = 'var(--accent)';
-                });
-                newNameInput.addEventListener('blur', () => {
-                    newNameInput.style.borderColor = 'var(--border-default)';
-                });
-                newNameInput.addEventListener('input', (e) => {
+                // Listen for input changes
+                const inputEl = inputCtrl.input;
+                inputEl.addEventListener('input', (e) => {
                     item.newName = e.target.value;
                 });
+                inputEl.addEventListener('blur', () => {
+                    item.newName = inputCtrl.getValue();
+                });
                 
-                inputElements.push({ input: newNameInput, data: item });
+                inputControls.push({ ctrl: inputCtrl, data: item });
                 
-                newNameContainer.appendChild(newNameInput);
+                newNameContainer.appendChild(inputCtrl.element);
                 row.appendChild(oldNameDiv);
                 row.appendChild(arrow);
                 row.appendChild(newNameContainer);
@@ -154,19 +148,26 @@
 
             modalBody.appendChild(listWrap);
 
-            // Apply logic
-            applyBtn.addEventListener('click', () => {
-                const prefix = prefixCtrl.getValue();
-                const startStr = startCtrl.getValue() || '1';
-                let startNum = parseInt(startStr, 10);
-                if (isNaN(startNum)) startNum = 1;
-                
-                inputElements.forEach((el, index) => {
-                    const newName = `${prefix}${startNum + index}`;
-                    el.input.value = newName;
-                    el.data.newName = newName;
-                });
+            // Add apply button to the controls wrap
+            const applyBtnContainer = document.createElement('button');
+            DuckControls.Button.create(applyBtnContainer, {
+                text: 'Apply',
+                variant: 'secondary',
+                icon: 'auto_fix_high',
+                onClick: () => {
+                    const prefix = prefixCtrl.getValue();
+                    const startStr = startCtrl.getValue() || '1';
+                    let startNum = parseInt(startStr, 10);
+                    if (isNaN(startNum)) startNum = 1;
+                    
+                    inputControls.forEach((el, index) => {
+                        const newName = `${prefix}${startNum + index}`;
+                        el.ctrl.setValue(newName);
+                        el.data.newName = newName;
+                    });
+                }
             });
+            applyBtnWrap.appendChild(applyBtnContainer);
 
             this._modal = window.DuckControls.Modal.create({
             defaultEnter: true,
@@ -208,21 +209,55 @@
                 return;
             }
             
+            // Show loading state on submit button
+            const submitBtn = this._modal?.container?.querySelector('.duck-btn-primary');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="material-symbols-outlined duck-btn-icon animate-spin">progress_activity</span> Saving...';
+            }
+            
             try {
-                const promises = changes.map(c => window._duckBridge.call('profile.update', { id: c.id, changes: { Name: c.name } }));
-                await Promise.all(promises);
+                // Fetch all profiles first to preserve existing data
+                const profileFetches = changes.map(c => DuckBridge.call('profile.get', { id: c.id }));
+                const profiles = await Promise.all(profileFetches);
+                
+                // Update each profile preserving existing data
+                const updatePromises = changes.map((c, i) => {
+                    const profile = profiles[i];
+                    return DuckBridge.call('profile.update', {
+                        id: c.id,
+                        name: c.name,
+                        groupId: profile?.groupId ?? null,
+                        tagIds: profile?.tagIds ?? null,
+                        proxyId: profile?.proxyId ?? null,
+                        browserType: profile?.browserType ?? 'Chromium',
+                        browserVersion: profile?.browserVersion ?? '138',
+                        profileData: profile?.profileData ?? '{}',
+                        notes: profile?.notes ?? '',
+                        cookies: profile?.cookies ?? null
+                    });
+                });
+                await Promise.all(updatePromises);
                 
                 if (this._modal) this._modal.close();
                 
-                if (window.app && typeof window.app.loadProfiles === 'function') {
-                    window.app.loadProfiles();
-                } else {
-                    const event = new CustomEvent('profiles-updated');
-                    window.dispatchEvent(event);
+                // Refresh profiles, groups, and tags
+                if (window.ProfilesView?.loadProfiles) {
+                    await window.ProfilesView.loadProfiles();
+                }
+                if (window.ProfilesView?.loadGroups) {
+                    await window.ProfilesView.loadGroups();
+                }
+                if (window.ProfilesView?.loadTags) {
+                    await window.ProfilesView.loadTags();
                 }
             } catch (err) {
                 console.error('Bulk Rename Error:', err);
-                // toast handled by DuckBridge
+                // Reset button state
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span class="material-symbols-outlined duck-btn-icon">save</span> Submit to database';
+                }
             }
         }
     };

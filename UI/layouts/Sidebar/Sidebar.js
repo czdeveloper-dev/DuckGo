@@ -15,7 +15,6 @@
             this._setupThemeToggle();
             this._restoreState();
             this._restoreTheme();
-            console.log('[DuckSidebar] Initialized');
         },
 
         /**

@@ -1,0 +1,4 @@
+{
+  "summary": "Removed the default `chrome://newtab` fallback from profile creation and config generation, so blank Start URL now stays blank instead of being auto-filled. I updated the Create Profile payload, `ProfileService`, `ConfigBuilder`, and profile config defaults accordingly. I also added `BrowserVersion` as a real column in the `Profiles` database table, including migration-safe initialization for existing databases, entity/repository/service/response support, and persistence from the fingerprint payload into the profile row. Finally, I relaxed create-name validation to allow backend-generated names and verified the edited files are lint-clean.",
+  "current_status": "Profile creation now leaves Start URL empty unless explicitly provided, backend-generated names still work for blank names, and `BrowserVersion` is now stored directly on profile rows in the database alongside the existing profile metadata flow."
+}

@@ -164,7 +164,8 @@ window.DuckControls.Select = {
             setValue(val) {
                 selectValue = val;
                 const opt = getOptionsArr().find(o => o.value === val);
-                textSpan.textContent = opt ? opt.label : (initialOptions.label || initialOptions.placeholder || 'Select...');
+                // Show option label if found, otherwise show the value itself
+                textSpan.textContent = opt ? opt.label : (val || initialOptions.placeholder || 'Select...');
                 if (_menuCtrl) _menuCtrl.setSelectedValue(val);
                 clearError();
             },

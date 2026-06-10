@@ -81,7 +81,6 @@ window.ProfileModals.ExportProfiles = {
             buttons: [
                     { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
                     { text: 'Export', class: 'duck-btn-primary', onClick: (e, modal) => {
-                        console.log('Exporting format:', modalBody.querySelector('.duck-btn-surface span').innerText, 'Profiles:', Array.from(selectedIds));
                         modal.close();
                     }}
                 ],

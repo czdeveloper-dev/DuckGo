@@ -1,0 +1,4 @@
+{
+  "summary": "Fixed FingerprintService to read from AppData: (1) FingerprintService.cs — path changed to %APPDATA%\\DuckGo\\fingerprint\\default_fingerprint.json, added bootstrap: if file missing, copy from embedded resource to AppData; (2) DuckGo.csproj — added Assets\\default_fingerprint.json to EmbeddedResource. App now: first run → file bootstraps from embedded resource to AppData; subsequent runs → read from AppData. Build 0 errors.",
+  "current_status": "Fingerprint template now loads from %APPDATA%\\DuckGo\\fingerprint\\default_fingerprint.json (bootstrapped from embedded resource on first run). CreateProfile modal will receive full template and cascade OS-dependent controls correctly. Build succeeded."
+}

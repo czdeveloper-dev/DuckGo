@@ -48,8 +48,16 @@ public class ProfileListItem
     public string BrowserVersion { get; set; } = "";
     public string Notes { get; set; } = "";
     public string Cookies { get; set; } = "[]";
-    public string Status { get; set; } = "stopped";
+    public string Status { get; set; } = "ready";
     public string Message { get; set; } = "";
     public DateTime CreatedAt { get; set; }
     public DateTime? LastOpened { get; set; }
+}
+
+/// <summary>
+/// Full profile data for edit modal - includes ProfileData JSON
+/// </summary>
+public class ProfileDetailItem : ProfileListItem
+{
+    public string ProfileData { get; set; } = "{}";
 }

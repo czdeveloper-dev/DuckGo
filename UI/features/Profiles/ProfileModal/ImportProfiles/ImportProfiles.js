@@ -68,7 +68,6 @@ window.ProfileModals.ImportProfiles = {
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
                 { text: 'Import', class: 'duck-btn-primary', onClick: (e, modal) => {
                     if (selectedFile) {
-                        console.log('Importing file:', selectedFile.name, selectedFile.size);
                         // Add actual import logic here
                     }
                     modal.close();

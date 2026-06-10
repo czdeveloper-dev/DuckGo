@@ -21,8 +21,8 @@ public class ToastService
     public void ShowError(string title, string message)
         => _onToast(ToastPayload.Error(title, message));
 
-    public void ShowProgress(string toastId, string title, string message, int progress, string status)
-        => _onToast(ToastPayload.Progress(toastId, title, message, progress, status));
+    public void ShowProgress(string toastId, string title, string downloaded, string total, int progress, string status)
+        => _onToast(ToastPayload.Progress(toastId, title, downloaded, total, progress, status));
 
     public void CompleteProgress(string toastId, string title, string message)
         => _onToast(ToastPayload.Complete(toastId, title, message));

@@ -1,0 +1,4 @@
+{
+  "summary": "Adjusted the empty-name behavior so the frontend no longer generates a fallback profile name. `CreateProfileModal.js` now sends an empty `name` when the field is blank, and `ProfileService.CreateProfileAsync` now normalizes that on the backend via `EnsureProfileName`, generating a timestamp-plus-number profile name server-side before persistence and config hydration. I then re-ran diagnostics on the edited UI and service files and confirmed they remain lint-clean.",
+  "current_status": "Profile creation now delegates random fallback naming to the backend as requested, while the earlier Create Profile sync, proxy persistence, Start URL, and fingerprint state changes remain intact."
+}

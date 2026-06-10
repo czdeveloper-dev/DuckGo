@@ -17,7 +17,7 @@ public class Profile
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime? LastOpened { get; set; }
     public string Message { get; set; } = "";
-    public string Status { get; set; } = "stopped";
+    public string Status { get; set; } = "ready";
 
     [JsonIgnore]
     public string? GroupName { get; set; }

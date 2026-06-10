@@ -88,6 +88,7 @@
             portBlockWrap.appendChild(window.DuckControls.SettingRow.create({ title: 'Port Block Mode', desc: 'Choose how localhost and internal ports are filtered', control: this.portBlockModeSelect.element, alignTop: true }).element);
 
             const portListWrap = document.createElement('div');
+            portListWrap.setAttribute('data-port-list', 'true');
             portListWrap.style.cssText = 'display:none; flex-direction:column; gap:12px; margin-left: 0; padding: 16px; background: var(--bg-surface); border-radius: 8px; border: 1px solid var(--border-default);';
             this.portBlockListInput = window.DuckControls.ComboBoxTag.create({
                 label: 'Port Block List',
@@ -112,6 +113,12 @@
             });
             privSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Media Devices', desc: 'Spoof available Microphones & Cameras', control: this.mediaToggle.element, alignTop: false }).element);
 
+            this.audioToggle = window.DuckControls.ToggleGroup.create({
+                options: [{ label: 'Noise', value: 'noise' }, { label: 'Real', value: 'real' }],
+                value: 'noise'
+            });
+            privSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Audio API', desc: 'Add noise to audio fingerprint', control: this.audioToggle.element, alignTop: false }).element);
+
             this.speechToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Noise', value: 'noise' }, { label: 'Real', value: 'real' }],
                 value: 'noise'
@@ -130,6 +137,12 @@
             });
             privSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Client Rects', desc: 'Add noise to getClientRects API', control: this.rectsToggle.element, alignTop: false }).element);
 
+            this.fontMetricsToggle = window.DuckControls.ToggleGroup.create({
+                options: [{ label: 'Default', value: 'default' }, { label: 'Noise', value: 'noise' }],
+                value: 'noise'
+            });
+            privSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Font Metrics', desc: 'Spoof font metric measurements', control: this.fontMetricsToggle.element, alignTop: false }).element);
+
             this.fontsToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Default', value: 'default' }, { label: 'Custom', value: 'custom' }],
                 value: 'default',
@@ -140,6 +153,7 @@
             });
 
             const fontCustomBox = document.createElement('div');
+            fontCustomBox.setAttribute('data-font-custom', 'true');
             fontCustomBox.style.cssText = 'display: none; flex-direction: column; gap: 12px; background: var(--bg-surface); padding: 20px; border-radius: 8px; border: 1px solid var(--border-default); width: 100%; box-sizing: border-box;';
             const fontTagInput = window.DuckControls.ComboBoxTag.create({
                 label: 'Custom Fonts',
@@ -178,6 +192,20 @@
 
         getValues() {
             const fontsMode = this.fontsToggle ? this.fontsToggle.getValue() : 'default';
+            // [DEBUG] security values
+            console.log('[DEBUG:SecurityTab.getValues]', JSON.stringify({
+                webrtcMode: this.rtcToggle ? this.rtcToggle.getValue() : 'disable',
+                sslMode: this.sslToggle ? this.sslToggle.getValue() : 'noise',
+                portScan: this.portToggle ? this.portToggle.getValue() : 'protect',
+                portBlockMode: this.portBlockModeSelect ? this.portBlockModeSelect.getValue() : 'block_default',
+                mediaDevices: this.mediaToggle ? this.mediaToggle.getValue() : 'noise',
+                audioMode: this.audioToggle ? this.audioToggle.getValue() : 'noise',
+                speechVoices: this.speechToggle ? this.speechToggle.getValue() : 'noise',
+                clientRects: this.rectsToggle ? this.rectsToggle.getValue() : 'noise',
+                fontMetricsMode: this.fontMetricsToggle ? this.fontMetricsToggle.getValue() : 'noise',
+                fontsMode,
+                doNotTrack: this.doNotTrackToggle ? this.doNotTrackToggle.getValue() : 'default',
+            }, null, 2));
             return {
                 webrtcMode: this.rtcToggle ? this.rtcToggle.getValue() : 'disable',
                 sslMode: this.sslToggle ? this.sslToggle.getValue() : 'noise',
@@ -185,12 +213,98 @@
                 portBlockMode: this.portBlockModeSelect ? this.portBlockModeSelect.getValue() : 'block_default',
                 portBlockList: this.portBlockListInput ? this.portBlockListInput.getValues() : [],
                 mediaDevices: this.mediaToggle ? this.mediaToggle.getValue() : 'noise',
+                audioMode: this.audioToggle ? this.audioToggle.getValue() : 'noise',
                 speechVoices: this.speechToggle ? this.speechToggle.getValue() : 'noise',
                 clientRects: this.rectsToggle ? this.rectsToggle.getValue() : 'noise',
+                fontMetricsMode: this.fontMetricsToggle ? this.fontMetricsToggle.getValue() : 'noise',
                 fontsMode: fontsMode,
                 customFonts: fontsMode === 'custom' && this._fontTagInput ? this._fontTagInput.getValues() : [],
                 doNotTrack: this.doNotTrackToggle ? this.doNotTrackToggle.getValue() : 'default',
             };
+        },
+
+        /** Set values from loaded profile data */
+        setValues(values) {
+            // WebRTC mode
+            if (values.webrtcMode !== undefined && this.rtcToggle) {
+                this.rtcToggle.setValue(values.webrtcMode);
+            }
+
+            // SSL mode
+            if (values.sslMode !== undefined && this.sslToggle) {
+                this.sslToggle.setValue(values.sslMode);
+            }
+
+            // Port scan protection
+            if (values.portScan !== undefined && this.portToggle) {
+                this.portToggle.setValue(values.portScan);
+            }
+
+            // Port block mode
+            if (values.portBlockMode && this.portBlockModeSelect) {
+                this.portBlockModeSelect.setValue(values.portBlockMode);
+                // Show/hide port list using data attribute
+                const portListWrap = this.portBlockModeSelect?.element?.closest('.duck-card-body')?.querySelector('[data-port-list]');
+                if (portListWrap) {
+                    portListWrap.style.display = ['allow_list', 'custom'].includes(values.portBlockMode) ? 'flex' : 'none';
+                }
+            }
+
+            // Port block list
+            if (values.portBlockList && Array.isArray(values.portBlockList) && this.portBlockListInput) {
+                this.portBlockListInput.setValues(values.portBlockList);
+            }
+
+            // Media devices
+            if (values.mediaDevices !== undefined && this.mediaToggle) {
+                this.mediaToggle.setValue(values.mediaDevices);
+            }
+
+            // Audio API
+            if (values.audioMode !== undefined && this.audioToggle) {
+                this.audioToggle.setValue(values.audioMode);
+            }
+
+            // Speech voices
+            if (values.speechVoices !== undefined && this.speechToggle) {
+                this.speechToggle.setValue(values.speechVoices);
+            }
+
+            // Client rects
+            if (values.clientRects !== undefined && this.rectsToggle) {
+                this.rectsToggle.setValue(values.clientRects);
+            }
+
+            // Font metrics
+            if (values.fontMetricsMode !== undefined && this.fontMetricsToggle) {
+                this.fontMetricsToggle.setValue(values.fontMetricsMode);
+            }
+
+            // Fonts mode
+            if (values.fontsMode !== undefined && this.fontsToggle) {
+                this.fontsToggle.setValue(values.fontsMode);
+                // Show/hide custom fonts box using data attribute
+                const fontCustomBox = this.fontsToggle?.element?.closest('.duck-card-body')?.querySelector('[data-font-custom]');
+                if (fontCustomBox) {
+                    fontCustomBox.style.display = values.fontsMode === 'custom' ? 'flex' : 'none';
+                }
+                if (values.fontsMode === 'custom' && values.customFonts && Array.isArray(values.customFonts) && this._fontTagInput) {
+                    this._fontTagInput.setValues(values.customFonts);
+                }
+            }
+
+            // Do Not Track - convert from ProfileData format (1/0/null) to toggle format (enabled/disabled/default)
+            if (values.doNotTrack !== undefined && values.doNotTrack !== null && this.doNotTrackToggle) {
+                let dntValue = 'default';
+                if (values.doNotTrack === '1' || values.doNotTrack === 1 || values.doNotTrack === true) {
+                    dntValue = 'enabled';
+                } else if (values.doNotTrack === '0' || values.doNotTrack === 0 || values.doNotTrack === false) {
+                    dntValue = 'disabled';
+                } else if (typeof values.doNotTrack === 'string' && ['enabled', 'disabled', 'default'].includes(values.doNotTrack.toLowerCase())) {
+                    dntValue = values.doNotTrack.toLowerCase();
+                }
+                this.doNotTrackToggle.setValue(dntValue);
+            }
         }
     };
 })();

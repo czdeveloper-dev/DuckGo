@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
@@ -9,19 +8,15 @@ using DuckGo.Pipes;
 
 namespace DuckGo.Services;
 
-public class BrowserLifecycleService
+public class BrowserLifecycleService : IDisposable
 {
     private readonly IProfileRepository _profileRepo;
     private readonly BrowserCatalogService _catalogService;
     private readonly BrowserProvisioningService _provisioningService;
     private readonly ProfileStatusService _statusService;
     private readonly DuckPipeClient _pipeClient;
+    private readonly DuckBrowserManager _browserManager;
     private readonly Action<ToastPayload> _onToast;
-    private readonly Action<ProfileMessageUpdate> _onMessageUpdate;
-    private readonly int _startPort;
-
-    private readonly Dictionary<int, (Process Process, int CdpPort)> _runningBrowsers = new();
-    private int _nextPort = 9200;
 
     public BrowserLifecycleService(
         IProfileRepository profileRepo,
@@ -29,18 +24,16 @@ public class BrowserLifecycleService
         BrowserProvisioningService provisioningService,
         ProfileStatusService statusService,
         DuckPipeClient pipeClient,
-        Action<ToastPayload> onToast,
-        Action<ProfileMessageUpdate> onMessageUpdate,
-        int startPort = 9200)
+        DuckBrowserManager browserManager,
+        Action<ToastPayload> onToast)
     {
         _profileRepo = profileRepo;
         _catalogService = catalogService;
         _provisioningService = provisioningService;
         _statusService = statusService;
         _pipeClient = pipeClient;
+        _browserManager = browserManager;
         _onToast = onToast;
-        _onMessageUpdate = onMessageUpdate;
-        _startPort = startPort;
     }
 
     public async Task<BrowserStartResult> StartBrowserAsync(int profileId)
@@ -53,7 +46,7 @@ public class BrowserLifecycleService
             return new BrowserStartResult { Success = false, ProfileId = profileId, Error = error };
         }
 
-        if (_runningBrowsers.ContainsKey(profileId))
+        if (_browserManager.GetInstance(profileId) != null)
         {
             var error = $"Profile {profileId} is already running";
             _onToast(ToastPayload.Error("Already Running", error));
@@ -83,126 +76,97 @@ public class BrowserLifecycleService
             }
         }
 
-        await _statusService.UpdateStatusAsync(profileId, "provisioning", $"Checking {browserType} {browserVersion}...");
+        _statusService.UpdateStatus(profileId, "provisioning", $"Checking {browserType} {browserVersion}...");
 
-        var provisioningResult = await _provisioningService.EnsureInstalledAsync(profileId, browserType, browserVersion);
+        // Run provisioning on background thread
+        var provisioningResult = await Task.Run(async () =>
+            await _provisioningService.EnsureInstalledAsync(profileId, browserType, browserVersion)
+        ).ConfigureAwait(false);
+
         if (!provisioningResult.Success)
         {
-            await _statusService.UpdateStatusAsync(profileId, "error", provisioningResult.Error ?? "Failed to install browser");
-            _onToast(ToastPayload.Error("Browser Error", provisioningResult.Error ?? "Failed to install browser"));
+            System.Windows.Application.Current?.Dispatcher.Invoke(() => {
+                _onToast(ToastPayload.Error("Browser Error", provisioningResult.Error ?? "Failed to install browser"));
+            });
             return new BrowserStartResult { Success = false, ProfileId = profileId, Error = provisioningResult.Error };
         }
 
-        await _statusService.UpdateStatusAsync(profileId, "starting", "Launching browser...");
+        _statusService.UpdateStatus(profileId, "starting", "Launching DuckBrowser...");
 
-        var cdpPort = GetNextPort();
-        var profileDir = Path.Combine(AppConfig.ProfilesDir, profileId.ToString());
-        Directory.CreateDirectory(profileDir);
+        // Launch via DuckBrowserManager (handles pipe + CDP)
+        var launchResult = await Task.Run(async () =>
+            await _browserManager.LaunchAsync(profile)
+        ).ConfigureAwait(false);
 
-        var args = $"--remote-debugging-port={cdpPort} " +
-                   $"--profile-directory=\"{profileDir}\" " +
-                   $"--user-data-dir=\"{profileDir}\" " +
-                   $"--no-first-run " +
-                   $"--no-default-browser-check";
-
-        Process? proc;
-        try
+        if (launchResult.Success)
         {
-            proc = Process.Start(new ProcessStartInfo
-            {
-                FileName = provisioningResult.ExecutablePath,
-                Arguments = args,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WorkingDirectory = Path.GetDirectoryName(provisioningResult.ExecutablePath)
+            _statusService.UpdateStatus(profileId, "running", $"DuckBrowser running on port {launchResult.CdpPort}");
+            System.Windows.Application.Current?.Dispatcher.Invoke(() => {
+                _onToast(ToastPayload.Success("Browser Started", $"Profile {profile.Name} is running on port {launchResult.CdpPort}"));
             });
+            return new BrowserStartResult
+            {
+                Success = true,
+                ProfileId = profileId,
+                Status = "running",
+                CdpPort = launchResult.CdpPort
+            };
         }
-        catch (Exception ex)
+        else
         {
-            var error = $"Failed to start browser: {ex.Message}";
-            await _statusService.UpdateStatusAsync(profileId, "error", error);
-            _onToast(ToastPayload.Error("Launch Error", error));
-            return new BrowserStartResult { Success = false, ProfileId = profileId, Error = error };
+            _statusService.UpdateStatus(profileId, "error", launchResult.Error ?? "Launch failed");
+            System.Windows.Application.Current?.Dispatcher.Invoke(() => {
+                _onToast(ToastPayload.Error("Launch Error", launchResult.Error ?? "Failed to start browser"));
+            });
+            return new BrowserStartResult
+            {
+                Success = false,
+                ProfileId = profileId,
+                Error = launchResult.Error
+            };
         }
-
-        if (proc == null)
-        {
-            var error = "Failed to start browser process";
-            await _statusService.UpdateStatusAsync(profileId, "error", error);
-            _onToast(ToastPayload.Error("Launch Error", error));
-            return new BrowserStartResult { Success = false, ProfileId = profileId, Error = error };
-        }
-
-        _runningBrowsers[profileId] = (proc, cdpPort);
-        proc.Exited += (_, _) =>
-        {
-            _runningBrowsers.Remove(profileId);
-            _ = _statusService.UpdateStatusAsync(profileId, "stopped", "Browser closed");
-        };
-
-        await Task.Delay(2000);
-
-        await _statusService.UpdateStatusAsync(profileId, "running", "Connected to browser");
-        _onToast(ToastPayload.Success("Browser Started", $"Profile {profile.Name} is running on port {cdpPort}"));
-
-        return new BrowserStartResult
-        {
-            Success = true,
-            ProfileId = profileId,
-            Status = "running",
-            CdpPort = cdpPort
-        };
     }
 
     public async Task<BrowserStopResult> StopBrowserAsync(int profileId)
     {
-        if (!_runningBrowsers.TryGetValue(profileId, out var browserInfo))
+        var instance = _browserManager.GetInstance(profileId);
+        if (instance == null)
         {
             return new BrowserStopResult { Success = true, ProfileId = profileId };
         }
 
         try
         {
-            browserInfo.Process.Kill();
-            await Task.Delay(500);
-            _runningBrowsers.Remove(profileId);
-            await _statusService.UpdateStatusAsync(profileId, "stopped", "Browser stopped");
-            _onToast(ToastPayload.Info("Browser Stopped", $"Profile {profileId} has been stopped"));
+            await _browserManager.StopAsync(profileId);
+            _statusService.UpdateStatus(profileId, "stopped", "Browser stopped");
+            System.Windows.Application.Current?.Dispatcher.Invoke(() => {
+                _onToast(ToastPayload.Info("Browser Stopped", $"Profile {profileId} has been stopped"));
+            });
             return new BrowserStopResult { Success = true, ProfileId = profileId };
         }
         catch (Exception ex)
         {
             var error = $"Failed to stop browser: {ex.Message}";
-            await _statusService.UpdateStatusAsync(profileId, "error", error);
-            _onToast(ToastPayload.Error("Stop Error", error));
+            _statusService.UpdateStatus(profileId, "error", error);
+            System.Windows.Application.Current?.Dispatcher.Invoke(() => {
+                _onToast(ToastPayload.Error("Stop Error", error));
+            });
             return new BrowserStopResult { Success = false, ProfileId = profileId, Error = error };
         }
     }
 
-    public bool IsRunning(int profileId) => _runningBrowsers.ContainsKey(profileId);
+    public bool IsRunning(int profileId) => _browserManager.GetInstance(profileId) != null;
 
     public (int? CdpPort, bool IsRunning) GetBrowserInfo(int profileId)
     {
-        if (_runningBrowsers.TryGetValue(profileId, out var info))
-            return (info.CdpPort, true);
+        var instance = _browserManager.GetInstance(profileId);
+        if (instance != null)
+            return (instance.CdpPort, true);
         return (null, false);
     }
 
-    private int GetNextPort()
+    public void Dispose()
     {
-        var port = _nextPort++;
-        while (IsPortInUse(port)) port = _nextPort++;
-        return port;
-    }
-
-    private static bool IsPortInUse(int port)
-    {
-        try
-        {
-            using var client = new System.Net.Sockets.TcpClient();
-            client.Connect("127.0.0.1", port);
-            return true;
-        }
-        catch { return false; }
+        _browserManager?.Dispose();
     }
 }

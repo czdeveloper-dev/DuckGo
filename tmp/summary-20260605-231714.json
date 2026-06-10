@@ -1,0 +1,4 @@
+{
+  "summary": "Fixed the active C# build errors caused by the DTO shape mismatch. `ProfileService` was still reading legacy proxy properties (`Protocol` and `Auth`) after `ProfileProxyOptions` had been changed to explicit fields. I updated the proxy mapping logic to use the current DTO contract (`Mode`, `SavedProxyId`, `Type`, `Host`, `Port`, `Username`, `Password`) when composing `ProfileData`. I also checked the recently touched DTO/config/service/dispatcher files for diagnostics and they are lint-clean now.",
+  "current_status": "The immediate compile blocker in `ProfileService` is resolved. Proxy DTO/config/backend plumbing is now internally consistent again, while the broader Create Profile UX/backend work requested earlier is still in progress."
+}

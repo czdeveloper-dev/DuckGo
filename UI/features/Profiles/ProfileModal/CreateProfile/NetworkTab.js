@@ -8,6 +8,33 @@
         _savedProxies: [],
         _proxyTypes: [],
 
+        _setTemplate(template) {
+            this._fpTemplate = template;
+            this._populateNetworkOptions(template);
+        },
+
+        _populateNetworkOptions(tmpl) {
+            if (!tmpl) return;
+
+            // Language options
+            if (this._langTagInput) {
+                const langOpts = (tmpl.Languages || []).map(l => ({
+                    label: l,
+                    value: l
+                }));
+                this._langTagInput.setOptions(langOpts);
+            }
+
+            // Timezone options
+            if (this._tzSelect) {
+                const tzOpts = (tmpl.Timezones || []).map(tz => ({ label: tz, value: tz }));
+                this._tzSelect.setOptions([{ label: 'Auto (Match IP)', value: 'auto' }, ...tzOpts]);
+            } else if (this.tzSelect) {
+                const tzOpts = (tmpl.Timezones || []).map(tz => ({ label: tz, value: tz }));
+                this.tzSelect.setOptions([{ label: 'Auto (Match IP)', value: 'auto' }, ...tzOpts]);
+            }
+        },
+
         _currentBrowserLanguages() {
             const langs = Array.isArray(navigator.languages) && navigator.languages.length
                 ? navigator.languages
@@ -384,13 +411,6 @@
             const geoSec = document.createElement('div');
             geoSec.style.cssText = 'display: flex; flex-direction: column; gap: 20px;';
 
-            this.geoModeToggle = window.DuckControls.ToggleGroup.create({
-                options: [{ label: 'Prompt', value: 'Prompt' }, { label: 'Allow', value: 'Allow' }, { label: 'Block', value: 'Block' }],
-                value: 'Block',
-                onChange: () => window.ProfileModals?.CreateProfile?._scheduleSync?.()
-            });
-            geoSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Geolocation Access', desc: 'Handle websites requesting your location', control: this.geoModeToggle.element, alignTop: false }).element);
-
             this.tzSelect = window.DuckControls.ComboBox.create({
                 label: '',
                 placeholder: 'Search timezone...',
@@ -532,7 +552,76 @@
                     accuracy: this.accuracySpin ? parseFloat(this.accuracySpin.getValue() || '10') : 10
                 };
             }
+            // [DEBUG] network values
+            console.log('[DEBUG:NetworkTab.getValues]', JSON.stringify({
+                proxyMode: res.proxyMode,
+                timezone: res.timezone,
+                languages: res.languages,
+                locationMode: res.locationMode,
+                customCoordinates: res.customCoordinates,
+            }, null, 2));
             return res;
+        },
+
+        /** Set values from loaded profile data */
+        setValues(values) {
+            // Proxy settings
+            if (values.proxyMode) {
+                this.proxyTypeToggle?.setValue(values.proxyMode);
+                this._toggleProxyInputs(values.proxyMode);
+
+                if (values.proxyMode === 'saved' && values.savedProxyId) {
+                    // Wait for proxies to load
+                    setTimeout(() => {
+                        if (this.sProxy) this.sProxy.setValue(String(values.savedProxyId));
+                    }, 100);
+                } else if (values.proxyMode === 'custom' && values.proxyConfig) {
+                    // Set custom proxy fields
+                    if (values.proxyConfig.Type && this.pType) {
+                        this.pType.setValue(values.proxyConfig.Type);
+                    }
+                    if (values.proxyConfig.Host && this.pHost) {
+                        this.pHost.setValue(values.proxyConfig.Host);
+                    }
+                    if (values.proxyConfig.Port && this.pPort) {
+                        this.pPort.setValue(String(values.proxyConfig.Port));
+                    }
+                    if (values.proxyConfig.Username && this.pUser) {
+                        this.pUser.setValue(values.proxyConfig.Username);
+                    }
+                    if (values.proxyConfig.Password && this.pPass) {
+                        this.pPass.setValue(values.proxyConfig.Password);
+                    }
+                }
+            }
+
+            // Timezone
+            if (values.timezone && this.tzSelect) {
+                this.tzSelect.setValue(values.timezone);
+            }
+
+            // Languages
+            if (values.languages && Array.isArray(values.languages) && this.langTagInput) {
+                this.langTagInput.setValues(values.languages);
+            }
+
+            // Location mode
+            if (values.locationMode && this.locationModeToggle) {
+                this.locationModeToggle.setValue(values.locationMode);
+                this._toggleLocationInputs(values.locationMode);
+
+                if (values.locationMode === 'custom' && values.customCoordinates) {
+                    if (this.latIn && values.customCoordinates.lat !== undefined) {
+                        this.latIn.setValue(String(values.customCoordinates.lat));
+                    }
+                    if (this.lngIn && values.customCoordinates.lng !== undefined) {
+                        this.lngIn.setValue(String(values.customCoordinates.lng));
+                    }
+                    if (this.accuracySpin && values.customCoordinates.accuracy !== undefined) {
+                        this.accuracySpin.setValue(Math.round(values.customCoordinates.accuracy));
+                    }
+                }
+            }
         }
     };
 })();

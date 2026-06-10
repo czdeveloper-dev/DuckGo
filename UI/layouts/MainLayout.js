@@ -14,8 +14,6 @@
             if (this._initialized) return;
             this._initialized = true;
 
-            console.log('[DuckLayout] Initializing...');
-
             // Load HTML fragments (sidebar, topbar, etc.)
             await this._loadFragments();
 
@@ -24,8 +22,6 @@
 
             // Restore theme
             this._restoreTheme();
-
-            console.log('[DuckLayout] Initialized');
         },
 
         /**
@@ -40,8 +36,6 @@
                 this._fragmentsLoaded = true;
                 return;
             }
-
-            console.log(`[DuckLayout] Loading ${hosts.length} fragment(s)...`);
 
             // Try fetch first (works with HTTP server)
             const useFetch = await this._tryFetch();
@@ -84,11 +78,8 @@
                         } else {
                             host.outerHTML = html;
                         }
-                        console.log(`[DuckLayout] Fragment loaded: ${path}`);
                     }
-                } catch (e) {
-                    console.warn(`[DuckLayout] Failed to load fragment: ${path}`, e.message);
-                }
+                } catch (e) { }
             }
 
             this._fragmentsLoaded = true;

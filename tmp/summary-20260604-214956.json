@@ -1,0 +1,4 @@
+{
+  "summary": "Updated default_fingerprint.json: (1) Removed old placeholder models, added real Android block (20 models: Pixel 9, Galaxy S25, Xiaomi 15, OnePlus 13, etc.) with Qualcomm/ARM/Samsung GPU vendors and mobile screen presets + device memory tiers; (2) Added real iOS block (15 models: iPhone 16 series, iPad Pro/Air) with Apple GPU vendors and Retina screen presets; (3) All GPU renderers grouped by vendor — Qualcomm Adreno (750→610), ARM Mali (G925→G52), Samsung Mali, Apple GPU (A18 Pro→A10); (4) Updated GeneralTab.js: added iOS option to OS select, updated osModelSelect with real model names matching JSON. Build 0 warnings, 0 errors.",
+  "current_status": "All todos complete. default_fingerprint.json now has 5 OS blocks (Windows/macOS/Linux/Android/iOS) with consistent vendor-grouped GPU architecture. Build succeeded."
+}

@@ -411,7 +411,6 @@ window.ProfileModals.ImportProxy = {
             return;
         }
         
-        console.log('Importing', this._validProxies.length, 'proxies');
         // Implement bridge integration here
         
         if (this._modal) this._modal.close();

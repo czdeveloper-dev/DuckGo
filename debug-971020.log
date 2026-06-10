@@ -1,0 +1,448 @@
+{"sessionId":"971020","ts":1780782431326,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780782432055,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780782677535,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780782678244,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780782984778,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780782985580,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780783252360,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780783252890,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780783801925,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780783802695,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780800941307,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780800942101,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780801169197,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780801169664,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780801321139,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780801321934,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780801387438,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780801387581,"evt":"FP_FAIL","msg":"Error: An invalid request URI was provided. Either the request URI must be an absolute URI or BaseAddress must be set.","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780801509092,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780801509626,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780802422986,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780802423768,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780802606893,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780802607402,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780802947833,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780802948556,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780803084635,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780803085079,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780803993082,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780803993887,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780804514092,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780804514907,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780804797838,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780804798289,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780805140287,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780805141011,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780805267022,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780805267550,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780805418225,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780805418734,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780805662618,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780805663319,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780805842162,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780805842617,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780805960679,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780805961222,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780806285136,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780806285891,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780806414839,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780806415280,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780806641338,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780806642122,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780807015955,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780807016688,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780807181886,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780807182326,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780807403376,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780807404105,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780807560477,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780807560968,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780807686617,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780807687087,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780808144145,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780808144919,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780808494663,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780808495388,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780809094974,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780809095740,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780809359843,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780809360505,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780809455092,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780809455847,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780809703067,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780809703585,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780810775564,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780810776339,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35073","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780816024626,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780816025414,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35262","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780818542782,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780818543865,"evt":"FP_FAIL","msg":"Error: An item with the same key has already been added. Key: Fonts (Parameter \u0027propertyName\u0027)","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780819020424,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780819021407,"evt":"FP_FAIL","msg":"Error: An item with the same key has already been added. Key: Fonts (Parameter \u0027propertyName\u0027)","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780819426866,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780819427782,"evt":"FP_FAIL","msg":"Error: An item with the same key has already been added. Key: Fonts (Parameter \u0027propertyName\u0027)","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780820257711,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780820258833,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780821815786,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780821816593,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780822167285,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780822168066,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780822505614,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780822506879,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780822665597,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780822666176,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780829875418,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780829876390,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780830028316,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780830055195,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780830130834,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780830133598,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780830673061,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780830673825,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780831306685,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780831307582,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"id":"log_1780838345981_dbbd6c","timestamp":1780838345981,"location":"BrowserLifecycleService.StartBrowserAsync","message":"START","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780838345997_da0dd2","timestamp":1780838345997,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROFILE_FOUND","data":{"profileId":32,"profileName":"Josie Wehner 8595"},"sessionId":"971020"}
+{"id":"log_1780838346002_da8998","timestamp":1780838346002,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING","data":{"profileId":32,"browserType":"Chromium","browserVersion":"150.0.7849.0"},"sessionId":"971020"}
+{"id":"log_1780839540772_236704","timestamp":1780839540773,"location":"BrowserLifecycleService.StartBrowserAsync","message":"START","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780839540792_87f38d","timestamp":1780839540792,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROFILE_FOUND","data":{"profileId":32,"profileName":"Josie Wehner 8595"},"sessionId":"971020"}
+{"id":"log_1780839540798_08c038","timestamp":1780839540798,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING","data":{"profileId":32,"browserType":"Chromium","browserVersion":"150.0.7849.0"},"sessionId":"971020"}
+{"id":"log_1780839540897_7fbb01","timestamp":1780839540897,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING_DONE","data":{"profileId":32,"success":true,"error":null,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780839540916_ee18a1","timestamp":1780839540916,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCHING","data":{"profileId":32,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780839540940_9718e4","timestamp":1780839540940,"location":"DuckBrowserManager.LaunchAsync","message":"START","data":{"profileId":32,"cdpPort":9254,"browserPath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780839540947_9eae02","timestamp":1780839540947,"location":"DuckBrowserManager.LaunchAsync","message":"PROFILE_DIR","data":{"profileId":32,"profileDir":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32"},"sessionId":"971020"}
+{"id":"log_1780839540953_8e5fb7","timestamp":1780839540953,"location":"DuckBrowserManager.LaunchAsync","message":"SPAWNING","data":{"profileId":32,"args":"--remote-debugging-port=9254 --profile-directory=\u0022C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32\u0022 --user-data-dir=\u0022C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32\u0022 --no-first-run --no-default-browser-check"},"sessionId":"971020"}
+{"id":"log_1780839540978_14089c","timestamp":1780839540978,"location":"DuckBrowserManager.LaunchAsync","message":"PROCESS_START","data":{"profileId":32,"processId":24664,"hasExited":false},"sessionId":"971020"}
+{"id":"log_1780839541657_3a28b2","timestamp":1780839541657,"location":"DuckBrowserManager.LaunchAsync","message":"PIPE_CONNECT","data":{"profileId":32,"connected":true},"sessionId":"971020"}
+{"id":"log_1780839542699_b7f06f","timestamp":1780839542699,"location":"DuckBrowserManager.LaunchAsync","message":"CDP_READY_MISSING","data":{"profileId":32,"receivedType":null},"sessionId":"971020"}
+{"id":"log_1780839544716_5ab8b9","timestamp":1780839544716,"location":"DuckBrowserManager.LaunchAsync","message":"PROCESS_EXITED","data":{"profileId":32,"exitCode":200},"sessionId":"971020"}
+{"id":"log_1780839544723_b5c473","timestamp":1780839544723,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCH_RESULT","data":{"profileId":32,"success":false,"cdpPort":0,"error":"Browser exited with code 200"},"sessionId":"971020"}
+{"id":"log_1780840439508_52610c","timestamp":1780840439509,"location":"BrowserLifecycleService.StartBrowserAsync","message":"START","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780840439528_9d43cc","timestamp":1780840439528,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROFILE_FOUND","data":{"profileId":32,"profileName":"Josie Wehner 8595"},"sessionId":"971020"}
+{"id":"log_1780840439534_30a0b1","timestamp":1780840439534,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING","data":{"profileId":32,"browserType":"Chromium","browserVersion":"150.0.7849.0"},"sessionId":"971020"}
+{"id":"log_1780840439630_9c4c17","timestamp":1780840439630,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING_DONE","data":{"profileId":32,"success":true,"error":null,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780840439649_d16cb4","timestamp":1780840439649,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCHING","data":{"profileId":32,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780840439682_52ef25","timestamp":1780840439682,"location":"DuckBrowserManager.LaunchAsync","message":"START","data":{"profileId":32,"cdpPort":9254,"browserPath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780840439693_ae2098","timestamp":1780840439693,"location":"DuckBrowserManager.LaunchAsync","message":"PROFILE_DIR_OK","data":{"profileId":32,"profileDir":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32"},"sessionId":"971020"}
+{"id":"log_1780840439700_42d901","timestamp":1780840439700,"location":"DuckBrowserManager.LaunchAsync","message":"PROFILE_DIR","data":{"profileId":32,"profileDir":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32"},"sessionId":"971020"}
+{"id":"log_1780840439707_c5354a","timestamp":1780840439707,"location":"DuckBrowserManager.LaunchAsync","message":"SPAWNING","data":{"profileId":32,"args":"--remote-debugging-port=9254 --profile-directory=\u0022C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32\u0022 --user-data-dir=\u0022C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32\u0022 --no-first-run --no-default-browser-check"},"sessionId":"971020"}
+{"id":"log_1780840439729_24229b","timestamp":1780840439729,"location":"DuckBrowserManager.LaunchAsync","message":"PROCESS_START","data":{"profileId":32,"processId":17084,"hasExited":false},"sessionId":"971020"}
+{"id":"log_1780840440249_ed5e69","timestamp":1780840440249,"location":"DuckBrowserManager.LaunchAsync","message":"PIPE_CONNECT","data":{"profileId":32,"connected":true},"sessionId":"971020"}
+{"id":"log_1780840441163_f7d302","timestamp":1780840441163,"location":"DuckBrowserManager.LaunchAsync","message":"CDP_READY_MISSING","data":{"profileId":32,"receivedType":null},"sessionId":"971020"}
+{"id":"log_1780840443178_ab748e","timestamp":1780840443178,"location":"DuckBrowserManager.LaunchAsync","message":"PROCESS_EXITED","data":{"profileId":32,"exitCode":200},"sessionId":"971020"}
+{"id":"log_1780840443185_3ded66","timestamp":1780840443185,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCH_RESULT","data":{"profileId":32,"success":false,"cdpPort":0,"error":"Browser exited with code 200"},"sessionId":"971020"}
+{"id":"log_1780840495980_6d6e58","timestamp":1780840495980,"location":"BrowserLifecycleService.StartBrowserAsync","message":"START","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780840495986_6f0c07","timestamp":1780840495986,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROFILE_FOUND","data":{"profileId":32,"profileName":"Josie Wehner 8595"},"sessionId":"971020"}
+{"id":"log_1780840495991_f6eff2","timestamp":1780840495991,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING","data":{"profileId":32,"browserType":"Chromium","browserVersion":"150.0.7849.0"},"sessionId":"971020"}
+{"id":"log_1780840496042_d0947b","timestamp":1780840496042,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING_DONE","data":{"profileId":32,"success":true,"error":null,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780840496056_0d3201","timestamp":1780840496056,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCHING","data":{"profileId":32,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780840496061_385669","timestamp":1780840496061,"location":"DuckBrowserManager.LaunchAsync","message":"START","data":{"profileId":32,"cdpPort":9254,"browserPath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780840496078_eeb1e5","timestamp":1780840496078,"location":"DuckBrowserManager.LaunchAsync","message":"PROFILE_DIR_OK","data":{"profileId":32,"profileDir":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32"},"sessionId":"971020"}
+{"id":"log_1780840496083_a12db0","timestamp":1780840496083,"location":"DuckBrowserManager.LaunchAsync","message":"PROFILE_DIR","data":{"profileId":32,"profileDir":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32"},"sessionId":"971020"}
+{"id":"log_1780840496088_60aecb","timestamp":1780840496088,"location":"DuckBrowserManager.LaunchAsync","message":"SPAWNING","data":{"profileId":32,"args":"--remote-debugging-port=9254 --profile-directory=\u0022C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32\u0022 --user-data-dir=\u0022C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32\u0022 --no-first-run --no-default-browser-check"},"sessionId":"971020"}
+{"id":"log_1780840496104_0af9bd","timestamp":1780840496104,"location":"DuckBrowserManager.LaunchAsync","message":"PROCESS_START","data":{"profileId":32,"processId":28700,"hasExited":false},"sessionId":"971020"}
+{"id":"log_1780840496615_c45cb3","timestamp":1780840496615,"location":"DuckBrowserManager.LaunchAsync","message":"PIPE_CONNECT","data":{"profileId":32,"connected":true},"sessionId":"971020"}
+{"id":"log_1780840497369_6f51d5","timestamp":1780840497369,"location":"DuckBrowserManager.LaunchAsync","message":"CDP_READY_MISSING","data":{"profileId":32,"receivedType":null},"sessionId":"971020"}
+{"id":"log_1780840499380_7d5e02","timestamp":1780840499380,"location":"DuckBrowserManager.LaunchAsync","message":"PROCESS_EXITED","data":{"profileId":32,"exitCode":200},"sessionId":"971020"}
+{"id":"log_1780840499386_707080","timestamp":1780840499386,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCH_RESULT","data":{"profileId":32,"success":false,"cdpPort":0,"error":"Browser exited with code 200"},"sessionId":"971020"}
+{"id":"log_1780842330662_46e442","timestamp":1780842330662,"location":"BrowserLifecycleService.StartBrowserAsync","message":"START","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780842330679_f98418","timestamp":1780842330679,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROFILE_FOUND","data":{"profileId":32,"profileName":"Josie Wehner 8595"},"sessionId":"971020"}
+{"id":"log_1780842330687_29c533","timestamp":1780842330687,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING","data":{"profileId":32,"browserType":"Chromium","browserVersion":"150.0.7849.0"},"sessionId":"971020"}
+{"id":"log_1780842330764_39be76","timestamp":1780842330764,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING_DONE","data":{"profileId":32,"success":true,"error":null,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780842330783_fa77ac","timestamp":1780842330783,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCHING","data":{"profileId":32,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780842330794_0f8148","timestamp":1780842330794,"location":"DuckBrowserManager.LaunchAsync","message":"START","data":{"profileId":32,"cdpPort":9254,"browserPath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780842330802_46432a","timestamp":1780842330802,"location":"DuckBrowserManager.LaunchAsync","message":"PROFILE_DIR_OK","data":{"profileId":32,"profileDir":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32"},"sessionId":"971020"}
+{"id":"log_1780842330807_0b6294","timestamp":1780842330807,"location":"DuckBrowserManager.LaunchAsync","message":"PIPE_CONNECT_START","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780842335884_057991","timestamp":1780842335884,"location":"DuckBrowserManager.LaunchAsync","message":"PIPE_CONNECT","data":{"profileId":32,"connected":false},"sessionId":"971020"}
+{"id":"log_1780842335893_57f44d","timestamp":1780842335893,"location":"DuckBrowserManager.LaunchAsync","message":"PIPE_CONNECT_FAILED","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780842335901_0df8ce","timestamp":1780842335901,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCH_RESULT","data":{"profileId":32,"success":false,"cdpPort":0,"error":"Failed to connect to DuckBrowser pipe"},"sessionId":"971020"}
+{"id":"log_1780843139842_ce351d","timestamp":1780843139842,"location":"BrowserLifecycleService.StartBrowserAsync","message":"START","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780843139860_beab86","timestamp":1780843139860,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROFILE_FOUND","data":{"profileId":32,"profileName":"Josie Wehner 8595"},"sessionId":"971020"}
+{"id":"log_1780843139866_a38a62","timestamp":1780843139866,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING","data":{"profileId":32,"browserType":"Chromium","browserVersion":"150.0.7849.0"},"sessionId":"971020"}
+{"id":"log_1780843139975_5768a7","timestamp":1780843139975,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING_DONE","data":{"profileId":32,"success":true,"error":null,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780843139995_e2d23f","timestamp":1780843139995,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCHING","data":{"profileId":32,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780843140022_44c278","timestamp":1780843140022,"location":"DuckBrowserManager.LaunchAsync","message":"START","data":{"profileId":32,"cdpPort":9254,"browserPath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780843140030_2b0f1c","timestamp":1780843140030,"location":"DuckBrowserManager.LaunchAsync","message":"PROFILE_DIR_OK","data":{"profileId":32,"profileDir":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32"},"sessionId":"971020"}
+{"id":"log_1780843140231_6173f6","timestamp":1780843140231,"location":"DuckBrowserManager.LaunchAsync","message":"SPAWNING","data":{"profileId":32,"args":"--remote-debugging-port=9254 --profile-directory=\u0022C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32\u0022 --user-data-dir=\u0022C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32\u0022 --no-first-run --no-default-browser-check"},"sessionId":"971020"}
+{"id":"log_1780843140254_59afbd","timestamp":1780843140254,"location":"DuckBrowserManager.LaunchAsync","message":"PROCESS_START","data":{"profileId":32,"processId":2352,"hasExited":false},"sessionId":"971020"}
+{"id":"log_1780843140264_1a1ee1","timestamp":1780843140264,"location":"DuckBrowserManager.LaunchAsync","message":"PIPE_CONNECT_START","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780843140583_4afffc","timestamp":1780843140583,"location":"DuckBrowserManager.LaunchAsync","message":"PIPE_CONNECT_SUCCESS","data":{"profileId":32,"attempts":2},"sessionId":"971020"}
+{"id":"log_1780843140601_0948c8","timestamp":1780843140601,"location":"DuckBrowserManager.LaunchAsync","message":"SEND_CONNECT","data":{"profileId":32,"connectJson":"{\u0022profileId\u0022:\u002232\u0022,\u0022profileName\u0022:\u0022Josie Wehner 8595\u0022,\u0022timestamp\u0022:\u00221780843140597\u0022,\u0022startUrl\u0022:null}"},"sessionId":"971020"}
+{"id":"log_1780843140630_5bb68d","timestamp":1780843140630,"location":"DuckBrowserManager.LaunchAsync","message":"CONNECT_SENT","data":{"profileId":32,"sent":true},"sessionId":"971020"}
+{"id":"log_1780843140638_1a60aa","timestamp":1780843140638,"location":"DuckBrowserManager.LaunchAsync","message":"WAITING_FOR_CDP_READY","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780843143691_b5b520","timestamp":1780843143691,"location":"DuckBrowserManager.LaunchAsync","message":"GOT_RESPONSE","data":{"profileId":32,"responseType":null},"sessionId":"971020"}
+{"id":"log_1780843143701_65040f","timestamp":1780843143701,"location":"DuckBrowserManager.LaunchAsync","message":"NO_CDP_READY","data":{"profileId":32,"responseType":null},"sessionId":"971020"}
+{"id":"log_1780843144712_0fec26","timestamp":1780843144712,"location":"DuckBrowserManager.LaunchAsync","message":"PROCESS_EXITED","data":{"profileId":32,"exitCode":200},"sessionId":"971020"}
+{"id":"log_1780843144722_b662e2","timestamp":1780843144722,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCH_RESULT","data":{"profileId":32,"success":false,"cdpPort":0,"error":"Browser exited with code 200"},"sessionId":"971020"}
+{"id":"log_1780844510052_171be0","timestamp":1780844510053,"location":"BrowserLifecycleService.StartBrowserAsync","message":"START","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780844510071_c621dc","timestamp":1780844510071,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROFILE_FOUND","data":{"profileId":32,"profileName":"Josie Wehner 8595"},"sessionId":"971020"}
+{"id":"log_1780844510077_b5a30f","timestamp":1780844510077,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING","data":{"profileId":32,"browserType":"Chromium","browserVersion":"150.0.7849.0"},"sessionId":"971020"}
+{"id":"log_1780844510159_a03156","timestamp":1780844510159,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING_DONE","data":{"profileId":32,"success":true,"error":null,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780844510183_0218ad","timestamp":1780844510183,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCHING","data":{"profileId":32,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780844510195_615d2d","timestamp":1780844510195,"location":"DuckBrowserManager.LaunchAsync","message":"START","data":{"profileId":32,"cdpPort":9254,"browserPath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780844510204_ec2e37","timestamp":1780844510204,"location":"DuckBrowserManager.LaunchAsync","message":"PROFILE_DIR_OK","data":{"profileId":32,"profileDir":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32"},"sessionId":"971020"}
+{"id":"log_1780844510384_13d03b","timestamp":1780844510384,"location":"DuckBrowserManager.LaunchAsync","message":"SPAWNING","data":{"profileId":32,"args":"--remote-debugging-port=9254 --profile-directory=\u0022C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32\u0022 --user-data-dir=\u0022C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32\u0022 --no-first-run --no-default-browser-check"},"sessionId":"971020"}
+{"id":"log_1780844510411_864779","timestamp":1780844510411,"location":"DuckBrowserManager.LaunchAsync","message":"PROCESS_START","data":{"profileId":32,"processId":41612,"hasExited":false},"sessionId":"971020"}
+{"id":"log_1780844510423_a23d9a","timestamp":1780844510423,"location":"DuckBrowserManager.LaunchAsync","message":"PIPE_CONNECT_START","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780844510730_d3b950","timestamp":1780844510730,"location":"DuckBrowserManager.LaunchAsync","message":"PIPE_CONNECT_SUCCESS","data":{"profileId":32,"attempts":2},"sessionId":"971020"}
+{"id":"log_1780844510742_d456c0","timestamp":1780844510742,"location":"DuckBrowserManager.LaunchAsync","message":"SEND_CONNECT","data":{"profileId":32,"connectJson":"{\u0022profileId\u0022:\u002232\u0022,\u0022profileName\u0022:\u0022Josie Wehner 8595\u0022,\u0022timestamp\u0022:\u00221780844510738\u0022,\u0022startUrl\u0022:null}"},"sessionId":"971020"}
+{"id":"log_1780844510758_8073c6","timestamp":1780844510758,"location":"DuckBrowserManager.LaunchAsync","message":"CONNECT_SENT","data":{"profileId":32,"sent":true},"sessionId":"971020"}
+{"id":"log_1780844510765_5af35b","timestamp":1780844510765,"location":"DuckBrowserManager.LaunchAsync","message":"WAITING_FOR_CDP_READY","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780844513815_fe4e84","timestamp":1780844513815,"location":"DuckBrowserManager.LaunchAsync","message":"GOT_RESPONSE","data":{"profileId":32,"responseType":null},"sessionId":"971020"}
+{"id":"log_1780844513823_ec2bfa","timestamp":1780844513823,"location":"DuckBrowserManager.LaunchAsync","message":"NO_CDP_READY","data":{"profileId":32,"responseType":null},"sessionId":"971020"}
+{"id":"log_1780844514831_b5db36","timestamp":1780844514831,"location":"DuckBrowserManager.LaunchAsync","message":"PROCESS_EXITED","data":{"profileId":32,"exitCode":200},"sessionId":"971020"}
+{"id":"log_1780844514841_35ecb2","timestamp":1780844514841,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCH_RESULT","data":{"profileId":32,"success":false,"cdpPort":0,"error":"Browser exited with code 200"},"sessionId":"971020"}
+{"sessionId":"971020","ts":1780855637419,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780855638784,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"id":"log_1780855824133_2d2a9a","timestamp":1780855824134,"location":"BrowserLifecycleService.StartBrowserAsync","message":"START","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780855824144_f5c2a1","timestamp":1780855824144,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROFILE_FOUND","data":{"profileId":32,"profileName":"Josie Wehner 8595"},"sessionId":"971020"}
+{"id":"log_1780855824149_e8ecc6","timestamp":1780855824149,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING","data":{"profileId":32,"browserType":"Chromium","browserVersion":"150.0.7849.0"},"sessionId":"971020"}
+{"id":"log_1780855824550_174eaf","timestamp":1780855824550,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING_DONE","data":{"profileId":32,"success":true,"error":null,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780855824570_b44d5f","timestamp":1780855824570,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCHING","data":{"profileId":32,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780855824597_77152d","timestamp":1780855824597,"location":"DuckBrowserManager.LaunchAsync","message":"START","data":{"profileId":32,"cdpPort":9254,"browserPath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780855824606_6711bf","timestamp":1780855824606,"location":"DuckBrowserManager.LaunchAsync","message":"PROFILE_DIR_OK","data":{"profileId":32,"profileDir":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32"},"sessionId":"971020"}
+{"id":"log_1780855824773_d282bd","timestamp":1780855824773,"location":"DuckBrowserManager.LaunchAsync","message":"SPAWNING","data":{"profileId":32,"args":"--remote-debugging-port=9254 --profile-directory=\u0022C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32\u0022 --user-data-dir=\u0022C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32\u0022 --no-first-run --no-default-browser-check"},"sessionId":"971020"}
+{"id":"log_1780855825128_2ebf11","timestamp":1780855825128,"location":"DuckBrowserManager.LaunchAsync","message":"PROCESS_START","data":{"profileId":32,"processId":10512,"hasExited":false},"sessionId":"971020"}
+{"id":"log_1780855825140_1f2c82","timestamp":1780855825140,"location":"DuckBrowserManager.LaunchAsync","message":"PIPE_CONNECT_START","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780855826470_141a37","timestamp":1780855826470,"location":"DuckBrowserManager.LaunchAsync","message":"PIPE_CONNECT_SUCCESS","data":{"profileId":32,"attempts":5},"sessionId":"971020"}
+{"id":"log_1780855826481_d74c5d","timestamp":1780855826481,"location":"DuckBrowserManager.LaunchAsync","message":"SEND_CONNECT","data":{"profileId":32,"connectJson":"{\u0022profileId\u0022:\u002232\u0022,\u0022profileName\u0022:\u0022Josie Wehner 8595\u0022,\u0022timestamp\u0022:\u00221780855826477\u0022,\u0022startUrl\u0022:null}"},"sessionId":"971020"}
+{"id":"log_1780855826502_ec77a1","timestamp":1780855826502,"location":"DuckBrowserManager.LaunchAsync","message":"CONNECT_SENT","data":{"profileId":32,"sent":true},"sessionId":"971020"}
+{"id":"log_1780855826508_9f933b","timestamp":1780855826508,"location":"DuckBrowserManager.LaunchAsync","message":"WAITING_FOR_CDP_READY","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780855829554_7660f7","timestamp":1780855829554,"location":"DuckBrowserManager.LaunchAsync","message":"GOT_RESPONSE","data":{"profileId":32,"responseType":null},"sessionId":"971020"}
+{"id":"log_1780855829562_69e85c","timestamp":1780855829562,"location":"DuckBrowserManager.LaunchAsync","message":"NO_CDP_READY","data":{"profileId":32,"responseType":null},"sessionId":"971020"}
+{"id":"log_1780855830568_28587e","timestamp":1780855830568,"location":"DuckBrowserManager.LaunchAsync","message":"PROCESS_EXITED","data":{"profileId":32,"exitCode":200},"sessionId":"971020"}
+{"id":"log_1780855830577_c930da","timestamp":1780855830577,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCH_RESULT","data":{"profileId":32,"success":false,"cdpPort":0,"error":"Browser exited with code 200"},"sessionId":"971020"}
+{"id":"log_1780855916479_1da26e","timestamp":1780855916479,"location":"BrowserLifecycleService.StartBrowserAsync","message":"START","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780855916483_b44b70","timestamp":1780855916483,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROFILE_FOUND","data":{"profileId":32,"profileName":"Josie Wehner 8595"},"sessionId":"971020"}
+{"id":"log_1780855916487_53b618","timestamp":1780855916487,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING","data":{"profileId":32,"browserType":"Chromium","browserVersion":"150.0.7849.0"},"sessionId":"971020"}
+{"id":"log_1780855916515_47e25b","timestamp":1780855916515,"location":"BrowserLifecycleService.StartBrowserAsync","message":"PROVISIONING_DONE","data":{"profileId":32,"success":true,"error":null,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780855916525_8b2e4b","timestamp":1780855916525,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCHING","data":{"profileId":32,"executablePath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780855916528_e28550","timestamp":1780855916528,"location":"DuckBrowserManager.LaunchAsync","message":"START","data":{"profileId":32,"cdpPort":9254,"browserPath":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Browser\\Chromium\\150.0.7849.0\\chrome.exe"},"sessionId":"971020"}
+{"id":"log_1780855916532_9b14f0","timestamp":1780855916532,"location":"DuckBrowserManager.LaunchAsync","message":"PROFILE_DIR_OK","data":{"profileId":32,"profileDir":"C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32"},"sessionId":"971020"}
+{"id":"log_1780855916608_09108e","timestamp":1780855916608,"location":"DuckBrowserManager.LaunchAsync","message":"SPAWNING","data":{"profileId":32,"args":"--remote-debugging-port=9254 --profile-directory=\u0022C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32\u0022 --user-data-dir=\u0022C:\\Users\\CZDEVELOPER SEVER\\AppData\\Local\\.DuckGo\\Profiles\\32\u0022 --no-first-run --no-default-browser-check"},"sessionId":"971020"}
+{"id":"log_1780855916624_b64245","timestamp":1780855916624,"location":"DuckBrowserManager.LaunchAsync","message":"PROCESS_START","data":{"profileId":32,"processId":23952,"hasExited":false},"sessionId":"971020"}
+{"id":"log_1780855916627_2ff841","timestamp":1780855916627,"location":"DuckBrowserManager.LaunchAsync","message":"PIPE_CONNECT_START","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780855916792_989575","timestamp":1780855916792,"location":"DuckBrowserManager.LaunchAsync","message":"PIPE_CONNECT_SUCCESS","data":{"profileId":32,"attempts":1},"sessionId":"971020"}
+{"id":"log_1780855916795_89b68a","timestamp":1780855916795,"location":"DuckBrowserManager.LaunchAsync","message":"SEND_CONNECT","data":{"profileId":32,"connectJson":"{\u0022profileId\u0022:\u002232\u0022,\u0022profileName\u0022:\u0022Josie Wehner 8595\u0022,\u0022timestamp\u0022:\u00221780855916795\u0022,\u0022startUrl\u0022:null}"},"sessionId":"971020"}
+{"id":"log_1780855916803_5f7309","timestamp":1780855916803,"location":"DuckBrowserManager.LaunchAsync","message":"CONNECT_SENT","data":{"profileId":32,"sent":true},"sessionId":"971020"}
+{"id":"log_1780855916814_02a06f","timestamp":1780855916815,"location":"DuckBrowserManager.LaunchAsync","message":"WAITING_FOR_CDP_READY","data":{"profileId":32},"sessionId":"971020"}
+{"id":"log_1780855919855_138c4d","timestamp":1780855919855,"location":"DuckBrowserManager.LaunchAsync","message":"GOT_RESPONSE","data":{"profileId":32,"responseType":null},"sessionId":"971020"}
+{"id":"log_1780855919861_3d6996","timestamp":1780855919861,"location":"DuckBrowserManager.LaunchAsync","message":"NO_CDP_READY","data":{"profileId":32,"responseType":null},"sessionId":"971020"}
+{"id":"log_1780855920868_8514b6","timestamp":1780855920868,"location":"DuckBrowserManager.LaunchAsync","message":"PROCESS_EXITED","data":{"profileId":32,"exitCode":200},"sessionId":"971020"}
+{"id":"log_1780855920872_f0d3f9","timestamp":1780855920872,"location":"BrowserLifecycleService.StartBrowserAsync","message":"LAUNCH_RESULT","data":{"profileId":32,"success":false,"cdpPort":0,"error":"Browser exited with code 200"},"sessionId":"971020"}
+{"sessionId":"971020","ts":1780856846552,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780856848666,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780857493566,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780857495556,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780858104274,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780858105237,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780858397563,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780858397575,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780858670503,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780858671669,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780859178450,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780859180167,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780859343360,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780859344426,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780859535455,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780859537662,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780859672626,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780859675359,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780859971488,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780859973208,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780860070579,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780860072015,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780860165232,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780860166218,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780860612886,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780860614486,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780860854144,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780860856356,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780861180933,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780861182836,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780861436774,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780861442266,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780861562224,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780861566963,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780861592546,"evt":"FP_FAIL","msg":"Error: The request was canceled due to the configured HttpClient.Timeout of 30 seconds elapsing.","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780861592827,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780861597157,"evt":"FP_FAIL","msg":"Error: The request was canceled due to the configured HttpClient.Timeout of 30 seconds elapsing.","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780861602112,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780861622991,"evt":"FP_FAIL","msg":"Error: The request was canceled due to the configured HttpClient.Timeout of 30 seconds elapsing.","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780861632357,"evt":"FP_FAIL","msg":"Error: The request was canceled due to the configured HttpClient.Timeout of 30 seconds elapsing.","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780861634613,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780862190932,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780862192966,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780862381876,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780862383246,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780862727198,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780862728277,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780862877843,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780862879152,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780862978470,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780862979186,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780863151264,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780863152475,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780863188693,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780863189709,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780863349500,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780863350472,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780863680544,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780863681921,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780874013356,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780874014279,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780874043452,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780874043904,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780874394999,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780874395850,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780874569890,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780874570380,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780875200462,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780875201242,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780876107421,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780876108205,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780876826701,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780876827477,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780876879990,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780876880001,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780876973867,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780876973888,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780887653056,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780887653069,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780887695333,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780887695334,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780890206566,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780890206578,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780890340752,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780890340767,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780902568517,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780902569363,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780903265433,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780903265445,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780903645777,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780903645790,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780904049439,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780904050249,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780907090415,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780907091283,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780911606151,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780911607071,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780912605717,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780912605730,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780913116827,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780913117584,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780913529291,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780913529304,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780914441971,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780914441983,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780914976037,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780914976828,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780915901204,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780915902024,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780916294706,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780916295476,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780930261898,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780930262755,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780932258877,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780932260062,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780978681062,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780978682183,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780979246420,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780979246432,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780979375317,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780979375332,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780979749261,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1780979749277,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781011609390,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781011609403,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781016171436,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781016172271,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781018048368,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781018049163,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781019735767,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781019736587,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781024767752,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781024768622,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781026055721,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781026056485,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781027352698,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781027353556,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781027573445,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781027574017,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781029064840,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781029065610,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781048082256,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781048083430,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781048158136,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781048159093,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781048995234,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781048996856,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781049319512,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781049320748,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781050265113,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781050265886,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781059668614,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781059669491,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781059999267,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781060000035,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781060419999,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781060420808,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781060960941,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781060961747,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781072151253,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781072152146,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781073486853,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781073486865,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781073877957,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781073878788,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781075509232,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781075510025,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781076194037,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781076194054,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781076770599,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781076770611,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781077164889,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781077165709,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781077472723,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781077473563,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781078056311,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781078056323,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781079803527,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781079804348,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781080063090,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781080063105,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781080118263,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781080118276,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781082759503,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781082759514,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781083273026,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781083273824,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781084457032,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781084457814,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781085329627,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781085330512,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781086723254,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781086724012,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781087856119,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781087857049,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781091121748,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781091122580,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781091894138,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781091895014,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781094647898,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781094648816,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781096860615,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781096861574,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781100926488,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781100927562,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781102499214,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781102500037,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781103335453,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781103336140,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781103336209,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781103336246,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781105407111,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781105407962,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781106190459,"evt":"FP_START","msg":"GetFingerprintTemplateAsync called","src":"ProfileDispatcher"}
+{"sessionId":"971020","ts":1781106191283,"evt":"FP_OK","msg":"Templates: 43 TZs, 37 LGs, 5 OSes, JSON len=35742","src":"ProfileDispatcher"}

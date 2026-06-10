@@ -48,8 +48,6 @@ public class DatabaseService : IDisposable
                 Notes TEXT DEFAULT '',
                 CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
                 LastOpened TEXT,
-                Message TEXT DEFAULT '',
-                Status TEXT DEFAULT 'stopped',
                 FOREIGN KEY (GroupId) REFERENCES Groups(Id) ON DELETE SET NULL
             )");
 
@@ -86,13 +84,6 @@ public class DatabaseService : IDisposable
             )");
 
         await SeedProxyTypesAsync(conn);
-        await MigrateProfilesColumnsAsync(conn);
-    }
-
-    private static async Task MigrateProfilesColumnsAsync(SqliteConnection conn)
-    {
-        await EnsureColumnExistsAsync(conn, "Profiles", "Message", "ALTER TABLE Profiles ADD COLUMN Message TEXT DEFAULT ''");
-        await EnsureColumnExistsAsync(conn, "Profiles", "Status", "ALTER TABLE Profiles ADD COLUMN Status TEXT DEFAULT 'stopped'");
     }
 
     private static async Task SeedProxyTypesAsync(SqliteConnection conn)

@@ -1,0 +1,4 @@
+{
+  "summary": "Root cause found and fixed: JSON deserialize failed because top-level keys (Windows, macOS, Linux) were not mapped to C# property 'OS'. System.Text.Json only maps exact property names by default. Fix: added FingerprintTemplate.FromJson() using JsonNode to dynamically read the JSON structure — iterates top-level keys, skips arrays (Timezones, Languages), deserializes OS blocks as OsTemplate. Added OsTemplate.FromJson() to FingerprintConfig.cs. Build 0 errors.",
+  "current_status": "Model dropdown now populated: template deserializes 5 OS keys (Windows, macOS, Linux, Android, iOS) with 11 Windows models. CreateProfile modal cascade fully working."
+}

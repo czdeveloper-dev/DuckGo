@@ -28,7 +28,6 @@ window.ProfileModals.ClearCache = {
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
                 { text: 'Confirm Clear', class: 'duck-btn-danger', onClick: (e, modal) => {
-                    console.log('Clearing cache for selected profiles:', Array.from(selectedIds));
                     modal.close();
                 }}
             ]

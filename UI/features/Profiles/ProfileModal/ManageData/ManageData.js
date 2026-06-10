@@ -395,7 +395,6 @@
                 }
             });
 
-            console.log('Saving Data for Profile:', this._profileId, this._tabsData);
             if (this._modal) this._modal.close();
         }
     };

@@ -86,11 +86,6 @@ window.ProfileModals.UpdateStartUrl = {
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
                 { text: 'Save Start URL', class: 'duck-btn-primary', onClick: (e, modal) => {
                     const data = isBulkMode ? bulkTextarea.getValue() : singleInput.getValue();
-                    console.log('Update Start URL Executed:', {
-                        targetProfiles: Array.from(selectedIds),
-                        mode: isBulkMode ? 'bulk' : 'single',
-                        data: data
-                    });
                     modal.close();
                 }}
             ],

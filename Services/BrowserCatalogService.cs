@@ -63,22 +63,41 @@ public class BrowserCatalogService
         return Path.Combine(AppConfig.BrowserDir, browserType, browserVersion);
     }
 
-    public async Task<string?> ResolveExecutablePathAsync(string installDir, BrowserCatalog definition)
+    public async Task<string?> ResolveExecutablePathAsync(string installDir, BrowserCatalog? definition)
     {
-        var exePath = Path.Combine(installDir, definition.ExecutableRelativePath);
-
-        if (File.Exists(exePath))
+        if (definition != null && !string.IsNullOrEmpty(definition.ExecutableRelativePath))
         {
-            return exePath;
+            var exePath = Path.Combine(installDir, definition.ExecutableRelativePath);
+            if (File.Exists(exePath))
+                return exePath;
         }
 
-        var exeDir = Path.GetDirectoryName(exePath);
-        if (!string.IsNullOrEmpty(exeDir) && Directory.Exists(exeDir))
+        // Fallback: search for chrome.exe in common locations
+        var commonPaths = new[] {
+            "chrome.exe",
+            "chromium.exe",
+            Path.Combine("chrome-win", "chrome.exe"),
+            Path.Combine("chrome-linux", "chrome"),
+            "firefox.exe",
+            "firefox.exe",
+        };
+
+        foreach (var relPath in commonPaths)
         {
-            var files = Directory.GetFiles(exeDir, "*.exe", SearchOption.TopDirectoryOnly);
-            if (files.Length > 0)
+            var exePath = Path.Combine(installDir, relPath);
+            if (File.Exists(exePath))
+                return exePath;
+        }
+
+        // Deep search
+        if (Directory.Exists(installDir))
+        {
+            var files = Directory.GetFiles(installDir, "*.exe", SearchOption.AllDirectories);
+            foreach (var f in files)
             {
-                return files[0];
+                var name = Path.GetFileName(f).ToLowerInvariant();
+                if (name.Contains("chrome") || name.Contains("chromium") || name.Contains("firefox"))
+                    return f;
             }
         }
 

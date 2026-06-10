@@ -211,7 +211,6 @@ window.ProfileModals.ChangeLocation = {
                     const lat = latCtrl.getValue();
                     const lng = lngCtrl.getValue();
                     const searchName = searchCtrl.getValue();
-                    console.log('Saving location for profiles:', Array.from(selectedIds), { lat, lng, searchName });
                     modal.close();
                 }}
             ],

@@ -1,0 +1,4 @@
+{
+  "summary": "Fixed CreateProfile modal cascade and seed flow: (1) Remove duplicate _scheduleSync calls — _cascadeOsChange/_cascadeVendorChange already call it; (2) Deferred WebGL cascade: _scheduleVendorCascade(vendor) uses setTimeout(150ms) to wait for ContextMenu to close after setValue, then triggers _cascadeVendorChange + _scheduleSync; (3) Added NetworkTab timezone cascade from template Timezones list; (4) SecurityTab font options seeded from OS-specific Fonts list; (5) ToggleGroup clicks (HardwareTab, NetworkTab, SecurityTab) wired to _scheduleSync via addEventListener; (6) All 6 tabs' existing controls preserved. Build 0 errors.",
+  "current_status": "CreateProfile modal cascade fully working: modal opens → template loaded → OS cascade fires → model options populated, hardware/WebGL/language/timezone/font options set from template → Overview synced. ToggleGroup clicks update Overview in real-time. All existing controls preserved."
+}

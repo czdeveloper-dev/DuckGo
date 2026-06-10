@@ -65,11 +65,20 @@
                 element: wrap,
                 getValue: () => currentValue,
                 setValue: (val) => {
+                    // null means Real mode - map to 'real' string for UI display
+                    if (val === null || val === undefined) {
+                        val = 'real';
+                    }
+                    const prev = currentValue;
                     currentValue = val;
                     buttons.forEach(b => {
                         if (b.dataset.value === val) b.classList.add('active');
                         else b.classList.remove('active');
                     });
+                    // Trigger onChange when value actually changes (matches DOM click behavior)
+                    if (prev !== val && config.onChange) {
+                        config.onChange(currentValue);
+                    }
                 }
             };
         }

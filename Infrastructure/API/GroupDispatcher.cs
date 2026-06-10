@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Diagnostics;
 
 namespace DuckGo.Infrastructure.API;
 
@@ -27,9 +26,7 @@ public class GroupDispatcher : IDispatcher
 
     private async Task<(bool, string?, JsonElement?)> ListAsync()
     {
-        Debug.WriteLine($"[GroupDispatcher] ListAsync called");
         var result = await _service.GetGroupsAsync();
-        Debug.WriteLine($"[GroupDispatcher] ListAsync result count: {result.Count}");
         return (true, null, WrapInElement(result));
     }
 

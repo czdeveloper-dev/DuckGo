@@ -44,6 +44,13 @@
             return {
                 notes: this._textArea ? this._textArea.getValue() : '',
             };
+        },
+
+        /** Set values from loaded profile data */
+        setValues(values) {
+            if (values.notes !== undefined && this._textArea) {
+                this._textArea.setValue(values.notes || '');
+            }
         }
     };
 })();

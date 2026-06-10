@@ -18,9 +18,6 @@ namespace DuckGo;
 
 public partial class MainWindow : Window
 {
-    private string? _uiFolder;
-    private string? _assetFolder;
-
     private DatabaseService? _db;
     private ProfileService? _profileService;
     private GroupService? _groupService;
@@ -29,6 +26,7 @@ public partial class MainWindow : Window
     private MessageDispatcher? _dispatcher;
 
     private BrowserCatalogService? _browserCatalogService;
+    private BrowserVersionService? _browserVersionService;
     private BrowserProvisioningService? _browserProvisioningService;
     private BrowserLifecycleService? _browserLifecycleService;
     private ProfileStatusService? _profileStatusService;
@@ -36,6 +34,26 @@ public partial class MainWindow : Window
     private DuckPipeClient? _pipeClient;
 
     private IProfileRepository? _profileRepo;
+    private readonly Dictionary<string, byte[]> _uiResourceCache = new();
+    private string? _uiTempFolder;
+    private readonly Dictionary<string, string> _mimeTypes = new()
+    {
+        { ".html", "text/html" },
+        { ".css", "text/css" },
+        { ".js", "application/javascript" },
+        { ".json", "application/json" },
+        { ".png", "image/png" },
+        { ".jpg", "image/jpeg" },
+        { ".jpeg", "image/jpeg" },
+        { ".gif", "image/gif" },
+        { ".svg", "image/svg+xml" },
+        { ".ico", "image/x-icon" },
+        { ".woff", "font/woff" },
+        { ".woff2", "font/woff2" },
+        { ".ttf", "font/ttf" },
+        { ".eot", "application/vnd.ms-fontobject" },
+        { ".map", "application/json" }
+    };
 
     public MainWindow()
     {
@@ -45,12 +63,10 @@ public partial class MainWindow : Window
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
-        Debug.WriteLine("[DuckGo] OnLoaded started");
         try
         {
             _db = new DatabaseService();
             await _db.InitializeAsync();
-            Debug.WriteLine("[DuckGo] Database initialized");
 
             var groupRepo = new GroupRepository(_db);
             var tagRepo = new TagRepository(_db);
@@ -64,100 +80,159 @@ public partial class MainWindow : Window
             _proxyService = new ProxyService(proxyRepo);
             var fingerprintSvc = new FingerprintService();
             _profileService = new ProfileService(_profileRepo, groupRepo, tagRepo, proxyRepo, fingerprintSvc);
-            Debug.WriteLine("[DuckGo] Services created");
 
             _pipeClient = new DuckPipeClient(AppConfig.PipeName, AppConfig.PipeConnectTimeoutMs);
             _browserCatalogService = new BrowserCatalogService();
+            _browserVersionService = new BrowserVersionService();
 
-            Action<Models.DTOs.ProfileMessageUpdate> onMessageUpdate = msg =>
-            {
-                Debug.WriteLine($"[DuckGo] ProfileMessage: profileId={msg.ProfileId} msg={msg.Message} status={msg.Status}");
-            };
+            Action<Models.DTOs.ProfileMessageUpdate> onMessageUpdate = msg => { };
 
-            Action<string, object> onPush = (channel, payload) =>
-            {
-                Debug.WriteLine($"[DuckGo] Push: channel={channel}");
-            };
+            Action<string, object> onPush = (channel, payload) => { };
 
             Action<Models.DTOs.ToastPayload> onToast = toast =>
             {
-                Debug.WriteLine($"[DuckGo] Toast: type={toast.Type} title={toast.Title} progress={toast.ProgressValue}");
-                var json = System.Text.Json.JsonSerializer.Serialize(
-                    new { type = "push", channel = "toast", payload = toast });
-                WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({json})");
+                try
+                {
+                    var json = System.Text.Json.JsonSerializer.Serialize(
+                        new { type = "push", channel = "toast", payload = toast });
+                    var script = $"window.__duckReceive({json})";
+                    WebView.CoreWebView2?.ExecuteScriptAsync(script);
+                }
+                catch { }
             };
 
             Action<int, string> onProfileMessage = (profileId, message) =>
             {
-                var json = System.Text.Json.JsonSerializer.Serialize(
-                    new { type = "push", channel = "profile.message", payload = new { profileId, message } });
-                WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({json})");
+                try
+                {
+                    var json = System.Text.Json.JsonSerializer.Serialize(
+                        new { type = "push", channel = "profile.message", payload = new { profileId, message } });
+
+                    if (System.Windows.Application.Current?.Dispatcher.CheckAccess() == true)
+                    {
+                        WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({json})");
+                    }
+                    else
+                    {
+                        System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => {
+                            WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({json})");
+                        });
+                    }
+                }
+                catch { }
             };
 
-            _profileStatusService = new ProfileStatusService(_profileRepo, onMessageUpdate, onPush);
+            _profileStatusService = new ProfileStatusService(onMessageUpdate, onProfileMessage);
             _browserProvisioningService = new BrowserProvisioningService(
                 _browserCatalogService, installedBrowserRepo, onToast, onMessageUpdate, onProfileMessage);
+
+            var browserPath = GetInstalledBrowserPath();
+            var duckBrowserManager = new DuckBrowserManager(browserPath);
+
             _browserLifecycleService = new BrowserLifecycleService(
                 _profileRepo, _browserCatalogService, _browserProvisioningService,
-                _profileStatusService, _pipeClient, onToast, msg => { });
+                _profileStatusService, _pipeClient, duckBrowserManager, onToast);
             _toastService = new ToastService(onToast);
 
             _dispatcher = new MessageDispatcher(new IDispatcher[]
             {
-                new BrowserDispatcher(_browserLifecycleService!),
+                new BrowserDispatcher(_browserLifecycleService!, _browserVersionService!),
                 new FingerprintDispatcher(fingerprintSvc),
-                new ProfileDispatcher(_profileService!, fingerprintSvc),
+                new ProfileDispatcher(_profileService!, fingerprintSvc, _profileStatusService!),
                 new GroupDispatcher(_groupService!),
                 new TagDispatcher(_tagService!),
                 new ProxyDispatcher(_proxyService!),
                 new ProxyTypeDispatcher(proxyTypeRepo),
             });
-            Debug.WriteLine("[DuckGo] Dispatcher created");
 
             WebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(255, 244, 246, 248);
-            await WebView.EnsureCoreWebView2Async();
-            Debug.WriteLine("[DuckGo] WebView2 ready");
+
+            var userDataFolder = Path.Combine(AppConfig.BaseDir, "WebView2", "UserData");
+            Directory.CreateDirectory(userDataFolder);
+
+            var env = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(
+                browserExecutableFolder: null,
+                userDataFolder: userDataFolder);
+
+            await WebView.EnsureCoreWebView2Async(env);
 
             WebView.CoreWebView2.Settings.IsScriptEnabled = true;
             WebView.CoreWebView2.Settings.AreDefaultScriptDialogsEnabled = false;
             WebView.CoreWebView2.Settings.IsStatusBarEnabled = false;
             WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
+            WebView.CoreWebView2.Settings.AreDevToolsEnabled = true;
+            WebView.CoreWebView2.Settings.IsWebMessageEnabled = true;
 
-            _uiFolder = ExtractResources("DuckGo.UI.", "UI");
-            _assetFolder = ExtractResources("DuckGo.Assets.", "Assets");
-            if (_uiFolder == null)
+            var uiFolder = ExtractUiToTempFolder();
+            if (uiFolder == null)
             {
-                MessageBox.Show("Failed to extract UI files", "DuckGo Error");
+                MessageBox.Show("Failed to extract UI resources", "DuckGo Error");
                 return;
             }
-            Debug.WriteLine($"[DuckGo] UI folder: {_uiFolder}");
-            if (_assetFolder != null) Debug.WriteLine($"[DuckGo] Asset folder: {_assetFolder}");
 
             WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                "duckgo.local", _uiFolder, CoreWebView2HostResourceAccessKind.Allow);
+                "duckgo.local",
+                uiFolder,
+                CoreWebView2HostResourceAccessKind.Allow);
+
+            WebView.CoreWebView2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
+            WebView.CoreWebView2.WebResourceRequested += OnWebResourceRequested;
 
             WebView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
             PreviewKeyDown += OnPreviewKeyDown;
-            Debug.WriteLine("[DuckGo] Navigating to index.html...");
+
             WebView.CoreWebView2.Navigate("http://duckgo.local/index.html");
-            Debug.WriteLine("[DuckGo] OnLoaded completed successfully");
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[DuckGo] OnLoaded EXCEPTION: {ex}");
             MessageBox.Show($"OnLoaded failed:\n{ex.Message}\n\n{ex.StackTrace}", "DuckGo Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
-    private string? ExtractResources(string prefix, string folderName)
+    private string GetInstalledBrowserPath()
+    {
+        var browserDir = Path.Combine(AppConfig.BrowserDir, "Chromium");
+
+        if (Directory.Exists(browserDir))
+        {
+            var versions = Directory.GetDirectories(browserDir)
+                .Select(d => new { Path = d, Version = Path.GetFileName(d) })
+                .OrderByDescending(x => x.Version)
+                .ToList();
+
+            foreach (var v in versions)
+            {
+                var chromePath = Path.Combine(v.Path, "chrome.exe");
+                if (File.Exists(chromePath))
+                {
+                    return chromePath;
+                }
+            }
+
+            var files = Directory.GetFiles(browserDir, "chrome.exe", SearchOption.AllDirectories);
+            if (files.Length > 0)
+            {
+                return files[0];
+            }
+        }
+
+        return Path.Combine(browserDir, "chrome.exe");
+    }
+
+    private string? LoadResourcesToMemory(string prefix)
     {
         try
         {
-            var tempPath = Path.Combine(Path.GetTempPath(), $"DuckGo_{folderName}");
-            if (Directory.Exists(tempPath)) { try { Directory.Delete(tempPath, true); } catch { } }
-            Directory.CreateDirectory(tempPath);
-
             var assembly = Assembly.GetExecutingAssembly();
+            var count = 0;
+
+            var tempDir = Path.Combine(Path.GetTempPath(), "DuckGoUI_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            _uiTempFolder = tempDir;
+
+            Debug.WriteLine("[UI] === Resource Loading Started ===");
+            Debug.WriteLine($"[UI] Extracting to: {tempDir}");
+
             foreach (var name in assembly.GetManifestResourceNames())
             {
                 if (!name.StartsWith(prefix)) continue;
@@ -166,29 +241,142 @@ public partial class MainWindow : Window
                 var lastDot = relativePath.LastIndexOf('.');
                 if (lastDot > 0)
                 {
-                    relativePath = relativePath.Substring(0, lastDot).Replace('.', Path.DirectorySeparatorChar)
-                                   + relativePath.Substring(lastDot);
+                    var ext = relativePath.Substring(lastDot);
+                    relativePath = relativePath.Substring(0, lastDot).Replace('.', '/') + ext;
                 }
-
-                var fullPath = Path.Combine(tempPath, relativePath);
-                var dir = Path.GetDirectoryName(fullPath);
-                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
 
                 using var stream = assembly.GetManifestResourceStream(name);
                 if (stream != null)
                 {
-                    using var fileStream = File.Create(fullPath);
-                    stream.CopyTo(fileStream);
+                    using var ms = new MemoryStream();
+                    stream.CopyTo(ms);
+                    var data = ms.ToArray();
+                    _uiResourceCache[relativePath] = data;
+
+                    var diskPath = Path.Combine(tempDir, relativePath);
+                    var diskDir = Path.GetDirectoryName(diskPath);
+                    if (diskDir != null) Directory.CreateDirectory(diskDir);
+                    File.WriteAllBytes(diskPath, data);
+
+                    count++;
+                    if (relativePath.Contains("index.html"))
+                    {
+                        Debug.WriteLine($"[UI] ** Found index.html at: {diskPath}");
+                    }
                 }
             }
 
-            Console.WriteLine($"[DuckGo] {folderName} folder: {tempPath}");
-            return tempPath;
+            Debug.WriteLine($"[UI] === Resource Loading Complete: {count} resources ===");
+
+            return count > 0 ? tempDir : null;
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.WriteLine($"[UI] LoadResourcesToMemory error: {ex.Message}");
             return null;
         }
+    }
+
+    private string? ExtractUiToTempFolder()
+    {
+        return LoadResourcesToMemory("DuckGo.UI.");
+    }
+
+    private string? GetResourceContent(string path)
+    {
+        if (path.StartsWith("/")) path = path.Substring(1);
+        if (path.StartsWith("http://duckgo.local/"))
+            path = path.Substring("http://duckgo.local/".Length);
+
+        if (_uiResourceCache.TryGetValue(path, out var data))
+        {
+            var ext = Path.GetExtension(path).ToLowerInvariant();
+            if (ext == ".html" || ext == ".css" || ext == ".js" || ext == ".json" || ext == ".svg" || ext == ".map")
+            {
+                if (data.Length >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF)
+                    return System.Text.Encoding.UTF8.GetString(data, 3, data.Length - 3);
+                if (data.Length >= 2 && data[0] == 0xFF && data[1] == 0xFE)
+                    return System.Text.Encoding.Unicode.GetString(data, 2, data.Length - 2);
+
+                try { return System.Text.Encoding.UTF8.GetString(data); }
+                catch { return System.Text.Encoding.Default.GetString(data); }
+            }
+        }
+        return null;
+    }
+
+    private byte[]? GetResourceBytes(string path)
+    {
+        if (path.StartsWith("/")) path = path.Substring(1);
+        if (path.StartsWith("http://duckgo.local/"))
+            path = path.Substring("http://duckgo.local/".Length);
+        if (path.StartsWith("http://duckgo.local"))
+            path = path.Substring("http://duckgo.local".Length);
+
+        var queryIndex = path.IndexOf('?');
+        if (queryIndex > 0) path = path.Substring(0, queryIndex);
+
+        if (_uiResourceCache.TryGetValue(path, out var data))
+            return data;
+
+        var lastSlash = path.LastIndexOf('/');
+        if (lastSlash >= 0)
+        {
+            var fileName = path.Substring(lastSlash + 1);
+            foreach (var key in _uiResourceCache.Keys)
+            {
+                if (key.EndsWith("/" + fileName) || key.EndsWith("\\" + fileName))
+                {
+                    return _uiResourceCache[key];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private string GetMimeType(string path)
+    {
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        return _mimeTypes.TryGetValue(ext, out var mime) ? mime : "application/octet-stream";
+    }
+
+    private void OnWebResourceRequested(object? sender, CoreWebView2WebResourceRequestedEventArgs e)
+    {
+        var uri = e.Request.Uri;
+
+        string path;
+        if (uri.StartsWith("http://duckgo.local/"))
+        {
+            path = uri.Substring("http://duckgo.local/".Length);
+        }
+        else if (uri.StartsWith("http://duckgo.local"))
+        {
+            path = uri.Substring("http://duckgo.local".Length);
+        }
+        else
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(path) || path == "/") path = "index.html";
+
+        Debug.WriteLine($"[UI] Requested: {path}");
+
+        var data = GetResourceBytes(path);
+        if (data == null)
+        {
+            Debug.WriteLine($"[UI] 404 Not Found: {path}");
+            e.Response = WebView.CoreWebView2.Environment.CreateWebResourceResponse(
+                null, 404, "Not Found", "");
+            return;
+        }
+
+        Debug.WriteLine($"[UI] 200 OK: {path} ({data.Length} bytes)");
+        var mime = GetMimeType(path);
+        var stream = new MemoryStream(data);
+        e.Response = WebView.CoreWebView2.Environment.CreateWebResourceResponse(
+            stream, 200, "OK", $"Content-Type: {mime}\r\n");
     }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
@@ -209,16 +397,19 @@ public partial class MainWindow : Window
 
             if (_dispatcher == null) return;
             var responseJson = await _dispatcher!.DispatchAsync(raw);
-            WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({responseJson})");
+            Dispatcher.Invoke(() => {
+                WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({responseJson})");
+            });
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[DuckGo] OnWebMessageReceived EXCEPTION: {ex}");
             try
             {
                 var errJson = System.Text.Json.JsonSerializer.Serialize(
                     new { type = "response", id = 0, success = false, error = ex.Message });
-                WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({errJson})");
+                Dispatcher.Invoke(() => {
+                    WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({errJson})");
+                });
             }
             catch { }
         }
@@ -229,7 +420,9 @@ public partial class MainWindow : Window
         try
         {
             var json = System.Text.Json.JsonSerializer.Serialize(new { type = "push", channel, payload });
-            WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({json})");
+            Dispatcher.Invoke(() => {
+                WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({json})");
+            });
         }
         catch { }
     }
@@ -237,10 +430,13 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _pipeClient?.Dispose();
-        if (!string.IsNullOrEmpty(_uiFolder) && Directory.Exists(_uiFolder))
+        _uiResourceCache.Clear();
+
+        if (_uiTempFolder != null && Directory.Exists(_uiTempFolder))
         {
-            try { Directory.Delete(_uiFolder, true); } catch { }
+            try { Directory.Delete(_uiTempFolder, true); } catch { }
         }
+
         base.OnClosed(e);
     }
 

@@ -1,0 +1,4 @@
+{
+  "summary": "Fixed critical missing backend action 'profile.getFingerprintTemplate': (1) ProfileDispatcher.cs — injected FingerprintService, added profile.getFingerprintTemplate case in switch that returns GetTemplatesAsync() as JSON; (2) MainWindow.xaml.cs — updated ProfileDispatcher constructor to pass fingerprintSvc, reordered dispatchers list so FingerprintDispatcher (exact match for 'profile.generateFingerprint') comes before ProfileDispatcher (StartsWith). App killed (PID 35240) and rebuilt. Build 0 errors.",
+  "current_status": "Backend now supports profile.getFingerprintTemplate. CreateProfile modal will load full template (OS blocks, GPUs, fonts, screen presets, hardware tiers) from backend when opened. Build succeeded."
+}

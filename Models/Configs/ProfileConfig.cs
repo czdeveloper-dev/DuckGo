@@ -16,7 +16,7 @@ public class ProfileDataConfig
         Fingerprint = FingerprintConfig.Default,
         Network = new NetworkConfig(),
         Security = new SecurityConfig(),
-        Location = new LocationConfig { Mode = "Noise", Latitude = 40.7128, Longitude = -74.0060, Accuracy = 100 }
+        Location = LocationConfig.Default
     };
 }
 

@@ -15,6 +15,8 @@ public class ToastPayload
     public string Message { get; set; } = "";
     public string Type { get; set; } = "info";
     public int ProgressValue { get; set; } = -1;
+    public string Downloaded { get; set; } = "";  // Formatted string: "45.2 MB"
+    public string Total { get; set; } = "";        // Formatted string: "100.5 MB"
     public string Status { get; set; } = "";
     public bool Persistent { get; set; } = false;
 
@@ -33,9 +35,10 @@ public class ToastPayload
         Title = title, Message = message, Type = "error"
     };
 
-    public static ToastPayload Progress(string toastId, string title, string message, int progress, string status) => new()
+    public static ToastPayload Progress(string toastId, string title, string downloaded, string total, int progress, string status) => new()
     {
-        ToastId = toastId, Title = title, Message = message,
+        ToastId = toastId, Title = title,
+        Downloaded = downloaded, Total = total,
         Type = "progress", ProgressValue = progress, Status = status, Persistent = true
     };
 

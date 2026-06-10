@@ -59,11 +59,6 @@ window.ProfileModals.ChangeBookmark = {
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
                 { text: 'Execute Update', class: 'duck-btn-primary', onClick: (e, modal) => {
-                    console.log('Change Bookmark Executed:', {
-                        targetProfiles: Array.from(selectedIds),
-                        actionType: actionCombo.getValue(),
-                        bookmarksData: textareaCtrl.getValue()
-                    });
                     modal.close();
                 }}
             ],

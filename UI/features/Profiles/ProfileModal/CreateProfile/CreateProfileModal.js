@@ -21,12 +21,17 @@
         _syncTimer: null,
         _browserCatalog: null,
         _isSubmitting: false,
+        // Edit mode properties
+        _mode: 'create',
+        _editProfileId: null,
+        _originalProfileData: null,
+        // Prevent sync/cascade during profile data loading
+        _isLoadingProfile: false,
 
         // Listen for profile-created so Group/Tag dropdowns stay fresh
         _initProfileCreatedListener() {
             window.removeEventListener('profile-created', this._onProfileCreatedBound);
             this._onProfileCreatedBound = () => {
-                console.log('[CreateProfile] profile-created event received!');
                 this._refreshEntityData();
             };
             window.addEventListener('profile-created', this._onProfileCreatedBound);
@@ -41,8 +46,16 @@
             const values = {};
             ['GeneralTab', 'NetworkTab', 'HardwareTab', 'SecurityTab', 'CookiesTab', 'NotesTab'].forEach(tabName => {
                 const tab = window.ProfileModals.CreateProfile[tabName];
-                if (tab?.getValues) Object.assign(values, tab.getValues());
+                const tabVals = tab?.getValues ? tab.getValues() : {};
+                console.log(`[DEBUG:_collectTabValues] ${tabName}:`, JSON.stringify(tabVals, null, 2));
+                Object.assign(values, tabVals);
             });
+            // Get name from the name input field
+            const nameInput = this._nameInput?.querySelector?.('input');
+            if (nameInput) {
+                values.name = nameInput.value || '';
+            }
+            console.log('[DEBUG:collectTabValues] FINAL:', JSON.stringify(values, null, 2));
             return values;
         },
 
@@ -114,7 +127,49 @@
         /** Read all tab values and write them into the Overview panel. */
         _syncSummary() {
             if (!this._modal) return;
+
+            // [DEBUG] check if overview elements exist in DOM
+            const allSummaryEls = this._modal.container.querySelectorAll('.duck-summary-item-value');
+            console.log('[DEBUG:_syncSummary] overview elements found:', allSummaryEls.length);
+            allSummaryEls.forEach(el => {
+                console.log(`  [${el.dataset.label}]: "${el.textContent}"`);
+            });
+
             const v = this._collectTabValues();
+            console.log('[CreateProfile] _syncSummary - collected values:', JSON.stringify(v, null, 2));
+            // [DEBUG:SYNC_KEYS] show the exact values overview uses
+            console.log('[DEBUG:SYNC_KEYS]', JSON.stringify({
+                os: v.os,
+                osModel: v.osModel,
+                browser: v.browser,
+                browserVersion: v.browserVersion,
+                screenMode: v.screenMode,
+                screenWidth: v.screenWidth,
+                screenHeight: v.screenHeight,
+                screenPixelRatio: v.screenPixelRatio,
+                screenPreset: v.screenPreset,
+                timezone: v.timezone,
+                languages: v.languages,
+                proxyMode: v.proxyMode,
+                locationMode: v.locationMode,
+                cpuMode: v.cpuMode,
+                concurrency: v.concurrency,
+                deviceMemory: v.deviceMemory,
+                webglMode: v.webglMode,
+                webglVendor: v.webglVendor,
+                webglRenderer: v.webglRenderer,
+                fontsMode: v.fontsMode,
+                customFonts: v.customFonts,
+                webrtcMode: v.webrtcMode,
+                sslMode: v.sslMode,
+                mediaDevices: v.mediaDevices,
+                audioMode: v.audioMode,
+                speechVoices: v.speechVoices,
+                clientRects: v.clientRects,
+                fontMetricsMode: v.fontMetricsMode,
+                portScan: v.portScan,
+                portBlockMode: v.portBlockMode,
+            }, null, 2));
             const groupText = this._groupCtrl?.getOptions?.().find(o => String(o.value) === String(this._groupCtrl?.getValue?.() || ''))?.label || 'None';
             const tagValues = this._tagCtrl?.getValues?.() || [];
             const tagText = tagValues.length
@@ -125,6 +180,7 @@
                 const el = this._modal.container.querySelector(
                     `.duck-summary-item-value[data-label="${label}"]`
                 );
+                console.log(`[DEBUG:set] label="${label}" text="${text}" el=${!!el}`);
                 if (el) el.textContent = text;
             };
 
@@ -139,23 +195,28 @@
                 : 'Chromium';
             set('Browser', `${browserLabel} ${v.browserVersion || '138'}`);
             // User-Agent: show based on mode
-            const uaMode = window.ProfileModals?.CreateProfile?.GeneralTab?.uaModeToggle?.getValue?.() || 'random';
-            if (uaMode === 'random') {
-                // Show what UA will be generated from template
-                const osVal = v.os || 'Windows';
-                const modelVal = v.osModel || null;
-                const version = v.browserVersion || '138';
-                const block = this._fpTemplate?.OS?.[osVal];
-                const modelDef = (block?.Models || []).find(m => m.Name === modelVal) || block?.Models?.[0];
-                const ua = modelDef?.UserAgentTemplate?.replace('{VERSION}', version)
-                    || `Generated for ${osVal} ${modelVal || ''}`.trim();
+            // Use DB-loaded values when available (bypasses timing issue: controls may not be set yet)
+            // Controls are populated asynchronously via RAF, but _syncSummary runs in a setTimeout
+            const db = this._loadedDbValues || {};
+            // null/undefined in DB means Real mode (browser uses real value)
+            const uaMode = (db.uaMode != null ? db.uaMode : null)
+                || window.ProfileModals?.CreateProfile?.GeneralTab?.uaModeToggle?.getValue?.()
+                || 'random';
+            const uaInputVal = window.ProfileModals?.CreateProfile?.GeneralTab?.uaInput?.getValue?.() || '';
+            if (uaMode === 'random' || uaMode === 'custom') {
+                // Backend generated a random/custom UA - display it from DB or from input
+                const ua = db.userAgent || uaInputVal || 'Random';
                 set('User Agent', ua);
-            } else if (uaMode === 'custom') {
-                set('User Agent', v.userAgent || '—');
             } else {
                 set('User Agent', 'Real (system)');
             }
-            set('Screen Resolution', this._fmtResolution(v));
+            set('Screen Resolution', this._fmtResolution({
+                screenMode: db.screenMode || v.screenMode,
+                screenWidth: db.screenWidth ?? v.screenWidth,
+                screenHeight: db.screenHeight ?? v.screenHeight,
+                screenPixelRatio: db.screenPixelRatio ?? v.screenPixelRatio,
+                screenPreset: v.screenPreset
+            }));
             set('Timezone', v.timezone || 'Auto (Match IP)');
             set('Language', this._fmtLanguages(v.languages));
             set('Proxy', this._fmtProxy(v));
@@ -163,20 +224,27 @@
             set('Hardware', this._fmtHardware(v));
             set('WebGL', this._fmtWebGL(v));
             set('Fonts', v.fontsMode === 'custom' ? (v.customFonts?.join(', ') || 'None') : 'Default');
-            set('WebRTC', v.webrtcMode || 'disable');
-            set('SSL', v.sslMode || 'noise');
+            set('WebRTC', v.webrtcMode || 'Real');
+            set('SSL', v.sslMode || 'Real');
             set('Ports', this._fmtPorts(v));
-            set('Media', v.mediaDevices || 'noise');
-            set('Speech', v.speechVoices || 'noise');
-            set('Rects', v.clientRects || 'noise');
+            set('Media', v.mediaDevices || 'Real');
+            set('Audio', v.audioMode || 'Real');
+            set('Speech', v.speechVoices || 'Real');
+            set('Rects', v.clientRects || 'Real');
+            set('Font Metrics', v.fontMetricsMode || 'Real');
         },
 
         _fmtResolution(v) {
-            if (v.screenMode === 'custom' && v.screenWidth) {
+            // screenMode from _loadedDbValues (DB source), falls back to controls for user changes
+            const screenMode = (this._loadedDbValues?.screenMode) || v.screenMode;
+            // Real mode (null/undefined) → browser uses real screen
+            if (!screenMode) return 'Real (system)';
+            if (screenMode === 'custom' && v.screenWidth) {
                 const pr = v.screenPixelRatio != null ? ` @${v.screenPixelRatio}x` : '';
                 return `${v.screenWidth}×${v.screenHeight}${pr}`;
             }
-            if (v.screenMode === 'random') return 'Random';
+            if (screenMode === 'random') return 'Random';
+            if (screenMode === 'default') return 'Default';
             return v.screenPreset ? v.screenPreset.replace(/x/g, '×') : '1920×1080';
         },
 
@@ -203,10 +271,16 @@
 
             // Hardware: CPU
             if (hwTab) {
-                hwTab.cpuToggle?.setValue?.('custom');
-                const concurrency = fp?.hardwareConcurrency ?? fp?.HardwareConcurrency ?? 8;
-                const memory = fp?.deviceMemory ?? fp?.DeviceMemory ?? 8;
-                hwTab.cpuChipSelect?.setValue?.(`${concurrency}-${memory}`);
+                if (fp?.cpuMode === 'custom' && (fp?.hardwareConcurrency ?? fp?.HardwareConcurrency)) {
+                    hwTab.cpuToggle?.setValue?.('custom');
+                    const concurrency = fp?.hardwareConcurrency ?? fp?.HardwareConcurrency ?? 8;
+                    const memory = fp?.deviceMemory ?? fp?.DeviceMemory ?? 8;
+                    hwTab.cpuChipSelect?.setValue?.(`${concurrency}-${memory}`);
+                } else if (fp?.cpuMode) {
+                    hwTab.cpuToggle?.setValue?.(fp.cpuMode);
+                } else {
+                    hwTab.cpuToggle?.setValue?.('random');
+                }
                 // CPU chip select dropdown visibility
                 const hwTierWrap = hwTab.cpuToggle?.element?.closest('[class*="card"]')?.querySelector('[style*="display"]') || null;
                 if (hwTierWrap && hwTierWrap.style.display === 'none' && hwTab.cpuToggle?.getValue?.() === 'custom') {
@@ -220,10 +294,12 @@
                 }
 
                 // Hardware: Screen
-                if (fp?.screenWidth && fp?.screenHeight) {
+                if (fp?.screenMode === 'custom' && fp?.screenWidth && fp?.screenHeight) {
                     hwTab.resToggle?.setValue?.('custom');
                     const pr = fp.screenPixelRatio ?? 1.0;
                     hwTab.resChipSelect?.setValue?.(`${fp.screenWidth}x${fp.screenHeight}x${pr}`);
+                } else if (fp?.screenMode) {
+                    hwTab.resToggle?.setValue?.(fp.screenMode);
                 }
 
                 // Hardware: WebGL
@@ -285,8 +361,28 @@
             const tagValues = this._tagCtrl?.getValues?.() || [];
             const tagIds = tagValues.map(t => parseInt(t, 10)).filter(n => !isNaN(n));
             const uaMode = window.ProfileModals?.CreateProfile?.GeneralTab?.uaModeToggle?.getValue?.() || 'random';
-            const useRealUserAgent = uaMode === 'real';
 
+            // Map DoNotTrack toggle format to DB format: enabled->"1", disabled->"0", default->null
+            const doNotTrackValue = v.doNotTrack === 'enabled' ? '1' : (v.doNotTrack === 'disabled' ? '0' : null);
+
+            // Only send hardware/screen values when mode is 'custom' (Real = null, Random = null)
+            const sendConcurrency = v.cpuMode === 'custom' ? (v.concurrency || null) : null;
+            const sendDeviceMemory = v.cpuMode === 'custom' ? (v.deviceMemory || null) : null;
+            const sendScreenWidth = v.screenMode === 'custom' && v.screenWidth ? parseInt(v.screenWidth, 10) : null;
+            const sendScreenHeight = v.screenMode === 'custom' && v.screenHeight ? parseInt(v.screenHeight, 10) : null;
+            const sendPixelRatio = v.screenMode === 'custom' ? (v.screenPixelRatio || null) : null;
+
+            console.log('[DEBUG:_collectPayload]', JSON.stringify({
+                uaMode, doNotTrackValue,
+                screenMode: v.screenMode,
+                screenWidth: sendScreenWidth, screenHeight: sendScreenHeight, pixelRatio: sendPixelRatio,
+                concurrency: sendConcurrency, deviceMemory: sendDeviceMemory,
+                webglMode: v.webglMode, webglVendor: v.webglVendor, webglRenderer: v.webglRenderer,
+                canvasMode: v.canvasMode, webglImageMode: v.webglImageMode,
+                pluginsMode: v.pluginsMode,
+                mediaDevices: v.mediaDevices,
+                clientRects: v.clientRects,
+            }, null, 2));
             return {
                 name,
                 groupId,
@@ -297,37 +393,42 @@
                 fingerprint: {
                     platform: v.os || 'Windows',
                     osModel: v.osModel || null,
-                    useRealUserAgent,
+                    // Real mode: no spoof, no UserAgent in DB; Custom mode: save UserAgent
                     uaMode,
-                    userAgent: (!useRealUserAgent && uaMode === 'custom') ? (v.userAgent || '') : null,
+                    userAgent: (uaMode === 'real') ? null : (v.userAgent || ''),
                     browserVersion: v.browserVersion || '138',
                     languages: v.languages || ['en-US', 'en'],
-                    timezone: v.timezone || 'auto',
-                    screenWidth: v.screenWidth ? parseInt(v.screenWidth, 10) : null,
-                    screenHeight: v.screenHeight ? parseInt(v.screenHeight, 10) : null,
-                    screenPixelRatio: v.screenPixelRatio || null,
-                    hardwareConcurrency: v.concurrency || null,
-                    deviceMemory: v.deviceMemory || null,
-                    webglMode: v.webglMode || 'random',
-                    webglVendor: v.webglVendor || null,
-                    webglRenderer: v.webglRenderer || null,
-                    canvasMode: v.canvasMode || 'noise',
-                    webglImageMode: v.webglImageMode || 'noise',
-                    pluginsMode: v.pluginsMode || 'noise',
-                    fontsMode: v.fontsMode || 'default',
+                    timezone: v.timezone === 'auto' ? null : (v.timezone || null),
+                    screenMode: v.screenMode || 'real',
+                    screenWidth: sendScreenWidth,
+                    screenHeight: sendScreenHeight,
+                    screenPixelRatio: sendPixelRatio,
+                    hardwareConcurrency: sendConcurrency,
+                    deviceMemory: sendDeviceMemory,
+                    cpuMode: v.cpuMode || null,
+                    audioMode: v.audioMode || null,
+                    webglMode: v.webglMode || null,
+                    webglVendor: v.webglMode === 'custom' ? (v.webglVendor || null) : null,
+                    webglRenderer: v.webglMode === 'custom' ? (v.webglRenderer || null) : null,
+                    canvasMode: v.canvasMode || null,
+                    webglImageMode: v.webglImageMode || null,
+                    pluginsMode: v.pluginsMode || null,
+                    plugins: v.pluginsMode === 'custom' ? (v.plugins || []) : null,
+                    fontsMode: v.fontsMode || null,
                     fonts: v.fontsMode === 'custom' ? (v.customFonts || []) : null,
                     webRtcMode: v.webrtcMode || 'disable',
-                    sslMode: v.sslMode || 'noise',
+                    sslMode: v.sslMode || null,
                     portScan: v.portScan || 'protect',
                     portBlockMode: v.portBlockMode || 'block_default',
                     portBlockList: v.portBlockList || [],
-                    mediaDevicesMode: v.mediaDevices || 'noise',
-                    speechVoicesMode: v.speechVoices || 'noise',
-                    clientRectsMode: v.clientRects || 'noise',
-                    doNotTrack: v.doNotTrack || 'default',
-                    locationMode: v.locationMode || 'noise',
-                    latitude: v.customCoordinates?.lat || null,
-                    longitude: v.customCoordinates?.lng || null,
+                    mediaDevicesMode: v.mediaDevices || null,
+                    speechVoicesMode: v.speechVoices || null,
+                    clientRectsMode: v.clientRects || null,
+                    fontMetricsMode: v.fontMetricsMode || null,
+                    doNotTrack: doNotTrackValue,
+                    locationMode: v.locationMode || null,
+                    latitude: v.locationMode === 'real' || v.locationMode === 'default' ? null : (v.customCoordinates?.lat || null),
+                    longitude: v.locationMode === 'real' || v.locationMode === 'default' ? null : (v.customCoordinates?.lng || null),
                     accuracy: v.customCoordinates?.accuracy || null,
                 }
             };
@@ -340,7 +441,17 @@
             const tagValues = this._tagCtrl?.getValues?.() || [];
             const tagIds = tagValues.map(t => parseInt(t, 10)).filter(n => !isNaN(n));
             const uaMode = window.ProfileModals?.CreateProfile?.GeneralTab?.uaModeToggle?.getValue?.() || 'random';
-            const useRealUserAgent = uaMode === 'real';
+            console.log('[DEBUG:_collectBulkPayload] uaMode source:', uaMode, '| v.uaMode:', v.uaMode);
+
+            // Map DoNotTrack toggle format to DB format: enabled->"1", disabled->"0", default->null
+            const doNotTrackValue = v.doNotTrack === 'enabled' ? '1' : (v.doNotTrack === 'disabled' ? '0' : null);
+
+            // Only send hardware/screen values when mode is 'custom' (Real = null, Random = null)
+            const sendConcurrency = v.cpuMode === 'custom' ? (v.concurrency || null) : null;
+            const sendDeviceMemory = v.cpuMode === 'custom' ? (v.deviceMemory || null) : null;
+            const sendScreenWidth = v.screenMode === 'custom' && v.screenWidth ? parseInt(v.screenWidth, 10) : null;
+            const sendScreenHeight = v.screenMode === 'custom' && v.screenHeight ? parseInt(v.screenHeight, 10) : null;
+            const sendPixelRatio = v.screenMode === 'custom' ? (v.screenPixelRatio || null) : null;
 
             return {
                 quantity: qty,
@@ -352,70 +463,45 @@
                 fingerprint: {
                     platform: v.os || 'Windows',
                     osModel: v.osModel || null,
-                    useRealUserAgent,
+                    // Real mode: no spoof, no UserAgent in DB; Custom mode: save UserAgent
                     uaMode,
-                    userAgent: (!useRealUserAgent && uaMode === 'custom') ? (v.userAgent || '') : null,
+                    userAgent: (uaMode === 'real') ? null : (v.userAgent || ''),
                     browserVersion: v.browserVersion || '138',
                     languages: v.languages || ['en-US', 'en'],
-                    timezone: v.timezone || 'auto',
-                    screenWidth: v.screenWidth ? parseInt(v.screenWidth, 10) : null,
-                    screenHeight: v.screenHeight ? parseInt(v.screenHeight, 10) : null,
-                    screenPixelRatio: v.screenPixelRatio || null,
-                    hardwareConcurrency: v.concurrency || null,
-                    deviceMemory: v.deviceMemory || null,
-                    webglMode: v.webglMode || 'random',
-                    webglVendor: v.webglVendor || null,
-                    webglRenderer: v.webglRenderer || null,
-                    canvasMode: v.canvasMode || 'noise',
-                    webglImageMode: v.webglImageMode || 'noise',
-                    pluginsMode: v.pluginsMode || 'noise',
-                    fontsMode: v.fontsMode || 'default',
+                    timezone: v.timezone === 'auto' ? null : (v.timezone || null),
+                    screenMode: v.screenMode || 'real',
+                    screenWidth: sendScreenWidth,
+                    screenHeight: sendScreenHeight,
+                    screenPixelRatio: sendPixelRatio,
+                    hardwareConcurrency: sendConcurrency,
+                    deviceMemory: sendDeviceMemory,
+                    cpuMode: v.cpuMode || null,
+                    audioMode: v.audioMode || null,
+                    webglMode: v.webglMode || null,
+                    webglVendor: v.webglMode === 'custom' ? (v.webglVendor || null) : null,
+                    webglRenderer: v.webglMode === 'custom' ? (v.webglRenderer || null) : null,
+                    canvasMode: v.canvasMode || null,
+                    webglImageMode: v.webglImageMode || null,
+                    pluginsMode: v.pluginsMode || null,
+                    plugins: v.pluginsMode === 'custom' ? (v.plugins || []) : null,
+                    fontsMode: v.fontsMode || null,
                     fonts: v.fontsMode === 'custom' ? (v.customFonts || []) : null,
-                    webRtcMode: v.webrtcMode || 'disable',
-                    sslMode: v.sslMode || 'noise',
+                    webRTcMode: v.webrtcMode || 'disable',
+                    sslMode: v.sslMode || null,
                     portScan: v.portScan || 'protect',
                     portBlockMode: v.portBlockMode || 'block_default',
                     portBlockList: v.portBlockList || [],
-                    mediaDevicesMode: v.mediaDevices || 'noise',
-                    speechVoicesMode: v.speechVoices || 'noise',
-                    clientRectsMode: v.clientRects || 'noise',
-                    doNotTrack: v.doNotTrack || 'default',
-                    locationMode: v.locationMode || 'noise',
-                    latitude: v.customCoordinates?.lat || null,
-                    longitude: v.customCoordinates?.lng || null,
-                    accuracy: v.customCoordinates?.accuracy || null,
+                    mediaDevicesMode: v.mediaDevices || null,
+                    speechVoicesMode: v.speechVoices || null,
+                    clientRectsMode: v.clientRects || null,
+                    fontMetricsMode: v.fontMetricsMode || null,
+                    doNotTrack: doNotTrackValue,
+                    locationMode: v.locationMode || null,
+                    latitude: v.locationMode === 'real' || v.locationMode === 'default' ? null : (v.customCoordinates?.lat || null),
+                    longitude: v.locationMode === 'real' || v.locationMode === 'default' ? null : (v.customCoordinates?.lng || null),
+                    accuracy: v.locationMode === 'real' || v.locationMode === 'default' ? null : (v.customCoordinates?.accuracy || null),
                 }
             };
-        },
-
-        _clearFieldError(field) {
-            if (field) {
-                const ctrl = this._getFieldControl(field);
-                if (ctrl && typeof ctrl.clearError === 'function') {
-                    ctrl.clearError();
-                }
-            } else {
-                const fields = ['userAgent', 'proxy.host', 'proxy.port', 'proxy.saved', 'location.lat', 'location.lng', 'webgl.vendor', 'webgl.renderer', 'display.resolution', 'portBlock.list'];
-                fields.forEach(f => {
-                    const ctrl = this._getFieldControl(f);
-                    if (ctrl && typeof ctrl.clearError === 'function') {
-                        ctrl.clearError();
-                    }
-                });
-            }
-        },
-
-        _showFieldError(field, message) {
-            const ctrl = this._getFieldControl(field);
-            if (!ctrl) {
-                window.DuckControls.Toast?.error?.(message);
-                return;
-            }
-            if (typeof ctrl.setError === 'function') {
-                ctrl.setError(message);
-            } else {
-                window.DuckControls.Toast?.error?.(message);
-            }
         },
 
         _clearFieldError(field) {
@@ -582,9 +668,11 @@
         },
 
         _fmtHardware(v) {
-            if (v.cpuMode === 'real') return 'Real hardware';
-            if (v.cpuMode === 'random') return 'Random hardware';
-            // Custom mode: show selected tier
+            // cpuMode from _loadedDbValues (DB source), falls back to controls for user changes
+            const cpuMode = (this._loadedDbValues?.cpuMode) || v.cpuMode;
+            if (cpuMode === 'real') return 'Real hardware';
+            if (cpuMode === 'random') return 'Random hardware';
+            // Default/custom/noise: show selected tier if available
             if (v.concurrency != null && v.deviceMemory != null) {
                 return `${v.concurrency} Cores, ${v.deviceMemory} GB RAM`;
             }
@@ -592,8 +680,10 @@
         },
 
         _fmtWebGL(v) {
-            if (v.webglMode === 'real') return 'Real (no spoof)';
-            if (v.webglMode === 'random') return 'Random spoofed';
+            // webglMode from _loadedDbValues (DB source), falls back to controls for user changes
+            const webglMode = (this._loadedDbValues?.webglMode) || v.webglMode;
+            if (webglMode === 'real') return 'Real (no spoof)';
+            if (webglMode === 'random') return 'Random spoofed';
             if (v.webglVendor || v.webglRenderer) {
                 const parts = [v.webglVendor, v.webglRenderer].filter(Boolean);
                 const short = parts.map(p => p.length > 40 ? p.substring(0, 40) + '...' : p);
@@ -627,6 +717,8 @@
 
         /** Debounced sync — call whenever any control changes. */
         _scheduleSync() {
+            // Skip sync during profile loading to prevent overriding loaded values
+            if (this._isLoadingProfile) return;
             if (this._syncTimer) clearTimeout(this._syncTimer);
             this._syncTimer = setTimeout(() => this._syncSummary(), 50);
         },
@@ -636,8 +728,10 @@
          * Called by GeneralTab OS select onChange.
          */
         _cascadeOsChange(osValue) {
+            // Skip cascade during profile loading to preserve loaded values
+            if (this._isLoadingProfile) return;
+
             const tmpl = this._fpTemplate;
-            if (!tmpl || !osValue) return;
 
             const genTab = window.ProfileModals.CreateProfile.GeneralTab;
             const hwTab  = window.ProfileModals.CreateProfile.HardwareTab;
@@ -661,7 +755,14 @@
                 const osModels = (osBlock?.Models || []).map(m => ({ label: m.Name, value: m.Name }));
                 if (genTab.osModelSelect) {
                     genTab.osModelSelect.setOptions(osModels);
-                    if (osModels.length > 0) genTab.osModelSelect.setValue(osModels[0].value);
+                    // Preserve model if provided (from loaded profile) and exists in options
+                    const preserveModel = genTab._preserveOsModelValue;
+                    if (preserveModel && osModels.some(m => m.value === preserveModel)) {
+                        genTab.osModelSelect.setValue(preserveModel);
+                        genTab._preserveOsModelValue = null; // Clear after use
+                    } else if (osModels.length > 0) {
+                        genTab.osModelSelect.setValue(osModels[0].value);
+                    }
                 }
             }
 
@@ -677,7 +778,8 @@
                 }));
                 if (hwTab.cpuChipSelect) {
                     hwTab.cpuChipSelect.setOptions(cpuTierOpts);
-                    if (cpuTierOpts.length > 0) {
+                    // Only randomize in create mode (not during profile loading)
+                    if (!this._isLoadingProfile && cpuTierOpts.length > 0) {
                         hwTab.cpuChipSelect.setValue(cpuTierOpts[0].value);
                     }
                 }
@@ -690,7 +792,9 @@
                 }));
                 if (hwTab.resChipSelect) {
                     hwTab.resChipSelect.setOptions(resOpts);
-                    if (resOpts.length > 0) hwTab.resChipSelect.setValue(resOpts[0].value);
+                    if (!this._isLoadingProfile && resOpts.length > 0) {
+                        hwTab.resChipSelect.setValue(resOpts[0].value);
+                    }
                 }
 
                 // WebGL vendors → cascade to vendor + renderer
@@ -701,7 +805,8 @@
 
                 if (hwTab._webglVendorSelect) {
                     hwTab._webglVendorSelect.setOptions(vendorOpts);
-                    if (vendorOpts.length > 0) {
+                    // Only randomize in create mode
+                    if (!this._isLoadingProfile && vendorOpts.length > 0) {
                         const randomVendor = vendorOpts[Math.floor(Math.random() * vendorOpts.length)].value;
                         hwTab._webglVendorSelect.setValue(randomVendor);
                     }
@@ -713,7 +818,7 @@
                     const renderers = osBlock.WebGL.VendorGPUs[selectedVendor];
                     const rendererOpts = renderers.map(r => ({ label: r, value: r }));
                     hwTab._rendererSelect.setOptions(rendererOpts);
-                    if (rendererOpts.length > 0) {
+                    if (!this._isLoadingProfile && rendererOpts.length > 0) {
                         const randomRenderer = rendererOpts[Math.floor(Math.random() * rendererOpts.length)].value;
                         hwTab._rendererSelect.setValue(randomRenderer);
                     }
@@ -725,7 +830,7 @@
             }
 
             // ── NetworkTab: language options + timezone ────────────────────
-            if (netTab) {
+            if (netTab && !this._isLoadingProfile) {
                 if (netTab._langTagInput) {
                     const langOpts = (tmpl.Languages || []).map(l => ({
                         label: _LANG_LABELS[l] || l,
@@ -748,7 +853,7 @@
             }
 
             // ── SecurityTab: font options ─────────────────────────────────
-            if (secTab) {
+            if (secTab && !this._isLoadingProfile) {
                 if (secTab._fontTagInput) {
                     const fontOpts = (osBlock?.Fonts || []).map(f => ({ label: f, value: f }));
                     secTab._fontTagInput.setOptions(fontOpts);
@@ -762,6 +867,9 @@
 
         /** Called when WebGL vendor changes — update renderer select. */
         _cascadeVendorChange(vendor) {
+            // Skip cascade during profile loading
+            if (this._isLoadingProfile) return;
+
             const tmpl = this._fpTemplate;
             const genTab = window.ProfileModals.CreateProfile.GeneralTab;
             const hwTab  = window.ProfileModals.CreateProfile.HardwareTab;
@@ -788,9 +896,14 @@
             }, 150);
         },
 
-        async show() {
+        /** Show modal - accepts optional profileId for edit mode */
+        async show(profileId) {
             if (this._modal) { this._modal.destroy(); this._modal = null; }
             this._modal = null;
+            this._mode = profileId ? 'edit' : 'create';
+            this._editProfileId = profileId || null;
+            this._originalProfileData = null;
+            this._loadedDbValues = null; // clear cached DB values from previous load
 
             // ── Loading / Error state ───────────────────────────────────────
             const loadingWrap = document.createElement('div');
@@ -803,7 +916,7 @@
             loadingWrap.appendChild(spinner);
             const loadingLabel = document.createElement('div');
             loadingLabel.style.cssText = 'font-size: 13px; color: var(--text-secondary);';
-            loadingLabel.textContent = 'Loading profile data...';
+            loadingLabel.textContent = this._mode === 'edit' ? 'Loading profile data...' : 'Loading profile data...';
             loadingWrap.appendChild(loadingLabel);
 
             // Error state (hidden until needed)
@@ -823,33 +936,30 @@
             loadingContent.appendChild(loadingWrap);
             loadingContent.appendChild(errorWrap);
 
+            // Modal title based on mode
+            const modalTitle = this._mode === 'edit' ? 'Edit Profile' : 'Create Profile';
+            const modalSubtitle = this._mode === 'edit'
+                ? 'Configure and update the isolated browser fingerprint environment.'
+                : 'Configure and generate a new isolated browser fingerprint environment.';
+            const modalIcon = this._mode === 'edit' ? 'edit' : 'add_circle';
+            const submitButtonText = this._mode === 'edit' ? 'Save Changes' : 'Create Profile';
+            const submitButtonIcon = this._mode === 'edit' ? 'save' : 'add';
+
             // Modal — submit button disabled until data loads
             this._modal = window.DuckControls.Modal.create({
                 defaultEnter: true,
-                title: 'Create Profile',
-                subtitle: 'Configure and generate a new isolated browser fingerprint environment.',
-                icon: 'add_circle',
+                title: modalTitle,
+                subtitle: modalSubtitle,
+                icon: modalIcon,
                 content: loadingContent,
                 size: 'xxl',
                 buttons: [
                     { text: 'Cancel', class: 'duck-btn-ghost', onClick: () => this._modal?.close() },
                     {
-                        text: 'Create Profile', class: 'duck-btn-primary', isDefault: true, icon: 'add', disabled: true,
+                        text: submitButtonText, class: 'duck-btn-primary', isDefault: true, icon: submitButtonIcon, disabled: true,
                         onClick: async () => {
-                            // #region debug log
-                            const selfRef = window.ProfileModals.CreateProfile;
-                            fetch('http://127.0.0.1:7838/ingest/b23e979e-49e7-4b7a-9d09-e180b500a667',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'971020'},body:JSON.stringify({sessionId:'971020',location:'CreateProfileModal.js:738',message:'onClick',data:{isSubmitting:this._isSubmitting,modalExists:!!this._modal,thisIsSameAsGlobal:this===selfRef,globalIsSubmitting:selfRef._isSubmitting},timestamp:Date.now()})}).catch(()=>{});
-                            // #endregion
-                            // Prevent double-click - check FIRST before any other action
-                            if (this._isSubmitting) {
-                                // #region debug log
-                                fetch('http://127.0.0.1:7838/ingest/b23e979e-49e7-4b7a-9d09-e180b500a667',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'971020'},body:JSON.stringify({sessionId:'971020',location:'CreateProfileModal.js:742',message:'BLOCKED: isSubmitting=true',data:{},timestamp:Date.now()})}).catch(()=>{});
-                                // #endregion
-                                return;
-                            }
-                            // #region debug log
-                            fetch('http://127.0.0.1:7838/ingest/b23e979e-49e7-4b7a-9d09-e180b500a667',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'971020'},body:JSON.stringify({sessionId:'971020',location:'CreateProfileModal.js:750',message:'Setting isSubmitting=true',data:{before:this._isSubmitting,thisIsSameAsGlobal:this===selfRef,globalIsSubmitting:selfRef._isSubmitting},timestamp:Date.now()})}).catch(()=>{});
-                            // #endregion
+                            // Prevent double-click
+                            if (this._isSubmitting) return;
                             this._isSubmitting = true;
 
                             const submitBtn = this._modal?.container?.querySelector('.duck-btn-primary');
@@ -857,19 +967,14 @@
 
                             const mode = this._modeCtrl?.getValue?.() || 'single';
                             const qty = mode === 'bulk' ? (this._qtyCtrl?.getValue?.() || 1) : 1;
-                            const prefixVal = this._nameInput?.querySelector('input')?.value?.trim() || null;
+                            const nameVal = this._nameInput?.querySelector('input')?.value?.trim() || null;
 
                             // Validate before submitting
                             const validationError = this._validateBeforeSubmit();
-                            // #region debug log
-                            fetch('http://127.0.0.1:7838/ingest/b23e979e-49e7-4b7a-9d09-e180b500a667',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'971020'},body:JSON.stringify({sessionId:'971020',location:'CreateProfileModal.js:834',message:'Validation result',data:{validationError:validationError},timestamp:Date.now()})}).catch(()=>{});
-                            // #endregion
                             if (validationError) {
                                 if (submitBtn) submitBtn.disabled = false;
                                 this._isSubmitting = false;
-                                // Clear all previous errors first
                                 this._clearFieldError();
-                                // Handle both single error and array of errors
                                 if (Array.isArray(validationError)) {
                                     validationError.forEach(err => this._showFieldError(err.field, err.message));
                                 } else {
@@ -880,59 +985,40 @@
                             this._clearFieldError();
 
                             try {
-                                // #region debug log
-                                fetch('http://127.0.0.1:7838/ingest/b23e979e-49e7-4b7a-9d09-e180b500a667',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'971020'},body:JSON.stringify({sessionId:'971020',location:'CreateProfileModal.js:851',message:'Calling setLoading(true)',data:{},timestamp:Date.now()})}).catch(()=>{});
-                                // #endregion
-                                this._modal.setLoading(true, qty > 1 ? `Creating ${qty} profiles...` : 'Creating profile...');
-                                let results;
+                                this._modal.setLoading(true, this._mode === 'edit' ? 'Saving profile...' : (qty > 1 ? `Creating ${qty} profiles...` : 'Creating profile...'));
 
-                                if (qty > 1) {
-                                    const payload = this._collectBulkPayload(qty, prefixVal);
-                                    results = await DuckBridge.call('profile.bulkCreate', payload);
+                                if (this._mode === 'edit') {
+                                    await this._saveProfile();
                                 } else {
-                                    const payload = this._collectPayload(prefixVal || null);
-                                    const result = await DuckBridge.call('profile.create', payload);
-                                    results = [result];
+                                    let results;
+                                    if (qty > 1) {
+                                        const payload = this._collectBulkPayload(qty, nameVal);
+                                        console.log('[DEBUG:ACTUAL_PAYLOAD_BULKCREATE]', JSON.stringify(payload, null, 2));
+                                        results = await DuckBridge.call('profile.bulkCreate', payload);
+                                    } else {
+                                        const payload = this._collectPayload(nameVal || null);
+                                        console.log('[DEBUG:FE_TO_BACKEND_CREATE]', JSON.stringify(payload, null, 2));
+                                        const result = await DuckBridge.call('profile.create', payload);
+                                        console.log('[DEBUG:FE_FROM_BACKEND_CREATE]', JSON.stringify(result, null, 2));
+                                        results = [result];
+                                    }
+                                    try {
+                                        window.dispatchEvent(new CustomEvent('profile-created', { detail: results }));
+                                    } catch (e) { }
+                                    if (this._onCreated) this._onCreated(results);
                                 }
 
                                 this._modal.setLoading(false);
                                 this._isSubmitting = false;
                                 this._modal.close();
-                                console.log('[CreateProfile] Dispatching profile-created event with', Array.isArray(results) ? results.length : 1, 'profiles');
-                                try {
-                                    window.dispatchEvent(new CustomEvent('profile-created', { detail: results }));
-                                    console.log('[CreateProfile] Event dispatched successfully!');
-                                } catch (e) {
-                                    console.error('[CreateProfile] Event dispatch failed:', e);
-                                }
-                                if (this._onCreated) this._onCreated(results);
                             } catch (err) {
                                 this._modal.setLoading(false);
                                 const msg = err?.message || String(err);
-                                const field = err?._field || '';
-                                console.error('[CreateProfile] create failed:', msg, 'field:', field);
-
-                                // Re-enable submit button
+                                console.error('[CreateProfile] operation failed:', msg);
                                 if (submitBtn) submitBtn.disabled = false;
                                 this._isSubmitting = false;
-
-                                // Clear existing errors and show new error
                                 this._clearFieldError();
-                                if (field) {
-                                    this._showFieldError(field, msg);
-                                    // Scroll to the field with error
-                                    setTimeout(() => {
-                                        const errorEl = this._modal?.container?.querySelector('.is-error');
-                                        if (errorEl) {
-                                            errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                            const input = errorEl.querySelector?.('input, select') || errorEl;
-                                            if (input?.focus) input.focus();
-                                        }
-                                    }, 100);
-                                } else {
-                                    // Show toast for non-field errors
-                                    window.DuckControls.Toast?.error?.(msg);
-                                }
+                                window.DuckControls.Toast?.error?.(msg);
                             }
                         }
                     }
@@ -946,36 +1032,32 @@
                     this._langTagInput = null;
                     this._fontTagInput = null;
                     this._isSubmitting = false;
+                    this._mode = 'create';
+                    this._editProfileId = null;
+                    this._originalProfileData = null;
                     if (this._syncTimer) clearTimeout(this._syncTimer);
                 }
             });
 
             const showError = (msg) => {
-                // Stop skeleton loading — show explicit error state inside modal body
                 const modalBody = this._modal?.container?.querySelector('.duck-modal-body');
                 if (modalBody) {
                     modalBody.innerHTML = '';
                     modalBody.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:16px;padding:40px;text-align:center;';
-
                     const icon = document.createElement('span');
                     icon.className = 'material-symbols-outlined';
                     icon.style.cssText = 'font-size:48px;color:var(--danger);opacity:0.8;';
                     icon.textContent = 'error_outline';
-
                     const title = document.createElement('div');
                     title.style.cssText = 'font-size:15px;font-weight:600;color:var(--text-primary);';
                     title.textContent = 'Failed to Load Data';
-
                     const detail = document.createElement('div');
                     detail.style.cssText = 'font-size:13px;color:var(--text-secondary);max-width:340px;line-height:1.6;';
                     detail.textContent = msg;
-
                     modalBody.appendChild(icon);
                     modalBody.appendChild(title);
                     modalBody.appendChild(detail);
                 }
-
-                // Hide footer
                 const footer = this._modal?.container?.querySelector('.duck-modal-footer');
                 if (footer) footer.style.display = 'none';
             };
@@ -984,6 +1066,74 @@
 
             // ── Load data ───────────────────────────────────────────────────
             await this._loadEntityData();
+
+            // In edit mode, load profile data and generate defaults for merging
+            let profileDefaults = null;
+            if (this._mode === 'edit' && this._editProfileId) {
+                try {
+                    const profile = await DuckBridge.call('profile.get', { id: this._editProfileId });
+                    console.log('[DEBUG:FE_FROM_BACKEND_LOAD]', JSON.stringify(profile, null, 2));
+                    console.log('[CreateProfile] Raw profile from API:', JSON.stringify(profile, null, 2));
+                    console.log('[CreateProfile] profile keys:', Object.keys(profile || {}));
+                    console.log('[CreateProfile] profile.ok:', profile?.ok, 'profile.data:', !!profile?.data, 'profile.id:', profile?.id, 'profile.name:', profile?.name);
+                    // [DEBUG:EDIT_LOAD] log full profile for backend data inspection
+                    console.log('[DEBUG:EDIT_LOAD]', JSON.stringify({
+                        id: profile?.id,
+                        name: profile?.name,
+                        browserType: profile?.browserType,
+                        browserVersion: profile?.browserVersion,
+                        groupId: profile?.groupId,
+                        tagIds: profile?.tagIds,
+                        proxyId: profile?.proxyId,
+                        notes: profile?.notes,
+                        cookies: profile?.cookies,
+                        profileData_TYPEOF: typeof profile?.ProfileData,
+                        profileData_LENGTH: profile?.ProfileData?.length,
+                        profileData_VALUE: profile?.ProfileData,
+                        profileDataParsed_EXISTS: profile?.ProfileDataParsed !== undefined,
+                        profileDataParsed: profile?.ProfileDataParsed,
+                    }, null, 2));
+                    if (profile) {
+                        this._originalProfileData = profile;
+                        loadingLabel.textContent = 'Applying profile settings...';
+
+                        // Generate fingerprint defaults for this platform/browser
+                        const platform = profile.BrowserType === 'Firefox' ? 'Linux' : 'Win32';
+                        const browserType = profile.BrowserType || 'Chromium';
+                        try {
+                            profileDefaults = await DuckBridge.call('profile.generateFingerprint', {
+                                platform: platform,
+                                browser: browserType,
+                                model: null
+                            });
+                            console.log('[CreateProfile] Generated defaults for merge:', JSON.stringify(profileDefaults, null, 2));
+                        } catch (e) {
+                            console.warn('[CreateProfile] Failed to generate defaults:', e);
+                        }
+
+                        // Parse ProfileData once for use in _buildUpdatePayload
+                        if (profile.ProfileData) {
+                            try {
+                                this._originalProfileData.ProfileDataParsed =
+                                    JSON.parse(profile.ProfileData);
+                                console.log('[CreateProfile] Parsed ProfileData for update payload:', JSON.stringify(this._originalProfileData.ProfileDataParsed, null, 2));
+                            } catch (e) {
+                                console.warn('[CreateProfile] Failed to parse ProfileData:', e);
+                                this._originalProfileData.ProfileDataParsed = {};
+                            }
+                        } else {
+                            this._originalProfileData.ProfileDataParsed = {};
+                        }
+                    } else {
+                        showError('Profile not found.');
+                        return;
+                    }
+                } catch (e) {
+                    console.error('[CreateProfile] Failed to load profile:', e);
+                    showError('Failed to load profile data. Please try again.');
+                    return;
+                }
+            }
 
             const [template, browserCatalog] = await Promise.all([
                 this._loadFingerprintTemplate(),
@@ -998,13 +1148,6 @@
             this._fpTemplate = template;
             this._browserCatalog = browserCatalog;
 
-            // Pass data to all tabs before building the form
-            ['GeneralTab', 'NetworkTab', 'HardwareTab', 'SecurityTab', 'CookiesTab', 'NotesTab'].forEach(tabName => {
-                const tab = window.ProfileModals.CreateProfile[tabName];
-                if (tab?._setTemplate) tab._setTemplate(template);
-                if (tab?._setBrowserCatalog) tab._setBrowserCatalog(browserCatalog);
-            });
-
             // ── Build form and replace skeleton ─────────────────────────────
             const container = this._buildFormContainer(template, browserCatalog);
 
@@ -1015,14 +1158,704 @@
                 modalBody.style.cssText = 'display:flex;flex-direction:column;overflow:hidden;padding:0;';
             }
 
-            // Cascade OS defaults — controls now exist in DOM after form build
-            this._cascadeOsChange('Windows');
+            // Pass data to all tabs AFTER form is built (controls now exist)
+            ['GeneralTab', 'NetworkTab', 'HardwareTab', 'SecurityTab', 'CookiesTab', 'NotesTab'].forEach(tabName => {
+                const tab = window.ProfileModals.CreateProfile[tabName];
+                if (tab?._setTemplate) tab._setTemplate(template);
+                if (tab?._setBrowserCatalog) tab._setBrowserCatalog(browserCatalog);
+            });
+
+            // Set up callback for GeneralTab OS change cascade (used by setValues in edit mode)
+            const genTab = window.ProfileModals?.CreateProfile?.GeneralTab;
+            if (genTab) {
+                genTab._onOsChange = (osValue) => this._cascadeOsChange(osValue);
+                genTab._onModelChange = (modelValue) => {
+                    // Trigger HardwareTab to update based on new OS model
+                    const hwTab = window.ProfileModals?.CreateProfile?.HardwareTab;
+                    if (hwTab?._onOsModelChange) hwTab._onOsModelChange(modelValue);
+                };
+            }
+
+            // Apply profile data if in edit mode
+            if (this._mode === 'edit' && this._originalProfileData) {
+                // Prevent _scheduleSync from running during profile load
+                this._isLoadingProfile = true;
+                console.log('[CreateProfile] About to call _applyProfileData, _isLoadingProfile=true');
+                this._applyProfileData(this._originalProfileData, profileDefaults);
+                // Wait for async option hydration in tabs before enabling sync
+                setTimeout(() => {
+                    this._isLoadingProfile = false;
+                    console.log('[CreateProfile] setTimeout fired, calling _scheduleSync');
+                    // Sync overview once after loading is complete
+                    this._scheduleSync();
+                }, 250);
+            } else {
+                // Cascade OS defaults — controls now exist in DOM after form build
+                this._cascadeOsChange('Windows');
+            }
 
             // Enable submit button now that form is ready
             const submitBtn = this._modal?.container?.querySelector('.duck-btn-primary');
             if (submitBtn) {
                 submitBtn.disabled = false;
             }
+        },
+
+        /** Apply loaded profile data to all form controls - merge with defaults for missing fields */
+        _applyProfileData(profile, profileDefaults) {
+            console.log('[CreateProfile] _applyProfileData called - profile.ProfileData:', profile?.ProfileData);
+            console.log('[CreateProfile] _applyProfileData - profileDefaults:', JSON.stringify(profileDefaults, null, 2));
+            console.log('[CreateProfile] _applyProfileData - tab existence:', {
+                GeneralTab: !!window.ProfileModals.CreateProfile.GeneralTab,
+                NetworkTab: !!window.ProfileModals.CreateProfile.NetworkTab,
+                HardwareTab: !!window.ProfileModals.CreateProfile.HardwareTab,
+                SecurityTab: !!window.ProfileModals.CreateProfile.SecurityTab,
+                CookiesTab: !!window.ProfileModals.CreateProfile.CookiesTab,
+                NotesTab: !!window.ProfileModals.CreateProfile.NotesTab,
+            });
+
+            // Parse ProfileData JSON if exists
+            let profileData = {};
+            if (profile.ProfileData) {
+                try {
+                    profileData = JSON.parse(profile.ProfileData);
+                    console.log('[CreateProfile] Loaded ProfileData:', JSON.stringify(profileData, null, 2));
+                } catch (e) {
+                    console.warn('[CreateProfile] Failed to parse ProfileData:', e);
+                }
+            } else {
+                console.warn('[CreateProfile] WARNING: No ProfileData in profile! Using defaults.');
+            }
+
+            // Helper: merge value from ProfileData, fallback to defaults
+            // Treat null/undefined/empty as "missing" and use defaults
+            const getValue = (profileValue, defaultValue) => {
+                // Check if profileValue is "missing" (undefined, null, empty string, or empty array)
+                const isMissing = profileValue === undefined
+                    || profileValue === null
+                    || profileValue === ''
+                    || (Array.isArray(profileValue) && profileValue.length === 0);
+                return isMissing ? defaultValue : profileValue;
+            };
+            // Preserve null as a valid value (for Real mode)
+            const getValueOrDefault = (profileValue, defaultValue) => {
+                if (profileValue !== undefined && profileValue !== null && profileValue !== '') {
+                    return profileValue;
+                }
+                return defaultValue;
+            };
+            const toLowerOrNull = (value) => {
+                if (value === undefined || value === null || value === '') return null;
+                return String(value).toLowerCase();
+            };
+            // Map null/empty (Real mode in DB) to 'real' for UI toggle — only for Real/Noise toggles
+            const nullMode = (value, defaultValue) => {
+                if (value == null || value === '') return 'real';
+                return String(value).toLowerCase() || defaultValue;
+            };
+
+            // NEW SCHEMA HELPERS: TypedConfig<*> has { Mode, Value } structure
+            // Extract .Value (or raw value for old schema compatibility)
+            const tcValue = (tc) => {
+                if (tc == null) return null;
+                if (typeof tc === 'object' && 'Value' in tc) return tc.Value; // new TypedConfig schema
+                return tc; // old schema: raw value
+            };
+            const tcMode = (tc) => {
+                if (tc == null) return null;
+                if (typeof tc === 'object' && 'Mode' in tc) return tc.Mode; // new TypedConfig schema
+                return null; // old schema has no mode → treat as null (real)
+            };
+
+            // 1. Apply to Name/Group/Tags in sticky header
+            const nameInput = this._nameInput?.querySelector('input');
+            if (nameInput) {
+                nameInput.value = profile.Name || profile.name || '';
+            }
+
+            // Set Group value
+            if (this._groupCtrl) {
+                const groupId = profile.GroupId ?? profile.groupId;
+                if (groupId) {
+                    this._groupCtrl.setValue(String(groupId));
+                }
+            }
+
+            // Set Tags values
+            if (this._tagCtrl) {
+                const tagIds = profile.TagIds ?? profile.tagIds ?? [];
+                if (tagIds.length > 0) {
+                    this._tagCtrl.setValues(tagIds.map(String));
+                }
+            }
+
+            // 2. Apply to each tab - parse structure from backend
+            const systemConfig = profileData.System || {};
+            const fingerprintConfig = profileData.Fingerprint || {};
+            const networkConfig = profileData.Network || {};
+            const securityConfig = profileData.Security || {};
+            const locationConfig = profileData.Location || {};
+
+            // Extract screen values from Screen object
+            // Extract screen values - ALWAYS extract from DB (even when Mode=random, backend generated specific values)
+            const screenConfig = systemConfig.Screen || {};
+            const dbScreenWidth = screenConfig.Width ?? null;
+            const dbScreenHeight = screenConfig.Height ?? null;
+            const dbScreenPixelRatio = screenConfig.PixelRatio ?? null;
+            // Screen Mode: if DB has concrete dimensions → 'custom'; null in DB → 'real'; otherwise use DB value
+            const hasSpecificScreen = dbScreenWidth != null && dbScreenHeight != null;
+            const resolvedScreenMode = hasSpecificScreen ? 'custom' : (screenConfig.Mode == null ? 'real' : String(screenConfig.Mode).toLowerCase());
+            // screenWidth/screenHeight for HW tab: show only when resolved as 'custom'
+            const screenWidth = resolvedScreenMode === 'custom' ? dbScreenWidth : null;
+            const screenHeight = resolvedScreenMode === 'custom' ? dbScreenHeight : null;
+            const screenPixelRatio = resolvedScreenMode === 'custom' ? dbScreenPixelRatio : null;
+            console.log('[CreateProfile] DEBUG screenConfig:', JSON.stringify(screenConfig));
+            console.log('[CreateProfile] DEBUG resolvedScreenMode:', resolvedScreenMode, 'screenWidth:', screenWidth, 'screenHeight:', screenHeight, 'hasSpecificScreen:', hasSpecificScreen);
+
+            // Extract language from System - defaults may have comma-separated string
+            let defaultLanguage = 'en-US';
+            if (profileDefaults?.languages) {
+                if (typeof profileDefaults.languages === 'string') {
+                    defaultLanguage = profileDefaults.languages.split(',')[0].trim();
+                } else if (Array.isArray(profileDefaults.languages)) {
+                    defaultLanguage = profileDefaults.languages[0];
+                }
+            }
+            // Platform: TypedConfig → extract Value; old schema: raw string
+            const platformVal = tcValue(systemConfig.Platform) || systemConfig.Platform || 'Win32';
+            const mappedOs = platformMap[platformVal] || platformVal || 'Windows';
+            // Language/AcceptLanguage: TypedConfig or raw string
+            const systemLanguage = getValue(
+                tcValue(systemConfig.Language) || tcValue(systemConfig.AcceptLanguage) || systemConfig.Language || systemConfig.AcceptLanguage,
+                defaultLanguage
+            );
+
+            // GeneralTab - Platform mapping: "Win32" -> "Windows", "Darwin" -> "macOS", etc.
+            const platformMap = {
+                'Win32': 'Windows',
+                'Win64': 'Windows',
+                'Darwin': 'macOS',
+                'Linux': 'Linux'
+            };
+
+            const genTab = window.ProfileModals.CreateProfile.GeneralTab;
+            if (genTab) {
+                // UA Mode: read from systemConfig.UaMode (single source of truth)
+                // DB null/empty → 'real' (browser uses real UA)
+                // DB 'custom'/'noise'/'random' → use as-is
+                // If DB has a concrete UserAgent → it's effectively 'custom'
+                const rawUaMode = (() => {
+                    if (systemConfig.UaMode != null && systemConfig.UaMode !== '') {
+                        return String(systemConfig.UaMode).toLowerCase();
+                    } else if (fingerprintConfig.UaMode != null && fingerprintConfig.UaMode !== '') {
+                        return String(fingerprintConfig.UaMode).toLowerCase();
+                    } else if (systemConfig.UseRealUserAgent === true || fingerprintConfig.UseRealUserAgent === true) {
+                        return 'real';
+                    }
+                    return 'real';
+                })();
+                // Check if DB has a concrete UserAgent (stored in systemConfig.UserAgent)
+                const dbUA = tcValue(systemConfig.UserAgent) || systemConfig.UserAgent || fingerprintConfig.UserAgent || '';
+                const hasSpecificUA = dbUA !== '';
+                // If DB has concrete UA → mode is 'custom' (editable); otherwise use raw mode
+                const uaMode = hasSpecificUA ? 'custom' : (rawUaMode || 'real');
+
+                // Real mode: do NOT load/save any UserAgent (system uses real browser UA)
+                // Other modes (random/custom): always load the concrete UA so overview can display it
+                const uaRaw = uaMode === 'real' ? '' : (dbUA || getValue(profileDefaults?.userAgent, ''));
+                const genValues = {
+                    os: mappedOs,
+                    osModel: osModel,
+                    browser: getValue(profile.BrowserType || profile.browserType, profileDefaults?.browserType || 'Chromium'),
+                    browserVersion: getValue(profile.BrowserVersion || profile.browserVersion || systemConfig.BrowserVersion, profileDefaults?.browserVersion || '138'),
+                    userAgent: uaRaw,
+                    startUrl: getValue(profileData.Profile?.StartURL, ''),
+                    uaMode: uaMode,
+                    _dbUserAgent: uaRaw // pass through so GeneralTab can populate the input
+                };
+
+                // Store loaded DB values so _syncSummary can read them directly
+                // (bypasses timing issue: _syncSummary runs before setValues RAF callbacks complete)
+                this._loadedDbValues = {
+                    uaMode: uaMode,
+                    userAgent: uaRaw,
+                    screenMode: resolvedScreenMode,
+                    screenWidth: screenWidth,
+                    screenHeight: screenHeight,
+                    screenPixelRatio: screenPixelRatio,
+                    cpuMode: cpuMode,
+                    // TypedConfig schema: tcValue extracts .Value, falls back to raw for old schema
+                    concurrency: getValue(tcValue(systemConfig.HardwareConcurrency) || systemConfig.HardwareConcurrency, profileDefaults?.hardwareConcurrency || null),
+                    deviceMemory: getValue(tcValue(systemConfig.DeviceMemory) || systemConfig.DeviceMemory, profileDefaults?.deviceMemory || null),
+                    timezone: rawTimezone === null || rawTimezone === undefined ? 'auto' : (rawTimezone || 'auto'),
+                    webglMode: resolvedWebGLMode,
+                    webglVendor: getValue(fingerprintConfig.WebGL?.Vendor, profileDefaults?.webglVendor || null),
+                    webglRenderer: getValue(fingerprintConfig.WebGL?.Renderer, profileDefaults?.webglRenderer || null),
+                };
+                console.log('[CreateProfile] _loadedDbValues stored:', JSON.stringify({
+                    uaMode, userAgentLen: uaRaw?.length, userAgent: uaRaw,
+                    screenMode: resolvedScreenMode, screenWidth, screenHeight,
+                    cpuMode, concurrency: systemConfig.HardwareConcurrency,
+                    webglMode: resolvedWebGLMode
+                }, null, 2));
+                console.log('[CreateProfile] Applying GeneralTab values:', JSON.stringify(genValues, null, 2));
+                console.log('[CreateProfile] genTab exists:', !!genTab, 'genTab.setValues exists:', !!genTab?.setValues);
+                if (genTab?.setValues) genTab.setValues(genValues);
+            }
+
+            // NetworkTab
+            const netTab = window.ProfileModals.CreateProfile.NetworkTab;
+            if (netTab) {
+                // Parse timezone - null in DB means user chose 'auto'
+                const rawTimezone = fingerprintConfig.Timezone || systemConfig.Timezone;
+                const timezone = rawTimezone === null || rawTimezone === undefined ? 'auto' : (rawTimezone || 'auto');
+
+                // Parse languages - defaults may have comma-separated string or array
+                let defaultLanguages = ['en-US', 'en'];
+                if (profileDefaults?.languages) {
+                    if (typeof profileDefaults.languages === 'string') {
+                        defaultLanguages = profileDefaults.languages.split(',').map(l => l.trim());
+                    } else if (Array.isArray(profileDefaults.languages)) {
+                        defaultLanguages = profileDefaults.languages;
+                    }
+                }
+                let languages = defaultLanguages;
+                if (fingerprintConfig.Languages && Array.isArray(fingerprintConfig.Languages) && fingerprintConfig.Languages.length > 0) {
+                    languages = fingerprintConfig.Languages;
+                } else if (systemLanguage) {
+                    languages = Array.isArray(systemLanguage) ? systemLanguage : [systemLanguage];
+                }
+
+                const proxyConfig = networkConfig.Proxy || {};
+                const proxyMode = toLowerOrNull(proxyConfig.Mode) || 'none';
+                // Location Mode: null (Real) -> 'real', otherwise use value or default 'noise'
+                const locationMode = nullMode(locationConfig.Mode, nullMode(profileDefaults?.locationMode, 'noise'));
+                const netValues = {
+                    proxyMode,
+                    proxyConfig,
+                    savedProxyId: proxyConfig.SavedProxyId ?? profile.ProxyId ?? null,
+                    timezone,
+                    languages,
+                    locationMode,
+                    customCoordinates: locationMode === 'custom'
+                        ? {
+                            lat: getValue(locationConfig.Latitude, profileDefaults?.latitude ?? null),
+                            lng: getValue(locationConfig.Longitude, profileDefaults?.longitude ?? null),
+                            accuracy: getValue(locationConfig.Accuracy, profileDefaults?.accuracy ?? 100)
+                        }
+                        : null
+                };
+                console.log('[CreateProfile] Applying NetworkTab values:', JSON.stringify(netValues, null, 2));
+                console.log('[CreateProfile] netTab exists:', !!netTab, 'netTab.setValues exists:', !!netTab?.setValues);
+                if (netTab?.setValues) netTab.setValues(netValues);
+            }
+
+            console.log('[CreateProfile] DEBUG fingerprintConfig keys:', Object.keys(fingerprintConfig));
+            console.log('[CreateProfile] DEBUG WebGL config:', JSON.stringify(fingerprintConfig.WebGL, null, 2));
+            console.log('[CreateProfile] DEBUG Canvas config:', JSON.stringify(fingerprintConfig.Canvas, null, 2));
+            console.log('[CreateProfile] DEBUG MediaDevices config:', JSON.stringify(fingerprintConfig.MediaDevices, null, 2));
+            console.log('[CreateProfile] DEBUG SpeechVoicesMode:', fingerprintConfig.SpeechVoicesMode);
+            console.log('[CreateProfile] DEBUG ClientRects config:', JSON.stringify(fingerprintConfig.ClientRects, null, 2));
+            console.log('[CreateProfile] DEBUG DoNotTrack:', fingerprintConfig.DoNotTrack);
+
+            // HardwareTab
+            const hwTab = window.ProfileModals.CreateProfile.HardwareTab;
+            if (hwTab) {
+                // CPU Hardware: TypedConfig schema or old int schema
+                const hwConcurrency = tcValue(systemConfig.HardwareConcurrency) || systemConfig.HardwareConcurrency;
+                const hwMemory = tcValue(systemConfig.DeviceMemory) || systemConfig.DeviceMemory;
+                const hwMode = tcMode(systemConfig.HardwareConcurrency) || tcMode(systemConfig.DeviceMemory);
+                // CPU: if HardwareConcurrency has value → show Custom; null/real → use mode
+                const hasSpecificHardware = hwConcurrency != null && hwConcurrency > 0;
+                const cpuMode = hasSpecificHardware ? 'custom'
+                    : getValue(toLowerOrNull(hwMode || fingerprintConfig.CpuMode), 'random');
+
+                // Determine screen mode: if specific dimensions are set, use 'custom' regardless of Screen.Mode in DB
+                const hasSpecificScreen = screenWidth && screenHeight;
+                const resolvedScreenMode = hasSpecificScreen ? 'custom' : (screenConfig.Mode == null ? 'real' : String(screenConfig.Mode).toLowerCase());
+
+                // WebGL: if Vendor/Renderer are set, show Custom; null in DB falls to fingerprint defaults (usually 'random')
+                const hasSpecificWebGL = fingerprintConfig.WebGL?.Vendor || fingerprintConfig.WebGL?.Renderer;
+                const resolvedWebGLMode = hasSpecificWebGL ? 'custom' : getValue(toLowerOrNull(fingerprintConfig.WebGL?.Mode), 'random');
+
+                const hwValues = {
+                    os: mappedOs,
+                    cpuMode,
+                    // TypedConfig: extract Value or fall back to raw int
+                    concurrency: getValue(hwConcurrency, profileDefaults?.hardwareConcurrency || null),
+                    deviceMemory: getValue(hwMemory, profileDefaults?.deviceMemory || null),
+                    screenMode: resolvedScreenMode,
+                    screenWidth: screenWidth,
+                    screenHeight: screenHeight,
+                    screenPixelRatio: screenPixelRatio,
+                    canvasMode: nullMode(fingerprintConfig.Canvas?.Mode, nullMode(profileDefaults?.canvasMode, 'noise')),
+                    webglMode: resolvedWebGLMode,
+                    webglVendor: getValue(fingerprintConfig.WebGL?.Vendor, profileDefaults?.webglVendor || null),
+                    webglRenderer: getValue(fingerprintConfig.WebGL?.Renderer, profileDefaults?.webglRenderer || null),
+                    webglImageMode: nullMode(fingerprintConfig.WebGL?.ImageSpoofing?.Mode, nullMode(profileDefaults?.webglImageMode, 'noise')),
+                    pluginsMode: nullMode(tcMode(fingerprintConfig.Plugins) || fingerprintConfig.PluginsMode, nullMode(profileDefaults?.pluginsMode, 'default'))
+                };
+                console.log('[CreateProfile] Applying HardwareTab values:', JSON.stringify(hwValues, null, 2));
+                console.log('[CreateProfile] hwTab exists:', !!hwTab, 'hwTab.setValues exists:', !!hwTab?.setValues);
+                if (hwTab?.setValues) hwTab.setValues(hwValues, this._fpTemplate);
+            }
+
+            // SecurityTab
+            const secTab = window.ProfileModals.CreateProfile.SecurityTab;
+            if (secTab) {
+                // Map DoNotTrack from DB: new schema has { Mode, Value }, old schema has raw string
+                const dntConfig = fingerprintConfig.DoNotTrack;
+                const dntValue = tcValue(dntConfig) || dntConfig; // .Value or raw string
+                let doNotTrackValue = 'default';
+                if (dntValue === '1' || dntValue === 1) {
+                    doNotTrackValue = 'enabled';
+                } else if (dntValue === '0' || dntValue === 0) {
+                    doNotTrackValue = 'disabled';
+                } else if (dntValue !== null && dntValue !== undefined) {
+                    if (String(dntValue).toLowerCase() === 'enabled') doNotTrackValue = 'enabled';
+                    else if (String(dntValue).toLowerCase() === 'disabled') doNotTrackValue = 'disabled';
+                }
+
+                // Fonts: new schema → .FontList array; old schema → raw string[]
+                const fontsList = fingerprintConfig.Fonts?.FontList || fingerprintConfig.Fonts || [];
+                // FontsMode: new schema → .Mode; old schema → .FontsMode string
+                const fontsMode = tcMode(fingerprintConfig.Fonts) || fingerprintConfig.FontsMode || fingerprintConfig.Fonts?.Mode;
+
+                const secValues = {
+                    webrtcMode: nullMode(fingerprintConfig.WebRTcMode || fingerprintConfig.WebRtcMode, nullMode(profileDefaults?.WebRTcMode || profileDefaults?.webRtcMode, 'disable')),
+                    sslMode: nullMode(fingerprintConfig.SslMode, nullMode(profileDefaults?.SslMode || profileDefaults?.sslMode, 'noise')),
+                    portScan: getValue(toLowerOrNull(securityConfig.PortScan), profileDefaults?.portScan || 'protect'),
+                    portBlockMode: getValue(securityConfig.PortBlockMode, profileDefaults?.portBlockMode || 'block_default'),
+                    portBlockList: getValue(securityConfig.PortBlockList, profileDefaults?.portBlockList || []),
+                    mediaDevices: nullMode(fingerprintConfig.MediaDevices?.Mode, nullMode(profileDefaults?.mediaDevicesMode, 'noise')),
+                    audioMode: nullMode(fingerprintConfig.Audio?.Mode, nullMode(profileDefaults?.audioMode, 'noise')),
+                    speechVoices: nullMode(fingerprintConfig.SpeechVoicesMode, nullMode(profileDefaults?.speechVoicesMode, 'noise')),
+                    clientRects: nullMode(fingerprintConfig.ClientRects?.Mode, nullMode(profileDefaults?.clientRectsMode, 'noise')),
+                    fontMetricsMode: nullMode(fingerprintConfig.FontMetrics?.Mode, nullMode(profileDefaults?.fontMetricsMode, 'noise')),
+                    fontsMode: nullMode(fontsMode, nullMode(profileDefaults?.fontsMode, 'default')),
+                    customFonts: Array.isArray(fontsList) ? fontsList : [],
+                    doNotTrack: doNotTrackValue
+                };
+                console.log('[CreateProfile] Applying SecurityTab values:', JSON.stringify(secValues, null, 2));
+                console.log('[CreateProfile] secTab exists:', !!secTab, 'secTab.setValues exists:', !!secTab?.setValues);
+                if (secTab?.setValues) secTab.setValues(secValues);
+            }
+
+            // CookiesTab
+            const cookiesTab = window.ProfileModals.CreateProfile.CookiesTab;
+            const cookiesData = profile.Cookies || profile.cookies || '';
+            if (cookiesTab && cookiesData) {
+                cookiesTab.setValues({ cookiesData: cookiesData });
+            }
+
+            // NotesTab
+            const notesTab = window.ProfileModals.CreateProfile.NotesTab;
+            if (notesTab) {
+                notesTab.setValues({ notes: profile.Notes || profile.notes || '' });
+            }
+
+            // Sync overview
+            this._scheduleSync();
+        },
+
+        /** Save profile in edit mode */
+        async _saveProfile() {
+            if (!this._editProfileId) return;
+
+            const payload = this._buildUpdatePayload();
+            console.log('[DEBUG:FE_TO_BACKEND_UPDATE]', JSON.stringify(payload, null, 2));
+            console.log('[CreateProfile] _saveProfile - full payload:', JSON.stringify(payload, null, 2));
+            console.log('[CreateProfile] _saveProfile - profileData parsed:', JSON.parse(payload.profileData || '{}'));
+            const result = await DuckBridge.call('profile.update', payload);
+            console.log('[DEBUG:FE_FROM_BACKEND_UPDATE]', JSON.stringify(result, null, 2));
+
+            // Reload profiles table
+            if (window.ProfilesView?.loadProfiles) {
+                window.ProfilesView.loadProfiles();
+            }
+        },
+
+        /** Build payload for profile update - from UI controls only */
+        _buildUpdatePayload() {
+            const v = this._collectTabValues();
+            console.log('[CreateProfile] _buildUpdatePayload - collected values:', JSON.stringify({
+                screenMode: v.screenMode,
+                screenWidth: v.screenWidth,
+                screenHeight: v.screenHeight,
+                cpuMode: v.cpuMode,
+                canvasMode: v.canvasMode,
+                webglMode: v.webglMode,
+                webglImageMode: v.webglImageMode,
+                pluginsMode: v.pluginsMode,
+                webrtcMode: v.webrtcMode,
+                mediaDevices: v.mediaDevices,
+                speechVoices: v.speechVoices,
+                clientRects: v.clientRects,
+                fontsMode: v.fontsMode
+            }, null, 2));
+
+            const groupValue = this._groupCtrl?.getValue?.() || '';
+            const groupId = groupValue ? parseInt(groupValue, 10) : null;
+            const tagValues = this._tagCtrl?.getValues?.() || [];
+            const tagIds = tagValues.map(t => parseInt(t, 10)).filter(n => !isNaN(n));
+
+            // Map OS name to platform string: "Windows" -> "Win32", "macOS" -> "Darwin"
+            const osToPlatform = {
+                'Windows': 'Win32',
+                'macOS': 'Darwin',
+                'Linux': 'Linux'
+            };
+            const platform = osToPlatform[v.os] || v.os || 'Win32';
+
+            // Build ProfileData JSON - merge original with UI values
+            // Preserve original values for fields not exposed/changed in UI by reading from _originalProfileData.ProfileDataParsed
+            const orig = this._originalProfileData?.ProfileDataParsed || {};
+            const origFp = orig.Fingerprint || {};
+            const origSys = orig.System || {};
+            const origSec = orig.Security || {};
+            const origLoc = orig.Location || {};
+
+            const profileData = {
+                Profile: {
+                    ProfileID: String(this._editProfileId),
+                    ProfileName: v.name || this._originalProfileData?.Name || '',
+                    StartURL: v.startUrl || ''
+                },
+                System: {
+                    // Platform/Language/UserAgent/AcceptLanguage/Timezone are TypedConfig<*>
+                    Platform: { Mode: 'noise', Value: platform },
+                    // Language: 'noise' when user picks specific lang; 'real' when using defaults
+                    Language: {
+                        Mode: (v.languages?.length > 0 && v.languages?.[0] !== 'en-US') ? 'noise' : 'real',
+                        Value: v.languages?.[0] || null
+                    },
+                    UserAgent: v.uaMode === 'real'
+                        ? { Mode: 'real', Value: null }
+                        : { Mode: 'noise', Value: v.userAgent || origFp.UserAgent || origSys.UserAgent || null },
+                    BrowserVersion: v.browserVersion || '138',
+                    // AcceptLanguage: 'noise' only when user selects specific languages; 'real' when using defaults
+                    AcceptLanguage: {
+                        Mode: (v.languages?.length > 0 && v.languages?.[0] !== 'en-US') ? 'noise' : 'real',
+                        Value: (v.languages?.length > 0 && v.languages?.[0] !== 'en-US') ? (v.languages?.join(',') || null) : null
+                    },
+                    // Timezone: 'real' when Auto (no spoof); 'noise' only when user selects a specific timezone
+                    Timezone: v.timezone && v.timezone !== 'auto'
+                        ? { Mode: 'noise', Value: v.timezone }
+                        : { Mode: 'real', Value: null },
+                    // Hardware fields: TypedConfig<int>
+                    // Real mode → Mode='real', Value=null (no spoof, browser uses real hardware)
+                    // Custom mode → Mode='noise', Value=user-selected values
+                    // Random mode → Mode='noise', Value=null (browser generates random internally)
+                    HardwareConcurrency: v.cpuMode === 'real'
+                        ? { Mode: 'real', Value: null }
+                        : { Mode: 'noise', Value: v.concurrency ?? null },
+                    DeviceMemory: v.cpuMode === 'real'
+                        ? { Mode: 'real', Value: null }
+                        : { Mode: 'noise', Value: v.deviceMemory ?? null },
+                    Architecture: origSys.Architecture?.Value ? { Mode: 'noise', Value: origSys.Architecture.Value } : { Mode: 'real', Value: null },
+                    Bitness: origSys.Bitness?.Value ? { Mode: 'noise', Value: origSys.Bitness.Value } : { Mode: 'real', Value: null },
+                    Screen: {
+                        // Real mode → no Width/Height/PixelRatio spoofing
+                        Mode: v.screenMode === 'real' ? 'real' : (v.screenMode || 'real'),
+                        Width: v.screenMode === 'real' ? null : (v.screenWidth ?? null),
+                        Height: v.screenMode === 'real' ? null : (v.screenHeight ?? null),
+                        ColorDepth: origSys.Screen?.ColorDepth ?? 24,
+                        PixelRatio: v.screenMode === 'real' ? null : (v.screenPixelRatio ?? null)
+                    }
+                },
+                Fingerprint: {
+                    WebGL: {
+                        Mode: v.webglMode === 'real' ? 'real' : (v.webglMode || 'noise'),
+                        Vendor: v.webglMode === 'real' ? null : (v.webglVendor ?? null),
+                        Renderer: v.webglMode === 'real' ? null : (v.webglRenderer ?? null),
+                        // NoiseSeed/NoiseLevel: only set when NOT Real mode (Real = null, no noise)
+                        NoiseSeed: v.webglMode !== 'real' ? (origFp.WebGL?.NoiseSeed ?? null) : null,
+                        NoiseLevel: v.webglMode !== 'real' ? (origFp.WebGL?.NoiseLevel ?? null) : null,
+                        ImageSpoofing: {
+                            Mode: v.webglImageMode === 'real' ? 'real' : (v.webglImageMode || 'noise'),
+                            TextureSeed: v.webglImageMode !== 'real' ? (origFp.WebGL?.ImageSpoofing?.TextureSeed ?? null) : null,
+                            Pattern: origFp.WebGL?.ImageSpoofing?.Pattern ?? 'default'
+                        }
+                    },
+                    Canvas: {
+                        Mode: v.canvasMode === 'real' ? 'real' : (v.canvasMode || 'noise'),
+                        // NoiseSeed/NoiseLevel: null when Real (browser uses real canvas)
+                        NoiseSeed: v.canvasMode !== 'real' ? (origFp.Canvas?.NoiseSeed ?? null) : null,
+                        NoiseLevel: v.canvasMode !== 'real' ? (origFp.Canvas?.NoiseLevel ?? null) : null
+                    },
+                    Audio: {
+                        Mode: v.audioMode === 'real' ? 'real' : (v.audioMode || 'real'),
+                        NoiseSeed: v.audioMode !== 'real' ? (origFp.Audio?.NoiseSeed ?? null) : null,
+                        NoiseLevel: v.audioMode !== 'real' ? (origFp.Audio?.NoiseLevel ?? null) : null
+                    },
+                    ClientRects: {
+                        Mode: v.clientRects === 'real' ? 'real' : (v.clientRects || 'noise'),
+                        NoiseSeed: v.clientRects !== 'real' ? (origFp.ClientRects?.NoiseSeed ?? null) : null,
+                        NoiseLevel: v.clientRects !== 'real' ? (origFp.ClientRects?.NoiseLevel ?? null) : null
+                    },
+                    Fonts: {
+                        // Real/Default mode: FontList should be empty or null (browser uses real fonts)
+                        Mode: v.fontsMode === 'real' ? 'real' : (v.fontsMode || 'default'),
+                        FontList: v.fontsMode === 'custom' ? (v.customFonts || []) : []
+                    },
+                    Plugins: {
+                        Mode: v.pluginsMode === 'real' ? 'real' : (v.pluginsMode || 'default'),
+                        PluginList: []
+                    },
+                    MediaDevices: {
+                        Mode: v.mediaDevices === 'real' ? 'real' : (v.mediaDevices || 'real'),
+                        VideoInputs: v.mediaDevices !== 'real' ? (origFp.MediaDevices?.VideoInputs ?? null) : null,
+                        AudioInputs: v.mediaDevices !== 'real' ? (origFp.MediaDevices?.AudioInputs ?? null) : null,
+                        AudioOutputs: v.mediaDevices !== 'real' ? (origFp.MediaDevices?.AudioOutputs ?? null) : null
+                    },
+                    Connection: origFp.Connection || { Mode: 'default', EffectiveType: '4g', Downlink: 10, Rtt: 50, SaveData: false },
+                    StorageQuota: origFp.StorageQuota?.Value ? { Mode: 'noise', Value: origFp.StorageQuota.Value } : { Mode: 'real', Value: null },
+                    TLSOSMatch: origFp.TLSOSMatch?.Value ? { Mode: 'noise', Value: origFp.TLSOSMatch.Value } : { Mode: 'real', Value: null },
+                    DoNotTrack: {
+                        Mode: v.doNotTrack === 'enabled' ? 'noise' : (v.doNotTrack === 'disabled' ? 'noise' : 'real'),
+                        Value: v.doNotTrack === 'enabled' ? '1' : (v.doNotTrack === 'disabled' ? '0' : null)
+                    },
+                    WebRTcMode: v.webrtcMode || 'disable',
+                    SslMode: v.sslMode || 'noise',
+                    SpeechVoicesMode: v.speechVoices || 'noise',
+                    FontMetrics: {
+                        Mode: v.fontMetricsMode === 'real' ? 'real' : (v.fontMetricsMode || 'real'),
+                        // NoiseSeed/NoiseLevel: null when Real or Default (browser uses real/default)
+                        NoiseSeed: (v.fontMetricsMode !== 'real' && v.fontMetricsMode !== 'default') ? (origFp.FontMetrics?.NoiseSeed ?? null) : null,
+                        NoiseLevel: (v.fontMetricsMode !== 'real' && v.fontMetricsMode !== 'default') ? (origFp.FontMetrics?.NoiseLevel ?? null) : null
+                    }
+                },
+                Network: {
+                    Proxy: this._buildProxyConfig()
+                },
+                Security: {
+                    PortScan: v.portScan ? String(v.portScan).toLowerCase() : (origSec.PortScan || null),
+                    PortBlockMode: v.portBlockMode || origSec.PortBlockMode || null,
+                    PortBlockList: v.portBlockList?.length > 0 ? v.portBlockList : (origSec.PortBlockList || null)
+                },
+                Location: this._buildLocationConfigWithOrig(v, origLoc)
+            };
+
+            console.log('[CreateProfile] _buildUpdatePayload - profileData to save:', JSON.stringify(profileData, null, 2));
+            // [DEBUG] key fields
+            console.log('[DEBUG:_buildUpdatePayload]', JSON.stringify({
+                uaMode: v.uaMode,
+                screenMode: v.screenMode, screenWidth: v.screenWidth, screenHeight: v.screenHeight,
+                cpuMode: v.cpuMode, concurrency: v.concurrency, deviceMemory: v.deviceMemory,
+                webglMode: v.webglMode, webglVendor: v.webglVendor, webglRenderer: v.webglRenderer,
+                canvasMode: v.canvasMode, webglImageMode: v.webglImageMode,
+                pluginsMode: v.pluginsMode,
+                mediaDevices: v.mediaDevices, clientRects: v.clientRects,
+            }, null, 2));
+
+            return {
+                id: this._editProfileId,
+                name: v.name || this._originalProfileData?.Name || '',
+                groupId,
+                tagIds: tagIds.length ? tagIds : null,
+                proxyId: v.savedProxyId || null,
+                browserType: (v.browser || 'chromium').charAt(0).toUpperCase() + (v.browser || 'chromium').slice(1),
+                browserVersion: v.browserVersion || this._originalProfileData?.BrowserVersion || '138',
+                profileData: JSON.stringify(profileData),
+                notes: v.notes || '',
+                cookies: v.cookiesData || this._originalProfileData?.Cookies || ''
+            };
+        },
+
+        /** Build proxy config from tab values */
+        _buildProxyConfig() {
+            const v = this._collectTabValues();
+            const netTab = window.ProfileModals.CreateProfile.NetworkTab;
+
+            if (v.proxyMode === 'none' || !netTab) {
+                return { Mode: 'none' };
+            }
+
+            if (v.proxyMode === 'saved') {
+                return {
+                    Mode: 'saved',
+                    SavedProxyId: v.savedProxyId
+                };
+            }
+
+            if (v.proxyMode === 'custom' && v.customProxy) {
+                return {
+                    Mode: 'custom',
+                    Type: v.customProxy.type || 'http',
+                    Host: v.customProxy.host || '',
+                    Port: v.customProxy.port || 0,
+                    Username: v.customProxy.username || '',
+                    Password: v.customProxy.password || ''
+                };
+            }
+
+            return { Mode: 'none' };
+        },
+
+        /** Build location config from tab values */
+        _buildLocationConfig(v) {
+            const mode = v.locationMode || 'noise';
+            const access = v.geolocationAccess ? String(v.geolocationAccess).toLowerCase() : 'block';
+            if (mode === 'custom' && v.customCoordinates) {
+                return {
+                    Mode: 'custom',
+                    Access: access,
+                    Latitude: v.customCoordinates.lat || 0,
+                    Longitude: v.customCoordinates.lng || 0,
+                    Accuracy: v.customCoordinates.accuracy || 100
+                };
+            }
+            // Real mode → no coordinates spoofing
+            if (mode === 'real') {
+                return {
+                    Mode: 'real',
+                    Access: access,
+                    Latitude: null,
+                    Longitude: null,
+                    Accuracy: null
+                };
+            }
+            // noise or default mode → clear coordinates (no spoof)
+            return {
+                Mode: 'noise',
+                Access: access,
+                Latitude: null,
+                Longitude: null,
+                Accuracy: null
+            };
+        },
+
+        /** Build location config from tab values - preserves original values for unchanged fields */
+        _buildLocationConfigWithOrig(v, origLoc) {
+            const mode = v.locationMode || 'noise';
+            const access = v.geolocationAccess ? String(v.geolocationAccess).toLowerCase() : (origLoc?.Access || 'block');
+            if (mode === 'custom' && v.customCoordinates) {
+                return {
+                    Mode: 'custom',
+                    Access: access,
+                    Latitude: v.customCoordinates.lat || 0,
+                    Longitude: v.customCoordinates.lng || 0,
+                    Accuracy: v.customCoordinates.accuracy || 100
+                };
+            }
+            // Real mode → no coordinates spoofing
+            if (mode === 'real') {
+                return {
+                    Mode: 'real',
+                    Access: access,
+                    Latitude: null,
+                    Longitude: null,
+                    Accuracy: null
+                };
+            }
+            // noise or default mode → clear coordinates (no spoof)
+            return {
+                Mode: 'noise',
+                Access: access,
+                Latitude: null,
+                Longitude: null,
+                Accuracy: null
+            };
         },
 
         _buildFormContainer(template, browserCatalog) {
@@ -1061,7 +1894,7 @@
                 return w;
             };
 
-            // Row 1: Mode + Name
+            // Row 1: Mode + Name (hide mode toggle in edit mode)
             const row1 = document.createElement('div');
             row1.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start;';
 
@@ -1080,21 +1913,26 @@
             nameWrap.appendChild(nameInput.element);
             nameWrap.appendChild(qtyWrap);
 
-            const modeToggle = window.DuckControls.ToggleGroup.create({
-                options: [{ label: 'Single Profile', value: 'single' }, { label: 'Bulk Create', value: 'bulk' }],
-                value: 'single',
-                onChange: (val) => {
-                    qtyWrap.style.display = val === 'bulk' ? 'block' : 'none';
-                    this._modeCtrl = modeToggle;
-                    const lbl = nameInput.element.querySelector('.ui-label-sm');
-                    const inp = nameInput.element.querySelector('input');
-                    if (val === 'bulk') { if (lbl) lbl.textContent = 'Profile Prefix'; if (inp) inp.placeholder = 'Enter prefix...'; }
-                    else { if (lbl) lbl.textContent = 'Profile Name'; if (inp) inp.placeholder = 'Enter profile name...'; }
-                }
-            });
-            this._modeCtrl = modeToggle;
-            row1.appendChild(createLabelWrap('Creation Mode', modeToggle.element));
-            row1.appendChild(nameWrap);
+            // In edit mode, hide the mode toggle (no bulk create)
+            if (this._mode === 'edit') {
+                row1.appendChild(nameWrap);
+            } else {
+                const modeToggle = window.DuckControls.ToggleGroup.create({
+                    options: [{ label: 'Single Profile', value: 'single' }, { label: 'Bulk Create', value: 'bulk' }],
+                    value: 'single',
+                    onChange: (val) => {
+                        qtyWrap.style.display = val === 'bulk' ? 'block' : 'none';
+                        this._modeCtrl = modeToggle;
+                        const lbl = nameInput.element.querySelector('.ui-label-sm');
+                        const inp = nameInput.element.querySelector('input');
+                        if (val === 'bulk') { if (lbl) lbl.textContent = 'Profile Prefix'; if (inp) inp.placeholder = 'Enter prefix...'; }
+                        else { if (lbl) lbl.textContent = 'Profile Name'; if (inp) inp.placeholder = 'Enter profile name...'; }
+                    }
+                });
+                this._modeCtrl = modeToggle;
+                row1.appendChild(createLabelWrap('Creation Mode', modeToggle.element));
+                row1.appendChild(nameWrap);
+            }
             stickyHeader.appendChild(row1);
 
             // Row 2: Group + Tags

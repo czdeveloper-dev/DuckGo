@@ -5,6 +5,16 @@ window.ProfileModals.NewFingerprint = {
         if (!selectedIds) selectedIds = new Set();
         const count = selectedIds.size !== undefined ? selectedIds.size : (selectedIds.length || 0);
 
+        let statusLabel = null;
+        let isProcessing = false;
+
+        const updateStatus = (message, isError = false) => {
+            if (statusLabel) {
+                statusLabel.textContent = message;
+                statusLabel.style.color = isError ? 'var(--danger)' : 'var(--text-secondary)';
+            }
+        };
+
         DuckControls.Modal.create({
             defaultEnter: true,
             title: 'Generate New Fingerprint',
@@ -23,16 +33,42 @@ window.ProfileModals.NewFingerprint = {
                             <li><strong>Irreversible Action:</strong> The previous hardware canvas, WebGL, and Audio contexts will be permanently replaced.</li>
                         </ul>
                     </div>
+                    <div id="new-fp-status" style="margin-top: 12px; font-size: 12px;"></div>
                 </div>
             `,
             size: 'md',
             buttons: [
-                { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
-                { text: 'Change Fingerprint', class: 'duck-btn-primary', onClick: (e, modal) => {
-                    console.log('Generating new fingerprint for:', Array.from(selectedIds));
+                { text: 'Cancel', class: 'duck-btn-surface', id: 'new-fp-cancel', onClick: (e, modal) => {
+                    if (isProcessing) return;
                     modal.close();
+                }},
+                { text: 'Change Fingerprint', class: 'duck-btn-primary', id: 'new-fp-submit', onClick: async (e, modal) => {
+                    if (isProcessing) return;
+                    isProcessing = true;
+
+                    // Update UI to processing state
+                    updateStatus('Processing...');
+                    const submitBtn = document.getElementById('new-fp-submit');
+                    const cancelBtn = document.getElementById('new-fp-cancel');
+                    if (submitBtn) submitBtn.disabled = true;
+                    if (cancelBtn) cancelBtn.disabled = true;
+
+                    try {
+                        const idsArray = Array.isArray(selectedIds) ? selectedIds : [...selectedIds];
+                        await DuckBridge.call('profile.regenerateFingerprint', idsArray);
+                        updateStatus('Fingerprint regenerated successfully.');
+                        setTimeout(() => modal.close(), 500);
+                    } catch (err) {
+                        updateStatus(err.message || 'Failed to regenerate fingerprint.', true);
+                        isProcessing = false;
+                        if (submitBtn) submitBtn.disabled = false;
+                        if (cancelBtn) cancelBtn.disabled = false;
+                    }
                 }}
-            ]
+            ],
+            onContentReady: () => {
+                statusLabel = document.getElementById('new-fp-status');
+            }
         }).open();
     }
 };
