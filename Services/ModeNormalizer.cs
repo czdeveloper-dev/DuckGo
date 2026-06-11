@@ -14,15 +14,18 @@ public static class ModeNormalizer
 {
     /// <summary>
     /// Convert fingerprint config mode value to storage format.
-    /// "real" → "real". "random" → "custom" (not a valid UI option for fingerprint configs).
+    /// "real" → "real". "random" → "noise" (randomly-generated spoof value from template).
+    /// "custom" → "noise" (user explicitly provided custom value → spoof it).
     /// All other values pass through as-is.
+    /// DB storage only ever contains: "real", "noise", "default", "block", "disable", null.
     /// </summary>
     public static string? ToFingerprintStorage(string? uiMode)
     {
         if (string.IsNullOrWhiteSpace(uiMode)) return null;
         var normalized = uiMode.Trim().ToLowerInvariant();
         if (normalized == "real") return "real";
-        if (normalized == "random") return "custom"; // not a valid fingerprint option → treat as custom
+        if (normalized == "random") return "noise"; // random in DB means noise with browser-generated value
+        if (normalized == "custom") return "noise"; // custom = user-provided value → spoof it
         return normalized;
     }
 

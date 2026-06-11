@@ -198,23 +198,22 @@
             // Use DB-loaded values when available (bypasses timing issue: controls may not be set yet)
             // Controls are populated asynchronously via RAF, but _syncSummary runs in a setTimeout
             const db = this._loadedDbValues || {};
-            // null/undefined in DB means Real mode (browser uses real value)
-            const uaMode = (db.uaMode != null ? db.uaMode : null)
-                || window.ProfileModals?.CreateProfile?.GeneralTab?.uaModeToggle?.getValue?.()
-                || 'random';
+            // UA: read from controls first (after setValues), fallback to db for timing
+            const uaMode = window.ProfileModals?.CreateProfile?.GeneralTab?.uaModeToggle?.getValue?.()
+                || db.uaMode || 'random';
             const uaInputVal = window.ProfileModals?.CreateProfile?.GeneralTab?.uaInput?.getValue?.() || '';
-            if (uaMode === 'random' || uaMode === 'custom') {
-                // Backend generated a random/custom UA - display it from DB or from input
-                const ua = db.userAgent || uaInputVal || 'Random';
-                set('User Agent', ua);
-            } else {
+            if (uaMode === 'real') {
                 set('User Agent', 'Real (system)');
+            } else if (uaMode === 'custom') {
+                set('User Agent', uaInputVal || db.userAgent || 'Custom');
+            } else {
+                set('User Agent', db.userAgent || uaInputVal || 'Random');
             }
             set('Screen Resolution', this._fmtResolution({
-                screenMode: db.screenMode || v.screenMode,
-                screenWidth: db.screenWidth ?? v.screenWidth,
-                screenHeight: db.screenHeight ?? v.screenHeight,
-                screenPixelRatio: db.screenPixelRatio ?? v.screenPixelRatio,
+                screenMode: v.screenMode || db.screenMode,
+                screenWidth: v.screenWidth ?? db.screenWidth,
+                screenHeight: v.screenHeight ?? db.screenHeight,
+                screenPixelRatio: v.screenPixelRatio ?? db.screenPixelRatio,
                 screenPreset: v.screenPreset
             }));
             set('Timezone', v.timezone || 'Auto (Match IP)');
@@ -223,22 +222,21 @@
             set('Coordinates', v.locationMode === 'custom' && v.customCoordinates ? `${v.customCoordinates.lat || '-'}, ${v.customCoordinates.lng || '-'} (±${v.customCoordinates.accuracy || 100}m)` : this._fmtCoordinates(v));
             set('Hardware', this._fmtHardware(v));
             set('WebGL', this._fmtWebGL(v));
-            set('Fonts', v.fontsMode === 'custom' ? (v.customFonts?.join(', ') || 'None') : 'Default');
-            set('WebRTC', v.webrtcMode || 'Real');
-            set('SSL', v.sslMode || 'Real');
+            const fontsMode = v.fontsMode || 'default';
+            set('Fonts', fontsMode === 'custom' ? (v.customFonts?.join(', ') || 'None') : fontsMode.charAt(0).toUpperCase() + fontsMode.slice(1));
+            set('WebRTC', v.webrtcMode || 'disable');
+            set('SSL', v.sslMode || 'noise');
             set('Ports', this._fmtPorts(v));
-            set('Media', v.mediaDevices || 'Real');
-            set('Audio', v.audioMode || 'Real');
-            set('Speech', v.speechVoices || 'Real');
-            set('Rects', v.clientRects || 'Real');
-            set('Font Metrics', v.fontMetricsMode || 'Real');
+            set('Media', v.mediaDevices || 'real');
+            set('Audio', v.audioMode || 'real');
+            set('Speech', v.speechVoices || 'real');
+            set('Rects', v.clientRects || 'real');
+            set('Font Metrics', v.fontMetricsMode || 'real');
         },
 
         _fmtResolution(v) {
-            // screenMode from _loadedDbValues (DB source), falls back to controls for user changes
-            const screenMode = (this._loadedDbValues?.screenMode) || v.screenMode;
-            // Real mode (null/undefined) → browser uses real screen
-            if (!screenMode) return 'Real (system)';
+            const screenMode = v.screenMode || 'real';
+            if (screenMode === 'real') return 'Real (system)';
             if (screenMode === 'custom' && v.screenWidth) {
                 const pr = v.screenPixelRatio != null ? ` @${v.screenPixelRatio}x` : '';
                 return `${v.screenWidth}×${v.screenHeight}${pr}`;
@@ -268,6 +266,14 @@
             const genTab = window.ProfileModals.CreateProfile.GeneralTab;
             const netTab = window.ProfileModals.CreateProfile.NetworkTab;
             const secTab = window.ProfileModals.CreateProfile.SecurityTab;
+
+            if (fp?.rawConfig) {
+                if (this._originalProfileData) {
+                    this._originalProfileData.ProfileDataParsed = fp.rawConfig;
+                } else {
+                    this._originalProfileData = { ProfileDataParsed: fp.rawConfig };
+                }
+            }
 
             // Hardware: CPU
             if (hwTab) {
@@ -668,21 +674,18 @@
         },
 
         _fmtHardware(v) {
-            // cpuMode from _loadedDbValues (DB source), falls back to controls for user changes
-            const cpuMode = (this._loadedDbValues?.cpuMode) || v.cpuMode;
-            if (cpuMode === 'real') return 'Real hardware';
+            const cpuMode = v.cpuMode;
+            if (!cpuMode || cpuMode === 'real') return 'Real hardware';
             if (cpuMode === 'random') return 'Random hardware';
-            // Default/custom/noise: show selected tier if available
             if (v.concurrency != null && v.deviceMemory != null) {
                 return `${v.concurrency} Cores, ${v.deviceMemory} GB RAM`;
             }
-            return '—';
+            return 'Custom hardware';
         },
 
         _fmtWebGL(v) {
-            // webglMode from _loadedDbValues (DB source), falls back to controls for user changes
-            const webglMode = (this._loadedDbValues?.webglMode) || v.webglMode;
-            if (webglMode === 'real') return 'Real (no spoof)';
+            const webglMode = v.webglMode;
+            if (!webglMode || webglMode === 'real') return 'Real (no spoof)';
             if (webglMode === 'random') return 'Random spoofed';
             if (v.webglVendor || v.webglRenderer) {
                 const parts = [v.webglVendor, v.webglRenderer].filter(Boolean);
@@ -1104,6 +1107,7 @@
                             profileDefaults = await DuckBridge.call('profile.generateFingerprint', {
                                 platform: platform,
                                 browser: browserType,
+                                version: profile.BrowserVersion || profile.browserVersion || null,
                                 model: null
                             });
                             console.log('[CreateProfile] Generated defaults for merge:', JSON.stringify(profileDefaults, null, 2));
@@ -1248,9 +1252,11 @@
                 if (value === undefined || value === null || value === '') return null;
                 return String(value).toLowerCase();
             };
-            // Map null/empty (Real mode in DB) to 'real' for UI toggle — only for Real/Noise toggles
+            // Map null/empty to defaultValue, otherwise lowercase the value
+            // For Real/Noise toggles: pass 'real' as defaultValue
+            // For Noise-only toggles: pass 'noise' as defaultValue
             const nullMode = (value, defaultValue) => {
-                if (value == null || value === '') return 'real';
+                if (value == null || value === '') return defaultValue;
                 return String(value).toLowerCase() || defaultValue;
             };
 
@@ -1302,15 +1308,19 @@
             const dbScreenWidth = screenConfig.Width ?? null;
             const dbScreenHeight = screenConfig.Height ?? null;
             const dbScreenPixelRatio = screenConfig.PixelRatio ?? null;
-            // Screen Mode: if DB has concrete dimensions → 'custom'; null in DB → 'real'; otherwise use DB value
             const hasSpecificScreen = dbScreenWidth != null && dbScreenHeight != null;
-            const resolvedScreenMode = hasSpecificScreen ? 'custom' : (screenConfig.Mode == null ? 'real' : String(screenConfig.Mode).toLowerCase());
+            const rawScreenMode = screenConfig.Mode != null ? String(screenConfig.Mode).toLowerCase() : null;
+            
+            // Respect explicit mode from DB. Fallback to 'custom' if dimensions exist, otherwise 'random'
+            const resolvedScreenMode = rawScreenMode === 'random' ? 'random' 
+                                     : rawScreenMode === 'real' ? 'real'
+                                     : rawScreenMode === 'custom' ? 'custom'
+                                     : (hasSpecificScreen ? 'custom' : 'random');
+
             // screenWidth/screenHeight for HW tab: show only when resolved as 'custom'
             const screenWidth = resolvedScreenMode === 'custom' ? dbScreenWidth : null;
             const screenHeight = resolvedScreenMode === 'custom' ? dbScreenHeight : null;
             const screenPixelRatio = resolvedScreenMode === 'custom' ? dbScreenPixelRatio : null;
-            console.log('[CreateProfile] DEBUG screenConfig:', JSON.stringify(screenConfig));
-            console.log('[CreateProfile] DEBUG resolvedScreenMode:', resolvedScreenMode, 'screenWidth:', screenWidth, 'screenHeight:', screenHeight, 'hasSpecificScreen:', hasSpecificScreen);
 
             // Extract language from System - defaults may have comma-separated string
             let defaultLanguage = 'en-US';
@@ -1321,14 +1331,6 @@
                     defaultLanguage = profileDefaults.languages[0];
                 }
             }
-            // Platform: TypedConfig → extract Value; old schema: raw string
-            const platformVal = tcValue(systemConfig.Platform) || systemConfig.Platform || 'Win32';
-            const mappedOs = platformMap[platformVal] || platformVal || 'Windows';
-            // Language/AcceptLanguage: TypedConfig or raw string
-            const systemLanguage = getValue(
-                tcValue(systemConfig.Language) || tcValue(systemConfig.AcceptLanguage) || systemConfig.Language || systemConfig.AcceptLanguage,
-                defaultLanguage
-            );
 
             // GeneralTab - Platform mapping: "Win32" -> "Windows", "Darwin" -> "macOS", etc.
             const platformMap = {
@@ -1338,12 +1340,56 @@
                 'Linux': 'Linux'
             };
 
+            // Platform: TypedConfig -> extract Value; old schema: raw string
+            const platformVal = tcValue(systemConfig.Platform) ?? 'Win32';
+            const mappedOs = platformMap[platformVal] || platformVal || 'Windows';
+
+            // OS Model: derive from profile data or template
+            const osBlock = this._fpTemplate?.OS?.[mappedOs] || {};
+            const osModel = profile.OsModel || profile.osModel
+                || (osBlock?.Models?.[0]?.Name || null);
+
+            // Language/AcceptLanguage: TypedConfig or raw string
+            const systemLanguage = getValue(
+                tcValue(systemConfig.Language) ?? tcValue(systemConfig.AcceptLanguage),
+                defaultLanguage
+            );
+
+            // Pre-compute CPU/Hardware mode (needed for _loadedDbValues below)
+            const hwConcurrencyEarly = tcValue(systemConfig.HardwareConcurrency);
+            const hwModeEarly = tcMode(systemConfig.HardwareConcurrency) || tcMode(systemConfig.DeviceMemory);
+            const rawCpuMode = hwModeEarly != null ? String(hwModeEarly).toLowerCase() : null;
+            const hasSpecificHardwareEarly = hwConcurrencyEarly != null && hwConcurrencyEarly > 0;
+            
+            const cpuMode = rawCpuMode === 'random' ? 'random'
+                          : rawCpuMode === 'real' ? 'real'
+                          : rawCpuMode === 'custom' ? 'custom'
+                          : (hasSpecificHardwareEarly ? 'custom' : getValue(toLowerOrNull(fingerprintConfig.CpuMode), 'random'));
+
+            const rawTimezoneEarly = tcValue(systemConfig.Timezone) ?? tcValue(fingerprintConfig.Timezone) ?? null;
+            const rawTimezoneMode = tcMode(systemConfig.Timezone) ?? tcMode(fingerprintConfig.Timezone);
+            
+            let resolvedTimezone = 'auto';
+            if (rawTimezoneMode === 'real') {
+                resolvedTimezone = 'real';
+            } else if (rawTimezoneMode === 'noise') {
+                resolvedTimezone = rawTimezoneEarly ? rawTimezoneEarly : 'auto';
+            }
+
+            // Pre-compute WebGL mode
+            const rawWebglMode = fingerprintConfig.WebGL?.Mode != null ? String(fingerprintConfig.WebGL?.Mode).toLowerCase() : null;
+            const hasSpecificWebGL = fingerprintConfig.WebGL?.Vendor || fingerprintConfig.WebGL?.Renderer;
+            const resolvedWebGLMode = rawWebglMode === 'random' ? 'random'
+                                    : rawWebglMode === 'real' ? 'real'
+                                    : rawWebglMode === 'custom' ? 'custom'
+                                    : (hasSpecificWebGL ? 'custom' : 'random');
+
             const genTab = window.ProfileModals.CreateProfile.GeneralTab;
             if (genTab) {
                 // UA Mode: read from systemConfig.UaMode (single source of truth)
-                // DB null/empty → 'real' (browser uses real UA)
-                // DB 'custom'/'noise'/'random' → use as-is
-                // If DB has a concrete UserAgent → it's effectively 'custom'
+                // DB null/empty -> 'real' (browser uses real UA)
+                // DB 'custom'/'noise'/'random' -> use as-is
+                // If DB has a concrete UserAgent -> it's effectively 'custom'
                 const rawUaMode = (() => {
                     if (systemConfig.UaMode != null && systemConfig.UaMode !== '') {
                         return String(systemConfig.UaMode).toLowerCase();
@@ -1355,9 +1401,9 @@
                     return 'real';
                 })();
                 // Check if DB has a concrete UserAgent (stored in systemConfig.UserAgent)
-                const dbUA = tcValue(systemConfig.UserAgent) || systemConfig.UserAgent || fingerprintConfig.UserAgent || '';
+                const dbUA = tcValue(systemConfig.UserAgent) ?? tcValue(fingerprintConfig.UserAgent) ?? '';
                 const hasSpecificUA = dbUA !== '';
-                // If DB has concrete UA → mode is 'custom' (editable); otherwise use raw mode
+                // If DB has concrete UA -> mode is 'custom' (editable); otherwise use raw mode
                 const uaMode = hasSpecificUA ? 'custom' : (rawUaMode || 'real');
 
                 // Real mode: do NOT load/save any UserAgent (system uses real browser UA)
@@ -1375,7 +1421,6 @@
                 };
 
                 // Store loaded DB values so _syncSummary can read them directly
-                // (bypasses timing issue: _syncSummary runs before setValues RAF callbacks complete)
                 this._loadedDbValues = {
                     uaMode: uaMode,
                     userAgent: uaRaw,
@@ -1384,20 +1429,14 @@
                     screenHeight: screenHeight,
                     screenPixelRatio: screenPixelRatio,
                     cpuMode: cpuMode,
-                    // TypedConfig schema: tcValue extracts .Value, falls back to raw for old schema
-                    concurrency: getValue(tcValue(systemConfig.HardwareConcurrency) || systemConfig.HardwareConcurrency, profileDefaults?.hardwareConcurrency || null),
-                    deviceMemory: getValue(tcValue(systemConfig.DeviceMemory) || systemConfig.DeviceMemory, profileDefaults?.deviceMemory || null),
-                    timezone: rawTimezone === null || rawTimezone === undefined ? 'auto' : (rawTimezone || 'auto'),
+                    concurrency: hwConcurrencyEarly ?? null,
+                    deviceMemory: tcValue(systemConfig.DeviceMemory) ?? null,
+                    timezone: resolvedTimezone,
                     webglMode: resolvedWebGLMode,
                     webglVendor: getValue(fingerprintConfig.WebGL?.Vendor, profileDefaults?.webglVendor || null),
                     webglRenderer: getValue(fingerprintConfig.WebGL?.Renderer, profileDefaults?.webglRenderer || null),
                 };
-                console.log('[CreateProfile] _loadedDbValues stored:', JSON.stringify({
-                    uaMode, userAgentLen: uaRaw?.length, userAgent: uaRaw,
-                    screenMode: resolvedScreenMode, screenWidth, screenHeight,
-                    cpuMode, concurrency: systemConfig.HardwareConcurrency,
-                    webglMode: resolvedWebGLMode
-                }, null, 2));
+                console.log('[CreateProfile] _loadedDbValues stored:', JSON.stringify(this._loadedDbValues, null, 2));
                 console.log('[CreateProfile] Applying GeneralTab values:', JSON.stringify(genValues, null, 2));
                 console.log('[CreateProfile] genTab exists:', !!genTab, 'genTab.setValues exists:', !!genTab?.setValues);
                 if (genTab?.setValues) genTab.setValues(genValues);
@@ -1406,9 +1445,8 @@
             // NetworkTab
             const netTab = window.ProfileModals.CreateProfile.NetworkTab;
             if (netTab) {
-                // Parse timezone - null in DB means user chose 'auto'
-                const rawTimezone = fingerprintConfig.Timezone || systemConfig.Timezone;
-                const timezone = rawTimezone === null || rawTimezone === undefined ? 'auto' : (rawTimezone || 'auto');
+                // Parse timezone - use pre-computed rawTimezone
+                const timezone = rawTimezoneEarly === null || rawTimezoneEarly === undefined ? 'auto' : (rawTimezoneEarly || 'auto');
 
                 // Parse languages - defaults may have comma-separated string or array
                 let defaultLanguages = ['en-US', 'en'];
@@ -1420,7 +1458,10 @@
                     }
                 }
                 let languages = defaultLanguages;
-                if (fingerprintConfig.Languages && Array.isArray(fingerprintConfig.Languages) && fingerprintConfig.Languages.length > 0) {
+                const langMode = tcMode(systemConfig.Language) ?? tcMode(fingerprintConfig.Language);
+                if (langMode === 'real') {
+                    languages = [];
+                } else if (fingerprintConfig.Languages && Array.isArray(fingerprintConfig.Languages) && fingerprintConfig.Languages.length > 0) {
                     languages = fingerprintConfig.Languages;
                 } else if (systemLanguage) {
                     languages = Array.isArray(systemLanguage) ? systemLanguage : [systemLanguage];
@@ -1461,22 +1502,9 @@
             // HardwareTab
             const hwTab = window.ProfileModals.CreateProfile.HardwareTab;
             if (hwTab) {
-                // CPU Hardware: TypedConfig schema or old int schema
-                const hwConcurrency = tcValue(systemConfig.HardwareConcurrency) || systemConfig.HardwareConcurrency;
-                const hwMemory = tcValue(systemConfig.DeviceMemory) || systemConfig.DeviceMemory;
-                const hwMode = tcMode(systemConfig.HardwareConcurrency) || tcMode(systemConfig.DeviceMemory);
-                // CPU: if HardwareConcurrency has value → show Custom; null/real → use mode
-                const hasSpecificHardware = hwConcurrency != null && hwConcurrency > 0;
-                const cpuMode = hasSpecificHardware ? 'custom'
-                    : getValue(toLowerOrNull(hwMode || fingerprintConfig.CpuMode), 'random');
-
-                // Determine screen mode: if specific dimensions are set, use 'custom' regardless of Screen.Mode in DB
-                const hasSpecificScreen = screenWidth && screenHeight;
-                const resolvedScreenMode = hasSpecificScreen ? 'custom' : (screenConfig.Mode == null ? 'real' : String(screenConfig.Mode).toLowerCase());
-
-                // WebGL: if Vendor/Renderer are set, show Custom; null in DB falls to fingerprint defaults (usually 'random')
-                const hasSpecificWebGL = fingerprintConfig.WebGL?.Vendor || fingerprintConfig.WebGL?.Renderer;
-                const resolvedWebGLMode = hasSpecificWebGL ? 'custom' : getValue(toLowerOrNull(fingerprintConfig.WebGL?.Mode), 'random');
+                // CPU Hardware: reuse early-computed cpuMode and resolvedScreenMode
+                const hwConcurrency = tcValue(systemConfig.HardwareConcurrency) ?? null;
+                const hwMemory = tcValue(systemConfig.DeviceMemory) ?? null;
 
                 const hwValues = {
                     os: mappedOs,
@@ -1488,12 +1516,17 @@
                     screenWidth: screenWidth,
                     screenHeight: screenHeight,
                     screenPixelRatio: screenPixelRatio,
-                    canvasMode: nullMode(fingerprintConfig.Canvas?.Mode, nullMode(profileDefaults?.canvasMode, 'noise')),
+                    // Canvas null in DB = 'real' (no spoofing)
+                    canvasMode: nullMode(fingerprintConfig.Canvas?.Mode, 'real'),
                     webglMode: resolvedWebGLMode,
                     webglVendor: getValue(fingerprintConfig.WebGL?.Vendor, profileDefaults?.webglVendor || null),
                     webglRenderer: getValue(fingerprintConfig.WebGL?.Renderer, profileDefaults?.webglRenderer || null),
-                    webglImageMode: nullMode(fingerprintConfig.WebGL?.ImageSpoofing?.Mode, nullMode(profileDefaults?.webglImageMode, 'noise')),
-                    pluginsMode: nullMode(tcMode(fingerprintConfig.Plugins) || fingerprintConfig.PluginsMode, nullMode(profileDefaults?.pluginsMode, 'default'))
+                    // WebGL image mode: 'real' if mode is real, else pattern
+                    webglImageMode: fingerprintConfig.WebGL?.ImageSpoofing?.Mode === 'real' 
+                        ? 'real' 
+                        : nullMode(fingerprintConfig.WebGL?.ImageSpoofing?.Pattern, 'default'),
+                    // Plugins null = 'noise'
+                    pluginsMode: nullMode(tcMode(fingerprintConfig.Plugins) ?? fingerprintConfig.PluginsMode, 'noise')
                 };
                 console.log('[CreateProfile] Applying HardwareTab values:', JSON.stringify(hwValues, null, 2));
                 console.log('[CreateProfile] hwTab exists:', !!hwTab, 'hwTab.setValues exists:', !!hwTab?.setValues);
@@ -1505,7 +1538,7 @@
             if (secTab) {
                 // Map DoNotTrack from DB: new schema has { Mode, Value }, old schema has raw string
                 const dntConfig = fingerprintConfig.DoNotTrack;
-                const dntValue = tcValue(dntConfig) || dntConfig; // .Value or raw string
+                const dntValue = tcValue(dntConfig) ?? null; // .Value or raw string
                 let doNotTrackValue = 'default';
                 if (dntValue === '1' || dntValue === 1) {
                     doNotTrackValue = 'enabled';
@@ -1519,20 +1552,22 @@
                 // Fonts: new schema → .FontList array; old schema → raw string[]
                 const fontsList = fingerprintConfig.Fonts?.FontList || fingerprintConfig.Fonts || [];
                 // FontsMode: new schema → .Mode; old schema → .FontsMode string
-                const fontsMode = tcMode(fingerprintConfig.Fonts) || fingerprintConfig.FontsMode || fingerprintConfig.Fonts?.Mode;
+                const fontsMode = tcMode(fingerprintConfig.Fonts) ?? fingerprintConfig.FontsMode ?? fingerprintConfig.Fonts?.Mode;
 
                 const secValues = {
-                    webrtcMode: nullMode(fingerprintConfig.WebRTcMode || fingerprintConfig.WebRtcMode, nullMode(profileDefaults?.WebRTcMode || profileDefaults?.webRtcMode, 'disable')),
-                    sslMode: nullMode(fingerprintConfig.SslMode, nullMode(profileDefaults?.SslMode || profileDefaults?.sslMode, 'noise')),
+                    webrtcMode: toLowerOrNull(fingerprintConfig.WebRTcMode || fingerprintConfig.WebRtcMode) || toLowerOrNull(profileDefaults?.WebRTcMode || profileDefaults?.webRtcMode) || 'disable',
+                    sslMode: toLowerOrNull(fingerprintConfig.SslMode) || toLowerOrNull(profileDefaults?.SslMode || profileDefaults?.sslMode) || 'noise',
                     portScan: getValue(toLowerOrNull(securityConfig.PortScan), profileDefaults?.portScan || 'protect'),
                     portBlockMode: getValue(securityConfig.PortBlockMode, profileDefaults?.portBlockMode || 'block_default'),
                     portBlockList: getValue(securityConfig.PortBlockList, profileDefaults?.portBlockList || []),
-                    mediaDevices: nullMode(fingerprintConfig.MediaDevices?.Mode, nullMode(profileDefaults?.mediaDevicesMode, 'noise')),
-                    audioMode: nullMode(fingerprintConfig.Audio?.Mode, nullMode(profileDefaults?.audioMode, 'noise')),
-                    speechVoices: nullMode(fingerprintConfig.SpeechVoicesMode, nullMode(profileDefaults?.speechVoicesMode, 'noise')),
-                    clientRects: nullMode(fingerprintConfig.ClientRects?.Mode, nullMode(profileDefaults?.clientRectsMode, 'noise')),
-                    fontMetricsMode: nullMode(fingerprintConfig.FontMetrics?.Mode, nullMode(profileDefaults?.fontMetricsMode, 'noise')),
-                    fontsMode: nullMode(fontsMode, nullMode(profileDefaults?.fontsMode, 'default')),
+                    // null in DB = 'real' for Real/Noise toggles
+                    mediaDevices: nullMode(fingerprintConfig.MediaDevices?.Mode, 'real'),
+                    audioMode: nullMode(fingerprintConfig.Audio?.Mode, 'real'),
+                    speechVoices: nullMode(fingerprintConfig.SpeechVoicesMode, 'real'),
+                    clientRects: nullMode(fingerprintConfig.ClientRects?.Mode, 'real'),
+                    fontMetricsMode: (fingerprintConfig.FontMetrics?.Mode === 'real' || !fingerprintConfig.FontMetrics?.Mode) ? 'default' : String(fingerprintConfig.FontMetrics.Mode).toLowerCase(),
+                    // null or 'real' fontsMode = 'default' (toggle only has default/custom)
+                    fontsMode: (fontsMode === 'real' || !fontsMode) ? 'default' : String(fontsMode).toLowerCase(),
                     customFonts: Array.isArray(fontsList) ? fontsList : [],
                     doNotTrack: doNotTrackValue
                 };
@@ -1626,8 +1661,8 @@
                     Platform: { Mode: 'noise', Value: platform },
                     // Language: 'noise' when user picks specific lang; 'real' when using defaults
                     Language: {
-                        Mode: (v.languages?.length > 0 && v.languages?.[0] !== 'en-US') ? 'noise' : 'real',
-                        Value: v.languages?.[0] || null
+                        Mode: v.languages?.length > 0 ? 'noise' : 'real',
+                        Value: v.languages?.length > 0 ? v.languages[0] : null
                     },
                     UserAgent: v.uaMode === 'real'
                         ? { Mode: 'real', Value: null }
@@ -1635,13 +1670,13 @@
                     BrowserVersion: v.browserVersion || '138',
                     // AcceptLanguage: 'noise' only when user selects specific languages; 'real' when using defaults
                     AcceptLanguage: {
-                        Mode: (v.languages?.length > 0 && v.languages?.[0] !== 'en-US') ? 'noise' : 'real',
-                        Value: (v.languages?.length > 0 && v.languages?.[0] !== 'en-US') ? (v.languages?.join(',') || null) : null
+                        Mode: v.languages?.length > 0 ? 'noise' : 'real',
+                        Value: v.languages?.length > 0 ? v.languages.join(',') : null
                     },
-                    // Timezone: 'real' when Auto (no spoof); 'noise' only when user selects a specific timezone
-                    Timezone: v.timezone && v.timezone !== 'auto'
-                        ? { Mode: 'noise', Value: v.timezone }
-                        : { Mode: 'real', Value: null },
+                    // Timezone: 'real' -> real system, 'auto' -> noise with null, specific -> noise with value
+                    Timezone: v.timezone === 'real'
+                        ? { Mode: 'real', Value: null }
+                        : { Mode: 'noise', Value: v.timezone === 'auto' ? null : (v.timezone || null) },
                     // Hardware fields: TypedConfig<int>
                     // Real mode → Mode='real', Value=null (no spoof, browser uses real hardware)
                     // Custom mode → Mode='noise', Value=user-selected values
@@ -1672,9 +1707,9 @@
                         NoiseSeed: v.webglMode !== 'real' ? (origFp.WebGL?.NoiseSeed ?? null) : null,
                         NoiseLevel: v.webglMode !== 'real' ? (origFp.WebGL?.NoiseLevel ?? null) : null,
                         ImageSpoofing: {
-                            Mode: v.webglImageMode === 'real' ? 'real' : (v.webglImageMode || 'noise'),
+                            Mode: v.webglImageMode === 'real' ? 'real' : 'noise',
                             TextureSeed: v.webglImageMode !== 'real' ? (origFp.WebGL?.ImageSpoofing?.TextureSeed ?? null) : null,
-                            Pattern: origFp.WebGL?.ImageSpoofing?.Pattern ?? 'default'
+                            Pattern: v.webglImageMode !== 'real' ? (v.webglImageMode || 'default') : 'default'
                         }
                     },
                     Canvas: {
@@ -1896,7 +1931,9 @@
 
             // Row 1: Mode + Name (hide mode toggle in edit mode)
             const row1 = document.createElement('div');
-            row1.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start;';
+            row1.style.cssText = this._mode === 'edit' 
+                ? 'display: block; width: 100%; margin-bottom: 16px;'
+                : 'display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; margin-bottom: 16px;';
 
             const nameWrap = document.createElement('div');
             nameWrap.style.cssText = 'display: flex; gap: 12px; align-items: flex-end; width: 100%;';
@@ -2058,12 +2095,13 @@
                 size: 'sm',
                 icon: 'refresh',
                 onClick: async () => {
-                    const tabValues = this._collectTabValues();
+                    const genTab = window.ProfileModals.CreateProfile.GeneralTab;
                     this._modal.setLoading(true, 'Generating new fingerprint...');
                     try {
                         const fp = await DuckBridge.call('profile.generateFingerprint', {
                             platform: tabValues.os || 'Windows',
                             browser:  tabValues.browser || 'chromium',
+                            version:  tabValues.browserVersion || null,
                             model:    tabValues.osModel || null
                         });
                         this._applyFingerprintResponse(fp);

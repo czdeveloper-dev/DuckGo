@@ -46,6 +46,7 @@ public class ProfileListItem
     public string? ProxyName { get; set; }
     public string BrowserType { get; set; } = "Chromium";
     public string BrowserVersion { get; set; } = "";
+    public string Platform { get; set; } = "Windows";
     public string Notes { get; set; } = "";
     public string Cookies { get; set; } = "[]";
     public string Status { get; set; } = "ready";

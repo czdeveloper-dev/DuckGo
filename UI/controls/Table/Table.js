@@ -638,6 +638,40 @@ window.DuckControls.Table = {
                 });
                 return result;
             },
+            setChecked(ids) {
+                const idSet = new Set(ids);
+                let allChecked = true;
+                let anyChecked = false;
+                let totalCheckboxes = 0;
+                
+                tbody.querySelectorAll('td').forEach(td => {
+                    const cb = td._duckCheckbox;
+                    if (cb) {
+                        totalCheckboxes++;
+                        const val = cb.getValue();
+                        if (idSet.has(val)) {
+                            cb.check();
+                            const tr = td.closest('tr');
+                            if (tr) tr.classList.add('selected');
+                            anyChecked = true;
+                        } else {
+                            cb.uncheck();
+                            const tr = td.closest('tr');
+                            if (tr) tr.classList.remove('selected');
+                            allChecked = false;
+                        }
+                    }
+                });
+                
+                if (selectAllCheckbox) {
+                    if (totalCheckboxes > 0 && allChecked) selectAllCheckbox.check();
+                    else {
+                        selectAllCheckbox.uncheck();
+                        if (anyChecked) selectAllCheckbox.setIndeterminate(true);
+                        else selectAllCheckbox.setIndeterminate(false);
+                    }
+                }
+            },
             clearChecked() {
                 tbody.querySelectorAll('td').forEach(td => {
                     const cb = td._duckCheckbox;

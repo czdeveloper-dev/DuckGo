@@ -28,10 +28,10 @@
             // Timezone options
             if (this._tzSelect) {
                 const tzOpts = (tmpl.Timezones || []).map(tz => ({ label: tz, value: tz }));
-                this._tzSelect.setOptions([{ label: 'Auto (Match IP)', value: 'auto' }, ...tzOpts]);
+                this._tzSelect.setOptions([{ label: 'Auto (Match IP)', value: 'auto' }, { label: 'Real', value: 'real' }, ...tzOpts]);
             } else if (this.tzSelect) {
                 const tzOpts = (tmpl.Timezones || []).map(tz => ({ label: tz, value: tz }));
-                this.tzSelect.setOptions([{ label: 'Auto (Match IP)', value: 'auto' }, ...tzOpts]);
+                this.tzSelect.setOptions([{ label: 'Auto (Match IP)', value: 'auto' }, { label: 'Real', value: 'real' }, ...tzOpts]);
             }
         },
 
@@ -414,7 +414,7 @@
             this.tzSelect = window.DuckControls.ComboBox.create({
                 label: '',
                 placeholder: 'Search timezone...',
-                options: [{ label: 'Auto (Match IP)', value: 'auto' }],
+                options: [{ label: 'Auto (Match IP)', value: 'auto' }, { label: 'Real', value: 'real' }],
                 value: 'auto',
                 onChange: () => window.ProfileModals?.CreateProfile?._scheduleSync?.()
             });
@@ -558,70 +558,53 @@
                 timezone: res.timezone,
                 languages: res.languages,
                 locationMode: res.locationMode,
-                customCoordinates: res.customCoordinates,
             }, null, 2));
             return res;
         },
 
-        /** Set values from loaded profile data */
         setValues(values) {
-            // Proxy settings
-            if (values.proxyMode) {
-                this.proxyTypeToggle?.setValue(values.proxyMode);
-                this._toggleProxyInputs(values.proxyMode);
-
-                if (values.proxyMode === 'saved' && values.savedProxyId) {
-                    // Wait for proxies to load
-                    setTimeout(() => {
-                        if (this.sProxy) this.sProxy.setValue(String(values.savedProxyId));
-                    }, 100);
-                } else if (values.proxyMode === 'custom' && values.proxyConfig) {
-                    // Set custom proxy fields
-                    if (values.proxyConfig.Type && this.pType) {
-                        this.pType.setValue(values.proxyConfig.Type);
-                    }
-                    if (values.proxyConfig.Host && this.pHost) {
-                        this.pHost.setValue(values.proxyConfig.Host);
-                    }
-                    if (values.proxyConfig.Port && this.pPort) {
-                        this.pPort.setValue(String(values.proxyConfig.Port));
-                    }
-                    if (values.proxyConfig.Username && this.pUser) {
-                        this.pUser.setValue(values.proxyConfig.Username);
-                    }
-                    if (values.proxyConfig.Password && this.pPass) {
-                        this.pPass.setValue(values.proxyConfig.Password);
-                    }
-                }
+            if (!values) return;
+            // Proxy type
+            if (values.proxyMode && this.proxyTypeToggle) {
+                this.proxyTypeToggle.setValue(values.proxyMode);
+                // Manually trigger the visibility updates after initial render
+                setTimeout(() => {
+                    this._toggleProxyInputs(values.proxyMode);
+                }, 0);
             }
-
+            // Saved proxy
+            if (values.savedProxyId != null && this.sProxy) {
+                this.sProxy.setValue(String(values.savedProxyId));
+            }
+            // Custom proxy fields
+            if (values.proxyConfig) {
+                if (this.pHost) this.pHost.setValue(values.proxyConfig.Host || '');
+                if (this.pPort) this.pPort.setValue(values.proxyConfig.Port || '');
+                if (this.pUser) this.pUser.setValue(values.proxyConfig.Username || '');
+                if (this.pPass) this.pPass.setValue(values.proxyConfig.Password || '');
+                if (this.pType) this.pType.setValue(values.proxyConfig.Protocol || 'http');
+            }
             // Timezone
             if (values.timezone && this.tzSelect) {
                 this.tzSelect.setValue(values.timezone);
             }
-
             // Languages
-            if (values.languages && Array.isArray(values.languages) && this.langTagInput) {
-                this.langTagInput.setValues(values.languages);
+            if (values.languages && this.langTagInput) {
+                this.langTagInput.setValues(Array.isArray(values.languages) ? values.languages : [values.languages]);
             }
-
             // Location mode
             if (values.locationMode && this.locationModeToggle) {
                 this.locationModeToggle.setValue(values.locationMode);
-                this._toggleLocationInputs(values.locationMode);
-
-                if (values.locationMode === 'custom' && values.customCoordinates) {
-                    if (this.latIn && values.customCoordinates.lat !== undefined) {
-                        this.latIn.setValue(String(values.customCoordinates.lat));
-                    }
-                    if (this.lngIn && values.customCoordinates.lng !== undefined) {
-                        this.lngIn.setValue(String(values.customCoordinates.lng));
-                    }
-                    if (this.accuracySpin && values.customCoordinates.accuracy !== undefined) {
-                        this.accuracySpin.setValue(Math.round(values.customCoordinates.accuracy));
-                    }
-                }
+                setTimeout(() => {
+                    if (this._toggleLocationInputs) this._toggleLocationInputs(values.locationMode);
+                }, 0);
             }
-        }
+            // Custom coordinates
+            if (values.customCoordinates) {
+                if (this.latIn) this.latIn.setValue(String(values.customCoordinates.lat || 0));
+                if (this.lngIn) this.lngIn.setValue(String(values.customCoordinates.lng || 0));
+                if (this.accuracySpin) this.accuracySpin.setValue(values.customCoordinates.accuracy || 100);
+            }
+        },
     };
 })();

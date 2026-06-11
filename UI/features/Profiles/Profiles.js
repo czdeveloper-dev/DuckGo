@@ -63,7 +63,7 @@
                 if (this._filters.id)       filters.id        = this._filters.id;
                 if (this._filters.group)    filters.groupId   = parseInt(this._filters.group);
                 if (this._filters.tag)      filters.tagIds    = this._filters.tag.split(',').map(v => parseInt(v)).filter(v => !isNaN(v));
-                if (this._filters.status)   filters.browserType = this._filters.status;
+                if (this._filters.status)   filters.status    = this._filters.status;
                 
                 const minTimePromise = new Promise(resolve => setTimeout(resolve, 300));
                 const [resp] = await Promise.all([
@@ -95,7 +95,8 @@
                 message:   p.Message ?? p.message ?? '-',
                 createdAt: p.CreatedAt ?? p.createdAt,
                 lastOpened: p.LastOpened ?? p.lastOpened,
-                browserType: p.BrowserType ?? p.browserType ?? 'Chromium'
+                browserType: p.BrowserType ?? p.browserType ?? 'Chromium',
+                platform: p.Platform ?? p.platform ?? 'Windows'
             }));
 
             this._profilesData = items;
@@ -510,7 +511,11 @@
             mkBtn('ctrl-bulk-stop',    { variant: 'secondary', size: 'sm', icon: 'stop_circle', text: 'Stop Profile', onClick: () => this._bulkStop() });
             mkBtn('ctrl-bulk-rename',  { variant: 'secondary', size: 'sm', icon: 'drive_file_rename_outline', text: 'Bulk Rename', onClick: () => this._bulkRename() });
             mkBtn('ctrl-bulk-delete',  { variant: 'danger',    size: 'sm', icon: 'delete', text: 'Delete Profile', onClick: () => this._bulkDelete() });
-            mkBtn('ctrl-bulk-close',   { variant: 'ghost',     size: 'sm', icon: 'close', onClick: () => { this._table?.clearChecked?.(); this._selectedIds.clear(); this._updateBulkActions(); } });
+            mkBtn('ctrl-bulk-close',   { variant: 'ghost',     size: 'sm', icon: 'close', onClick: () => { 
+                this._table?.clearChecked?.(); 
+                this._selectedIds.clear(); 
+                this._updateBulkActions(); 
+            } });
         },
 
         _buildTable() {
@@ -521,7 +526,7 @@
             const cols = [
                 { id: 'select', type: 'checkbox', title: 'Select all', locked: true, lockedPosition: 'left', resizable: false, width: '52px', onCheckAll: (e) => this._handleCheckAll(e) },
                 { id: 'seq', label: '#', width: '1ch', minWidth: '1ch', locked: true, lockedPosition: 'left', resizable: false, autoSize: true, align: 'center', render: (r) => { const el = document.createElement('span'); el.textContent = r.seq; return el; } },
-                { id: 'name', label: 'NAME', width: '40ch', maxWidth: '40ch', locked: true, lockedPosition: 'left', resizable: false, render: (r) => _this._renderNameCell(r) },
+                { id: 'name', label: 'NAME', width: '35ch', maxWidth: '35ch', locked: true, lockedPosition: 'left', resizable: false, render: (r) => _this._renderNameCell(r) },
                 { id: 'resource', label: 'RESOURCE', width: '8ch', minWidth: '8ch', resizable: false, autoSize: true, field: 'browserType', render: (r) => _this._renderResourceCell(r) },
                 { id: 'group', label: 'GROUP', width: '20ch', minWidth: '20ch', maxWidth: '30ch', render: (r) => _this._renderGroupCell(r) },
                 { id: 'tags', label: 'TAGS', width: '20ch', minWidth: '20ch', maxWidth: '30ch', render: (r) => _this._renderTagsCell(r) },
@@ -545,7 +550,10 @@
             this._table.updateColumnVisibility(this._visibleCols);
         },
 
-        _loadTableData(profiles) { this._table?.renderData(profiles); },
+        _loadTableData(profiles) { 
+            this._table?.renderData(profiles); 
+            this._table?.setChecked?.(Array.from(this._selectedIds));
+        },
         _updateStats(profiles)   { if (this._statEl) this._statEl.textContent = `${profiles.length}`; },
 
         // ── Bulk / row actions ───────────────────────────────────────
@@ -558,15 +566,24 @@
             catch (e) { console.error('Failed to stop profile:', e); }
         },
         async _deleteProfile(id) {
+            const doDelete = async (delId) => {
+                try {
+                    await DuckBridge.call('profile.delete', { id: delId });
+                    this._selectedIds.delete(delId);
+                    this._updateBulkActions();
+                    await this.loadProfiles();
+                    window.ProfileModals?.CreateProfile?._refreshEntityData?.();
+                } catch (e) { console.error('Delete failed:', e); }
+            };
+
             if (window.ProfileModals?.DeleteProfiles) {
                 window.ProfileModals.DeleteProfiles.show(new Set([id]), async (ids) => {
-                    try { await DuckBridge.call('profile.delete', { id: ids[0] }); this._selectedIds.delete(ids[0]); this._updateBulkActions(); await this.loadProfiles(); window.ProfileModals?.CreateProfile?._refreshEntityData?.(); }
-                    catch (e) { console.error('Delete failed:', e); }
+                    const actualId = (Array.isArray(ids) && ids.length > 0) ? ids[0] : id;
+                    await doDelete(actualId);
                 });
             } else {
                 if (!confirm('Delete this profile?')) return;
-                try { await DuckBridge.call('profile.delete', { id }); this._selectedIds.delete(id); this._updateBulkActions(); await this.loadProfiles(); window.ProfileModals?.CreateProfile?._refreshEntityData?.(); }
-                catch (e) { console.error('Delete failed:', e); }
+                await doDelete(id);
             }
         },
         async _bulkLaunch() {
@@ -593,7 +610,13 @@
                 try {
                     await DuckBridge.call('profile.bulkDelete', ids);
                 } catch (e) { /* toast handled by DuckBridge */ }
-                this._selectedIds.clear(); this._updateBulkActions(); await this.loadProfiles();
+                if (Array.isArray(ids)) {
+                    ids.forEach(id => this._selectedIds.delete(id));
+                } else {
+                    this._selectedIds.clear();
+                }
+                this._updateBulkActions();
+                await this.loadProfiles();
                 window.ProfileModals?.CreateProfile?._refreshEntityData?.();
             });
         },
@@ -608,7 +631,7 @@
             if (this._selectedIds.size === 0) return;
             const idsWithProxy = [...this._selectedIds].filter(id => {
                 const r = this._profilesData.find(p => p.id === id);
-                return r?.proxy && r.proxy !== 'Direct';
+                return r?.proxy && r.proxy !== 'Direct' && r.proxy !== '-';
             });
             if (!idsWithProxy.length) return;
 
@@ -616,25 +639,27 @@
                 const r = this._profilesData.find(p => p.id === id);
                 if (r) { r.status = 'running'; r.message = 'Checking proxy...'; }
             }
-            this._table?.updateData(this._profilesData);
+            this._loadTableData(this._profilesData);
 
             for (const id of idsWithProxy) {
                 const r = this._profilesData.find(p => p.id === id);
                 if (!r) continue;
-                const proxyId = r.proxyId || r.proxyid;
-                if (!proxyId) { r.status = 'ready'; r.message = 'No proxy'; continue; }
                 try {
-                    const result = await DuckBridge.call('proxy.check', { id: proxyId });
+                    const result = await DuckBridge.call('profile.checkProxy', { id: r.id });
                     r.status = 'ready';
-                    r.message = result?.Status === 'alive'
-                        ? `Proxy alive - ${result.LatencyMs}ms`
-                        : 'Proxy dead';
+                    if (result?.Status === 'alive') {
+                        r.message = `[ Proxy Alive ] - ${result.LatencyMs}ms`;
+                    } else if (result?.LatencyMs >= 4900 || result?.Status === 'timeout') {
+                        r.message = '[ Proxy timeout ]';
+                    } else {
+                        r.message = '[ Proxy Expired ]';
+                    }
                 } catch {
                     r.status = 'ready';
-                    r.message = 'Proxy check failed';
+                    r.message = '[ Proxy Expired ]';
                 }
             }
-            this._table?.updateData(this._profilesData);
+            this._loadTableData(this._profilesData);
         },
         async _openModal(profileId) {
             if (!window.ProfileModals?.CreateProfile) {
@@ -645,21 +670,22 @@
         },
 
         async _checkSingleProxy(row) {
-            const proxyId = row.proxyId || row.proxyid;
-            if (!proxyId) {
-                window.DuckControls.Toast?.info?.('No Proxy', 'This profile has no proxy configured');
-                return;
-            }
+            row.message = 'Checking proxy...';
+            this._loadTableData(this._profilesData);
+            
             try {
-                const result = await DuckBridge.call('proxy.check', { id: proxyId });
+                const result = await DuckBridge.call('profile.checkProxy', { id: row.id });
                 if (result?.Status === 'alive') {
-                    window.DuckControls.Toast?.success?.('Proxy Alive', `${result.LatencyMs}ms response time`);
+                    row.message = `[ Proxy Alive ] - ${result.LatencyMs}ms`;
+                } else if (result?.LatencyMs >= 4900 || result?.Status === 'timeout') {
+                    row.message = '[ Proxy timeout ]';
                 } else {
-                    window.DuckControls.Toast?.error?.('Proxy Dead', 'Proxy is not responding');
+                    row.message = '[ Proxy Expired ]';
                 }
             } catch (e) {
-                window.DuckControls.Toast?.error?.('Proxy Check Failed', e?.message || 'Unknown error');
+                row.message = '[ Proxy Expired ]';
             }
+            this._loadTableData(this._profilesData);
         },
 
         async _detectScreen(row) {
@@ -684,10 +710,23 @@
 
         _handleCheckAll(e) { e.checked ? this._profilesData.forEach(p => this._selectedIds.add(p.id)) : this._selectedIds.clear(); this._updateBulkActions(); },
         _updateBulkActions() {
+            this._selectedIds.delete(undefined);
+            this._selectedIds.delete(null);
+            
             const has = this._selectedIds.size > 0;
             const bar = document.getElementById('bulk-actions');
             const cnt = document.getElementById('bulk-count');
-            if (bar) { bar.classList.toggle('visible', has); if (cnt) cnt.textContent = `${this._selectedIds.size} selected`; }
+            
+            if (bar) { 
+                if (has) {
+                    bar.classList.add('visible');
+                    bar.style.display = 'flex';
+                } else {
+                    bar.classList.remove('visible');
+                    bar.style.display = 'none';
+                }
+            }
+            if (cnt) cnt.textContent = `${this._selectedIds.size} selected`;
         },
 
         // ── Cell renderers ───────────────────────────────────────────
@@ -697,9 +736,8 @@
             const nc = document.createElement('div');
             nc.style.cssText = 'display:flex;align-items:center;width:100%;';
             const badge = document.createElement('span');
-            const bt = (row.browserType || '').toLowerCase();
             badge.style.cssText = 'font-size:10px;font-weight:700;background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:4px;padding:2px 4px;margin-right:8px;flex-shrink:0;width:56px;text-align:center;box-sizing:border-box;';
-            badge.textContent = bt.includes('mac') ? 'MacOS' : bt.includes('lin') ? 'Linux' : 'Windows';
+            badge.textContent = row.platform || 'Windows';
             const cw = document.createElement('div');
             cw.style.cssText = 'flex:1;min-width:0;display:flex;align-items:center;';
             const lbl = document.createElement('span');
@@ -714,7 +752,7 @@
             inputCtrl.element.style.display = 'none';
             inputCtrl.element.style.flex = '1';
             
-            lbl.addEventListener('dblclick', () => {
+            lbl.addEventListener('click', () => {
                 lbl.style.display = 'none';
                 inputCtrl.element.style.display = 'flex';
                 inputCtrl.input.focus();
@@ -802,7 +840,7 @@
             const wrap = document.createElement('div');
             wrap.style.cssText = 'display:flex;align-items:center;gap:8px;width:100%;';
             const ps = row.proxy || 'Direct';
-            if (ps === 'Direct') { wrap.textContent = '-'; return wrap; }
+            if (ps === 'Direct' || !ps || ps === '-') { wrap.textContent = '-'; return wrap; }
             const hiddenText = '********';
             const fullText = ps.length > 30 ? ps.substring(0, 30) + '...' : ps;
             const panel = document.createElement('div');
@@ -838,7 +876,7 @@
             inputCtrl.element.style.display = 'none';
             inputCtrl.element.style.flex = '1';
 
-            lbl.addEventListener('dblclick', () => {
+            lbl.addEventListener('click', () => {
                 lbl.style.display = 'none';
                 inputCtrl.element.style.display = 'flex';
                 inputCtrl.input.focus();
@@ -896,7 +934,7 @@
                 const cp = document.createElement('button');
                 cp.style.cssText = 'flex-shrink:0;background:none;border:none;cursor:pointer;padding:0 2px;color:var(--text-muted);display:flex;align-items:center;';
                 cp.innerHTML = '<span class="material-symbols-outlined" style="font-size:13px;">content_copy</span>';
-                cp.onclick = (e) => { e.stopPropagation(); navigator.clipboard.writeText(msg); };
+                cp.onclick = (e) => { e.stopPropagation(); this._copyToClipboard(msg); };
                 wrap.appendChild(cp);
             }
             const lbl = document.createElement('span');
@@ -975,9 +1013,9 @@
             DuckControls.ContextMenu.create(null, {
                 items: [
                     { label: 'Copy', icon: 'content_copy', children: [
-                        { label: 'Profile Name', icon: 'badge', onClick: () => navigator.clipboard.writeText(row.name) },
-                        { label: 'Profile ID', icon: 'fingerprint', onClick: () => navigator.clipboard.writeText(row.id) },
-                        { label: 'Proxy', icon: 'public', onClick: () => { const p = row.proxy || ''; if (p) navigator.clipboard.writeText(p); } }
+                        { label: 'Profile Name', icon: 'badge', onClick: () => this._copyToClipboard(row.name) },
+                        { label: 'Profile ID', icon: 'fingerprint', onClick: () => this._copyToClipboard(row.id.toString()) },
+                        { label: 'Proxy', icon: 'public', onClick: () => { const p = row.proxy || ''; if (p && p !== 'Direct' && p !== '-') this._copyToClipboard(p); } }
                     ]},
                     'divider',
                     { label: 'Browser Config', icon: 'settings', children: [
@@ -1000,7 +1038,17 @@
         _escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; },
         _formatDate(dateStr) {
             if (!dateStr) return '-';
-            try { return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+            try { 
+                const d = new Date(dateStr);
+                const pad = (n) => n.toString().padStart(2, '0');
+                const hh = pad(d.getHours());
+                const mm = pad(d.getMinutes());
+                const ss = pad(d.getSeconds());
+                const DD = pad(d.getDate());
+                const MM = pad(d.getMonth() + 1);
+                const YYYY = d.getFullYear();
+                return `${hh}:${mm}:${ss} - ${DD}/${MM}/${YYYY}`;
+            }
             catch { return dateStr; }
         },
         async _copyToClipboard(text) {

@@ -11,6 +11,7 @@ namespace DuckGo.Infrastructure.API
         private readonly Services.ProfileService _service;
         private readonly Services.FingerprintService _fingerprintService;
         private readonly Services.ProfileStatusService _statusService;
+        private readonly Services.ProxyService _proxyService;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -22,53 +23,70 @@ namespace DuckGo.Infrastructure.API
         public ProfileDispatcher(
             Services.ProfileService service,
             Services.FingerprintService fingerprintService,
-            Services.ProfileStatusService statusService)
+            Services.ProfileStatusService statusService,
+            Services.ProxyService proxyService)
         {
             _service = service;
             _fingerprintService = fingerprintService;
             _statusService = statusService;
+            _proxyService = proxyService;
         }
 
         public bool CanHandle(string action) => action.StartsWith("profile.");
 
         public async Task<(bool Success, string? Error, JsonElement? Data)> DispatchAsync(string action, JsonElement? payload)
         {
-            return action switch
+            try
             {
-                "profile.list" => await ListAsync(payload),
-                "profile.get" => await GetAsync(payload),
-                "profile.create" => await CreateAsync(payload),
-                "profile.update" => await UpdateAsync(payload),
-                "profile.delete" => await DeleteAsync(payload),
-                "profile.duplicate" => await DuplicateAsync(payload),
-                "profile.getFingerprintTemplate" => await GetFingerprintTemplateAsync(),
-                "profile.generateFingerprint" => await GenerateFingerprintAsync(payload),
-                "profile.bulkCreate" => await BulkCreateAsync(payload),
-                "profile.bulkDelete" => await BulkDeleteAsync(payload),
-                "profile.detectScreen" => await DetectScreenAsync(),
-                "profile.regenerateFingerprint" => await RegenerateFingerprintAsync(payload),
-                _ => (false, $"Unknown action: {action}", null)
-            };
+                return action switch
+                {
+                    "profile.list" => await ListAsync(payload),
+                    "profile.get" => await GetAsync(payload),
+                    "profile.create" => await CreateAsync(payload),
+                    "profile.update" => await UpdateAsync(payload),
+                    "profile.delete" => await DeleteAsync(payload),
+                    "profile.duplicate" => await DuplicateAsync(payload),
+                    "profile.getFingerprintTemplate" => await GetFingerprintTemplateAsync(),
+                    "profile.generateFingerprint" => await GenerateFingerprintAsync(payload),
+                    "profile.bulkCreate" => await BulkCreateAsync(payload),
+                    "profile.bulkDelete" => await BulkDeleteAsync(payload),
+                    "profile.bulkUpdateBrowserVersion" => await BulkUpdateBrowserVersionAsync(payload),
+                    "profile.detectScreen" => await DetectScreenAsync(),
+                    "profile.regenerateFingerprint" => await RegenerateFingerprintAsync(payload),
+                    "profile.checkProxy" => await CheckProxyAsync(payload),
+                    _ => (false, $"Unknown action: {action}", null)
+                };
+            }
+            catch (Exception ex)
+            {
+                return (false, ex.Message, null);
+            }
         }
 
         private async Task<(bool, string?, JsonElement?)> ListAsync(JsonElement? payload)
         {
-            string? search = null, browserType = null;
-            int? id = null, groupId = null;
+            string? search = null, browserType = null, status = null;
+            string? idStr = null;
+            int? groupId = null;
             List<int>? tagIds = null;
 
             if (payload.HasValue)
             {
                 var p = payload.Value;
                 if (p.TryGetProperty("search", out var s)) search = s.GetString();
-                if (p.TryGetProperty("id", out var i)) id = i.ValueKind == JsonValueKind.Null ? null : i.GetInt32();
+                if (p.TryGetProperty("id", out var i))
+                {
+                    if (i.ValueKind == JsonValueKind.Number) idStr = i.GetInt32().ToString();
+                    else if (i.ValueKind == JsonValueKind.String) idStr = i.GetString();
+                }
                 if (p.TryGetProperty("groupId", out var g)) groupId = g.ValueKind == JsonValueKind.Null ? null : g.GetInt32();
                 if (p.TryGetProperty("browserType", out var b)) browserType = b.GetString();
+                if (p.TryGetProperty("status", out var st)) status = st.GetString();
                 if (p.TryGetProperty("tagIds", out var t) && t.ValueKind == JsonValueKind.Array)
                     tagIds = t.EnumerateArray().Select(e => e.GetInt32()).ToList();
             }
 
-            var result = await _service.GetProfilesAsync(search, id, groupId, tagIds, browserType);
+            var result = await _service.GetProfilesAsync(search, idStr, groupId, tagIds, browserType, status);
             return (true, null, WrapInElement(result));
         }
 
@@ -232,15 +250,16 @@ namespace DuckGo.Infrastructure.API
 
         private async Task<(bool, string?, JsonElement?)> GenerateFingerprintAsync(JsonElement? payload)
         {
-            string? platform = null, browserType = null, osModelName = null;
+            string? platform = null, browserType = null, osModelName = null, browserVersion = null;
             if (payload.HasValue)
             {
                 var p = payload.Value;
                 if (p.TryGetProperty("platform", out var pl)) platform = pl.GetString();
                 if (p.TryGetProperty("browser", out var b)) browserType = b.GetString();
                 if (p.TryGetProperty("model", out var m)) osModelName = m.GetString();
+                if (p.TryGetProperty("version", out var v)) browserVersion = v.GetString();
             }
-            var result = await _fingerprintService.GenerateStructuredAsync(platform, browserType, osModelName);
+            var result = await _fingerprintService.GenerateStructuredAsync(platform, browserType, osModelName, browserVersion);
             return (true, null, WrapInElement(result));
         }
 
@@ -340,6 +359,95 @@ namespace DuckGo.Infrastructure.API
             }
             catch { }
         }
+
+        private async Task<(bool, string?, JsonElement?)> CheckProxyAsync(JsonElement? payload)
+        {
+            var id = payload?.GetProperty("id").GetInt32();
+            if (!id.HasValue) return (false, "Missing id", null);
+
+            var profile = await _service.GetProfileAsync(id.Value);
+            if (profile == null) return (false, "Profile not found", null);
+
+            DuckGo.Services.ProxyCheckResult result;
+
+            if (profile.ProxyId.HasValue)
+            {
+                result = await _proxyService.CheckProxyAsync(profile.ProxyId.Value);
+            }
+            else if (!string.IsNullOrEmpty(profile.ProfileData) && profile.ProfileData.Contains("\"Network\""))
+            {
+                try {
+                    var doc = JsonDocument.Parse(profile.ProfileData);
+                    if (doc.RootElement.TryGetProperty("Network", out var net) &&
+                        net.TryGetProperty("Proxy", out var proxy) &&
+                        proxy.TryGetProperty("Mode", out var mode) && mode.GetString() == "custom")
+                    {
+                        var type = proxy.TryGetProperty("Type", out var t) ? t.GetString() ?? "http" : "http";
+                        var host = proxy.TryGetProperty("Host", out var h) ? h.GetString() ?? "" : "";
+                        
+                        int port = 0;
+                        if (proxy.TryGetProperty("Port", out var pt))
+                        {
+                            if (pt.ValueKind == JsonValueKind.Number) port = pt.GetInt32();
+                            else if (pt.ValueKind == JsonValueKind.String && int.TryParse(pt.GetString(), out int p)) port = p;
+                        }
+                        
+                        var username = proxy.TryGetProperty("Username", out var u) ? u.GetString() : "";
+                        var password = proxy.TryGetProperty("Password", out var pass) ? pass.GetString() : "";
+
+                        if (string.IsNullOrEmpty(host)) return (false, "Proxy host is empty", null);
+
+                        result = await _proxyService.CheckProxyAsync(new Models.DTOs.ProxyCheckRequest(type, host, port, username, password));
+                    }
+                    else
+                    {
+                        return (false, "Profile has no proxy configured", null);
+                    }
+                } catch {
+                    return (false, "Invalid proxy configuration", null);
+                }
+            }
+            else
+            {
+                return (false, "Profile has no proxy configured", null);
+            }
+
+            return (true, null, WrapInElement(result));
+        }
+
+        private async Task<(bool, string?, JsonElement?)> BulkUpdateBrowserVersionAsync(JsonElement? payload)
+        {
+            if (!payload.HasValue) return (false, "Invalid payload", null);
+            var p = payload.Value;
+
+            if (!p.TryGetProperty("ids", out var idsProp) || idsProp.ValueKind != JsonValueKind.Array)
+                return (false, "Invalid profile ids", null);
+
+            var ids = idsProp.EnumerateArray().Select(e => e.GetInt32()).ToList();
+            if (ids.Count == 0) return (false, "No profile ids provided", null);
+
+            var version = p.TryGetProperty("version", out var vProp) ? vProp.GetString() : null;
+            if (string.IsNullOrEmpty(version)) return (false, "Invalid version", null);
+
+            var autoUpdateUA = p.TryGetProperty("autoUpdateUA", out var aProp) && aProp.ValueKind == JsonValueKind.True;
+
+            int updated = 0;
+            foreach (var id in ids)
+            {
+                try
+                {
+                    await _service.UpdateProfileBrowserVersionAsync(id, version, autoUpdateUA);
+                    updated++;
+                }
+                catch (Exception ex)
+                {
+                    DispatcherLog("UPDATE_VERSION_ERR", $"Error updating {id}: {ex.Message}");
+                }
+            }
+
+            return (true, null, WrapInElement(new { Updated = updated }));
+        }
+
     }
 
     internal class DoublePrecisionConverter : JsonConverter<double>

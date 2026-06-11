@@ -32,6 +32,12 @@
             if (options.rows) textarea.rows = options.rows;
             else textarea.rows = 4; // Default to 4 rows
 
+            if (options.fullHeight) {
+                wrap.style.height = '100%';
+                textarea.style.flex = '1';
+                textarea.style.resize = 'none';
+            }
+
             if (options.onInput) {
                 textarea.addEventListener('input', options.onInput);
             }

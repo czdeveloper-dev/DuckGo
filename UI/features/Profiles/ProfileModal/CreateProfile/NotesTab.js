@@ -24,15 +24,9 @@
                 label: 'Notes',
                 placeholder: 'Enter your notes here...',
                 rows: 15,
+                fullHeight: true,
                 onInput: () => window.ProfileModals?.CreateProfile?._scheduleSync?.()
             });
-            notesTextarea.element.style.flex = '1';
-
-            if (notesTextarea.textarea) {
-                notesTextarea.textarea.style.height = '100%';
-                notesTextarea.textarea.style.resize = 'none';
-                notesTextarea.textarea.style.background = 'var(--bg-surface)';
-            }
 
             container.appendChild(notesTextarea.element);
             this._textArea = notesTextarea;

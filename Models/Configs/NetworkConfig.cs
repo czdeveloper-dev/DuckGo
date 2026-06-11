@@ -8,7 +8,6 @@ public class NetworkConfig
 public class ProxyConfig
 {
     public string Mode { get; set; } = "none";
-    public int? SavedProxyId { get; set; }
     public string Type { get; set; } = "http";
     public string Host { get; set; } = "";
     public int Port { get; set; }

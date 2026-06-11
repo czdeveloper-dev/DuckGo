@@ -104,7 +104,7 @@ public class DuckBrowserConfigBuilder
             UserAgent = sys.UserAgent?.Mode == "noise"
                 ? (sys.UserAgent?.Value ?? GetDefaultUserAgent())
                 : GetDefaultUserAgent(),
-            AcceptLanguage = sys.AcceptLanguage?.Value ?? "en-US,en;q=0.9",
+            AcceptLanguage = sys.Language?.Value ?? "en-US,en",
             Timezone = sys.Timezone?.Value ?? "UTC",
             HardwareConcurrency = hwConcurrency,
             DeviceMemory = deviceMemory,
@@ -160,7 +160,11 @@ public class DuckBrowserConfigBuilder
                 ImageSpoofing = new DuckWebGLImageSpoofing
                 {
                     Mode = NormalizeMode(webgl.ImageSpoofing?.Mode, "noise", preserveNullAsNull: true),
-                    TextureSeed = webgl.ImageSpoofing?.Mode == "real" ? null : (webgl.ImageSpoofing?.TextureSeed ?? GenerateSeed()),
+                    TextureSeed = webgl.ImageSpoofing?.Mode == "real"
+                        ? null
+                        : (webgl.ImageSpoofing?.Pattern == "default"
+                            ? null
+                            : (webgl.ImageSpoofing?.TextureSeed ?? GenerateSeed())),
                     Pattern = webgl.ImageSpoofing?.Pattern ?? "default"
                 }
             },

@@ -5,7 +5,10 @@ window.ProfileModals.SetBrowserVersion = {
 
     show(selectedIds) {
         if (!selectedIds) selectedIds = new Set();
-        const count = selectedIds.size !== undefined ? selectedIds.size : (selectedIds.length || 0);
+        // Handle array conversion
+        const idSet = selectedIds instanceof Set ? selectedIds : new Set(selectedIds);
+        const idsArray = Array.from(idSet);
+        const count = idsArray.length;
 
         if (this._modal) {
             this._modal.destroy();
@@ -15,7 +18,6 @@ window.ProfileModals.SetBrowserVersion = {
         const modalBody = document.createElement('div');
         modalBody.style.cssText = 'font-size: 13px; color: var(--text-primary); line-height: 1.5; min-height: 150px; position: relative;';
 
-        // Loading state - simple CSS class-based spinner
         const loader = document.createElement('div');
         loader.style.cssText = 'position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-base); z-index: 10; transition: opacity 0.3s;';
         loader.innerHTML = `
@@ -24,13 +26,13 @@ window.ProfileModals.SetBrowserVersion = {
         `;
         modalBody.appendChild(loader);
 
-        // Content (hidden initially)
         const contentWrap = document.createElement('div');
         contentWrap.style.cssText = 'opacity: 0; transition: opacity 0.3s; display: flex; flex-direction: column; gap: 16px; pointer-events: none;';
         modalBody.appendChild(contentWrap);
 
         let autoUpdateUA = true;
         let versionCombo = null;
+        let selectedVersion = '';
 
         this._modal = DuckControls.Modal.create({
             defaultEnter: true,
@@ -42,9 +44,22 @@ window.ProfileModals.SetBrowserVersion = {
             closeOnOverlay: true,
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
-                { text: 'Update Version', class: 'duck-btn-primary', onClick: (e, modal) => {
+                { text: 'Update Version', class: 'duck-btn-primary', onClick: async (e, modal) => {
                     const version = versionCombo ? versionCombo.getValue() : '';
+                    if (!version) return;
                     modal.close();
+                    
+                    try {
+                        await DuckBridge.call('profile.bulkUpdateBrowserVersion', {
+                            ids: idsArray,
+                            version: version,
+                            autoUpdateUA: autoUpdateUA
+                        });
+                        window.DuckControls.Toast?.success?.('Success', 'Browser version updated');
+                        if (window.ProfilesView?.loadProfiles) await window.ProfilesView.loadProfiles();
+                    } catch (err) {
+                        window.DuckControls.Toast?.error?.('Update Failed', err?.message || 'Failed to update browser version');
+                    }
                 }}
             ],
             onClose: () => {
@@ -54,27 +69,52 @@ window.ProfileModals.SetBrowserVersion = {
 
         this._modal.open();
 
-        // Initially disable the submit button
         const submitBtn = this._modal.element.querySelector('.duck-btn-primary');
         if (submitBtn) submitBtn.disabled = true;
 
-        // Simulate backend fetch
-        setTimeout(() => {
+        // Get the browser type and version from the first selected profile
+        let browserType = 'Chromium';
+        let currentVersion = '';
+        if (idsArray.length > 0 && window.ProfilesView?._profilesData) {
+            const profile = window.ProfilesView._profilesData.find(p => p.id === idsArray[0]);
+            if (profile) {
+                if (profile.browserType) browserType = profile.browserType;
+                if (profile.browserVersion) currentVersion = profile.browserVersion;
+            }
+        }
+
+        DuckBridge.call('browser.listVersions').then(catalog => {
             loader.style.opacity = '0';
             setTimeout(() => loader.remove(), 300);
 
-            // Version selector using DuckControls.ComboBox
+            const browserDef = catalog?.Browsers?.find(b => b.BrowserType?.toLowerCase() === browserType.toLowerCase());
+            const versions = browserDef?.Versions || [];
+            
+            let options = versions.map(v => ({
+                label: `${browserDef.BrowserType} ${v.Version} ${v.Description ? `(${v.Description})` : ''}`,
+                value: v.Version
+            }));
+
+            if (options.length === 0) {
+                options = [{ label: `No versions found for ${browserType}`, value: '' }];
+            }
+
+            // Fallback to first if current version not found in the catalog
+            let preSelected = currentVersion;
+            if (!preSelected || !options.find(o => o.value === preSelected)) {
+                preSelected = options[0].value;
+            }
+
             const versionWrap = document.createElement('div');
             versionWrap.style.cssText = 'background: var(--bg-subtle); padding: 16px; border-radius: 6px; border: 1px solid var(--border-light); display: flex; flex-direction: column; gap: 12px;';
 
             versionCombo = DuckControls.ComboBox.create({
-                label: 'Select Target Version',
-                options: [
-                    { label: 'Chromium 120.0.6099.109 (Stable) - 145 MB', value: '120.0.6099.109' },
-                    { label: 'Chromium 119.0.6045.199 - 143 MB', value: '119.0.6045.199' },
-                    { label: 'Chromium 118.0.5993.117 - 142 MB', value: '118.0.5993.117' }
-                ],
-                value: '120.0.6099.109'
+                label: `Select Target Version for ${browserType}`,
+                options: options,
+                value: preSelected,
+                onChange: (val) => {
+                    selectedVersion = val;
+                }
             });
             versionWrap.appendChild(versionCombo.element);
 
@@ -84,7 +124,6 @@ window.ProfileModals.SetBrowserVersion = {
             versionWrap.appendChild(note);
             contentWrap.appendChild(versionWrap);
 
-            // Auto-update UserAgent checkbox
             const cbWrap = document.createElement('div');
             contentWrap.appendChild(cbWrap);
 
@@ -96,10 +135,12 @@ window.ProfileModals.SetBrowserVersion = {
                 }
             });
 
-            // Reveal content + enable submit
             contentWrap.style.opacity = '1';
             contentWrap.style.pointerEvents = 'auto';
-            if (submitBtn) submitBtn.disabled = false;
-        }, 1200);
+            if (submitBtn && options[0].value) submitBtn.disabled = false;
+        }).catch(err => {
+            console.error('Failed to fetch browser versions:', err);
+            loader.innerHTML = `<div style="color: var(--danger);">Failed to load versions. Please try again.</div>`;
+        });
     }
 };

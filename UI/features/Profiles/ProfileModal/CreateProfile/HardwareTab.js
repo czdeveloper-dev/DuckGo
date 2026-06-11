@@ -221,10 +221,15 @@
             emuSec.appendChild(window.DuckControls.SettingRow.create({ title: 'Canvas API', desc: 'Add noise to canvas fingerprints', control: this.canvasToggle.element, alignTop: false }).element);
 
             this.webglImgToggle = window.DuckControls.ToggleGroup.create({
-                options: [{ label: 'Noise', value: 'noise' }, { label: 'Real', value: 'real' }],
-                value: 'noise'
+                options: [
+                    { label: 'Real', value: 'real' },
+                    { label: 'Default', value: 'default' },
+                    { label: 'Noise', value: 'noise' },
+                    { label: 'Solid', value: 'solid' }
+                ],
+                value: 'real'
             });
-            emuSec.appendChild(window.DuckControls.SettingRow.create({ title: 'WebGL Image', desc: 'Add noise to WebGL rendering fingerprints', control: this.webglImgToggle.element, alignTop: false }).element);
+            emuSec.appendChild(window.DuckControls.SettingRow.create({ title: 'WebGL Image', desc: 'Spoof WebGL image rendering fingerprints', control: this.webglImgToggle.element, alignTop: false }).element);
 
             this.webglMetaToggle = window.DuckControls.ToggleGroup.create({
                 options: [{ label: 'Real', value: 'real' }, { label: 'Random', value: 'random' }, { label: 'Custom', value: 'custom' }],
@@ -316,76 +321,54 @@
                 }
             }
 
+            const webglVendor = this._webglVendorSelect ? this._webglVendorSelect.getValue?.() : null;
+            const webglRenderer = this._rendererSelect ? this._rendererSelect.getValue?.() : null;
+
             // [DEBUG] hardware values
             console.log('[DEBUG:HardwareTab.getValues]', JSON.stringify({
                 cpuMode, concurrency, deviceMemory,
                 resMode, screenWidth, screenHeight, screenPixelRatio,
                 canvasMode: this.canvasToggle ? this.canvasToggle.getValue() : 'noise',
-                webglImageMode: this.webglImgToggle ? this.webglImgToggle.getValue() : 'noise',
-                webglMode, webglVendor: webglMode === 'custom' && this._webglVendorSelect ? this._webglVendorSelect.getValue() : null,
-                webglRenderer: webglMode === 'custom' && this._rendererSelect ? this._rendererSelect.getValue() : null,
+                webglImageMode: this.webglImgToggle ? this.webglImgToggle.getValue() : 'default',
+                webglMode,
+                webglVendor, webglRenderer,
                 pluginsMode: this.pluginsToggle ? this.pluginsToggle.getValue() : 'noise',
             }, null, 2));
-
             return {
-                concurrency,
-                deviceMemory,
-                cpuMode,
-                screenWidth,
-                screenHeight,
-                screenPixelRatio,
-                screenPreset,
-                screenMode: resMode,
+                cpuMode, concurrency, deviceMemory,
+                resMode, screenWidth, screenHeight, screenPixelRatio, screenPreset,
                 canvasMode: this.canvasToggle ? this.canvasToggle.getValue() : 'noise',
-                webglImageMode: this.webglImgToggle ? this.webglImgToggle.getValue() : 'noise',
+                webglImageMode: this.webglImgToggle ? this.webglImgToggle.getValue() : 'default',
                 webglMode,
-                webglVendor: webglMode === 'custom' && this._webglVendorSelect ? this._webglVendorSelect.getValue() : null,
-                webglRenderer: webglMode === 'custom' && this._rendererSelect ? this._rendererSelect.getValue() : null,
+                webglVendor, webglRenderer,
                 pluginsMode: this.pluginsToggle ? this.pluginsToggle.getValue() : 'noise',
             };
         },
 
-        /** Set values from loaded profile data */
-        setValues(values, fpTemplate) {
-            // Suppress _randomizeTier/_randomizeResolution/_randomizeWebGL during load
-            // to prevent them from overwriting the chip values we just set
-            this._suppressRandomize = true;
-
-            // Use skipRandomize=true to avoid randomizing controls before we apply loaded values
-            if (fpTemplate && values.os) {
-                this._currentOsBlock = fpTemplate.OS?.[values.os];
-                this._populateHardwareOptions(fpTemplate, true);
-            }
-
-            // ToggleGroup.setValue now triggers onChange, which handles:
-            // - visibility of hwTierWrap/resChipWrap/webglCustomBox
-            // - _randomizeTier() / _randomizeResolution() / _randomizeWebGL() for custom modes
-            // Suppress randomization during this sequence so only our explicit setValue sticks.
-            // Toggles first, then deferred chip values last.
-
-            // CPU settings
-            if (values.cpuMode && this.cpuToggle) {
-                this.cpuToggle.setValue(values.cpuMode);
-                // Manually show/hide CPU tier box (don't rely on click handler)
-                const cpuWrap = this.cpuToggle.element?.closest('.duck-card-body')?.querySelector('[data-cpu-tier]');
-                if (cpuWrap) cpuWrap.style.display = values.cpuMode === 'custom' ? 'flex' : 'none';
+        setValues(values) {
+            if (values.cpuMode !== undefined) {
+                if (this.cpuToggle) this.cpuToggle.setValue(values.cpuMode);
+                // Show CPU tier wrap when custom mode
+                const cpuWrapEl = this.cpuToggle?.element?.closest('.duck-card-body')?.querySelector('[data-cpu-tier]');
+                if (cpuWrapEl) cpuWrapEl.style.display = values.cpuMode === 'custom' ? 'flex' : 'none';
                 if (values.cpuMode === 'custom' && values.concurrency && values.deviceMemory && this.cpuChipSelect) {
                     this.cpuChipSelect.setValue(`${values.concurrency}-${values.deviceMemory}`);
                 }
             }
 
-            // Screen Resolution settings
-            if (values.screenMode && this.resToggle) {
-                this.resToggle.setValue(values.screenMode);
-                // Manually show/hide resolution chip box
+            // Screen Resolution settings - key is 'screenMode' from hwValues
+            const screenModeVal = values.screenMode ?? values.resMode;
+            if (screenModeVal !== undefined && this.resToggle) {
+                this.resToggle.setValue(screenModeVal);
                 const resWrap = this.resToggle.element?.closest('.duck-card-body')?.querySelector('[data-res-chip]');
-                if (resWrap) resWrap.style.display = values.screenMode === 'custom' ? 'flex' : 'none';
-                if (values.screenMode === 'custom' && values.screenWidth && values.screenHeight && values.screenPixelRatio && this.resChipSelect) {
-                    this.resChipSelect.setValue(`${values.screenWidth}x${values.screenHeight}x${values.screenPixelRatio}`);
+                if (resWrap) resWrap.style.display = screenModeVal === 'custom' ? 'flex' : 'none';
+                if (screenModeVal === 'custom' && values.screenWidth && values.screenHeight && this.resChipSelect) {
+                    const pr = values.screenPixelRatio ?? 1.0;
+                    this.resChipSelect.setValue(`${values.screenWidth}x${values.screenHeight}x${pr}`);
                 }
             }
 
-            // Canvas mode - handle null (Real mode) and other valid values
+            // Canvas mode
             if (values.canvasMode !== undefined && this.canvasToggle) {
                 this.canvasToggle.setValue(values.canvasMode);
             }
@@ -398,7 +381,6 @@
             // WebGL Metadata settings
             if (values.webglMode !== undefined && this.webglMetaToggle) {
                 this.webglMetaToggle.setValue(values.webglMode);
-                // Manually show/hide WebGL custom box
                 if (this._webglCustomBox) {
                     this._webglCustomBox.style.display = values.webglMode === 'custom' ? 'flex' : 'none';
                 }
@@ -410,7 +392,7 @@
                 }
             }
 
-            // Plugins mode - handle null (Real mode) and other valid values
+            // Plugins mode
             if (values.pluginsMode !== undefined && this.pluginsToggle) {
                 this.pluginsToggle.setValue(values.pluginsMode);
             }

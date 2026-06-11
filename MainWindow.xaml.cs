@@ -35,13 +35,13 @@ public partial class MainWindow : Window
 
     private IProfileRepository? _profileRepo;
     private readonly Dictionary<string, byte[]> _uiResourceCache = new();
-    private string? _uiTempFolder;
+    private readonly List<MemoryStream> _activeStreams = new();
     private readonly Dictionary<string, string> _mimeTypes = new()
     {
-        { ".html", "text/html" },
-        { ".css", "text/css" },
-        { ".js", "application/javascript" },
-        { ".json", "application/json" },
+        { ".html", "text/html; charset=utf-8" },
+        { ".css", "text/css; charset=utf-8" },
+        { ".js", "application/javascript; charset=utf-8" },
+        { ".json", "application/json; charset=utf-8" },
         { ".png", "image/png" },
         { ".jpg", "image/jpeg" },
         { ".jpeg", "image/jpeg" },
@@ -95,8 +95,7 @@ public partial class MainWindow : Window
                 {
                     var json = System.Text.Json.JsonSerializer.Serialize(
                         new { type = "push", channel = "toast", payload = toast });
-                    var script = $"window.__duckReceive({json})";
-                    WebView.CoreWebView2?.ExecuteScriptAsync(script);
+                    WebView.CoreWebView2?.PostWebMessageAsJson(json);
                 }
                 catch { }
             };
@@ -110,12 +109,12 @@ public partial class MainWindow : Window
 
                     if (System.Windows.Application.Current?.Dispatcher.CheckAccess() == true)
                     {
-                        WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({json})");
+                        WebView.CoreWebView2?.PostWebMessageAsJson(json);
                     }
                     else
                     {
                         System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => {
-                            WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({json})");
+                            WebView.CoreWebView2?.PostWebMessageAsJson(json);
                         });
                     }
                 }
@@ -138,7 +137,7 @@ public partial class MainWindow : Window
             {
                 new BrowserDispatcher(_browserLifecycleService!, _browserVersionService!),
                 new FingerprintDispatcher(fingerprintSvc),
-                new ProfileDispatcher(_profileService!, fingerprintSvc, _profileStatusService!),
+                new ProfileDispatcher(_profileService!, fingerprintSvc, _profileStatusService!, _proxyService!),
                 new GroupDispatcher(_groupService!),
                 new TagDispatcher(_tagService!),
                 new ProxyDispatcher(_proxyService!),
@@ -163,17 +162,32 @@ public partial class MainWindow : Window
             WebView.CoreWebView2.Settings.AreDevToolsEnabled = true;
             WebView.CoreWebView2.Settings.IsWebMessageEnabled = true;
 
-            var uiFolder = ExtractUiToTempFolder();
-            if (uiFolder == null)
-            {
-                MessageBox.Show("Failed to extract UI resources", "DuckGo Error");
-                return;
+            // Clear WebView2 cache to ensure fresh CSS/JS loads
+            try {
+                var profilePath = WebView.CoreWebView2.Environment.UserDataFolder;
+                var cachePath = Path.Combine(profilePath, "Cache");
+                if (Directory.Exists(cachePath)) {
+                    foreach (var dir in Directory.GetDirectories(cachePath))
+                        try { Directory.Delete(dir, true); } catch { }
+                }
+                var codeCachePath = Path.Combine(profilePath, "Code Cache");
+                if (Directory.Exists(codeCachePath))
+                    try { Directory.Delete(codeCachePath, true); } catch { }
+                Debug.WriteLine($"[UI] Cache cleared: {cachePath}");
+            } catch (Exception ex) {
+                Debug.WriteLine($"[UI] Cache clear failed: {ex.Message}");
             }
 
-            WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                "duckgo.local",
-                uiFolder,
-                CoreWebView2HostResourceAccessKind.Allow);
+            try {
+                LoadResourcesToMemory("DuckGo.UI.");
+            } catch (Exception ex) {
+                MessageBox.Show($"Load error: {ex.Message}\n{ex.StackTrace}");
+            }
+            if (_uiResourceCache.Count == 0)
+            {
+                MessageBox.Show("Failed to load UI resources into memory", "DuckGo Error");
+                return;
+            }
 
             WebView.CoreWebView2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
             WebView.CoreWebView2.WebResourceRequested += OnWebResourceRequested;
@@ -182,6 +196,8 @@ public partial class MainWindow : Window
             PreviewKeyDown += OnPreviewKeyDown;
 
             WebView.CoreWebView2.Navigate("http://duckgo.local/index.html");
+
+
         }
         catch (Exception ex)
         {
@@ -224,16 +240,12 @@ public partial class MainWindow : Window
         try
         {
             var assembly = Assembly.GetExecutingAssembly();
+            var allNames = assembly.GetManifestResourceNames();
+            Debug.WriteLine($"[UI] Total embedded resources: {allNames.Length}");
+            foreach (var n in allNames) Debug.WriteLine($"[UI]   resource: {n}");
             var count = 0;
 
-            var tempDir = Path.Combine(Path.GetTempPath(), "DuckGoUI_" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tempDir);
-            _uiTempFolder = tempDir;
-
-            Debug.WriteLine("[UI] === Resource Loading Started ===");
-            Debug.WriteLine($"[UI] Extracting to: {tempDir}");
-
-            foreach (var name in assembly.GetManifestResourceNames())
+            foreach (var name in allNames)
             {
                 if (!name.StartsWith(prefix)) continue;
 
@@ -250,25 +262,13 @@ public partial class MainWindow : Window
                 {
                     using var ms = new MemoryStream();
                     stream.CopyTo(ms);
-                    var data = ms.ToArray();
-                    _uiResourceCache[relativePath] = data;
-
-                    var diskPath = Path.Combine(tempDir, relativePath);
-                    var diskDir = Path.GetDirectoryName(diskPath);
-                    if (diskDir != null) Directory.CreateDirectory(diskDir);
-                    File.WriteAllBytes(diskPath, data);
-
+                    _uiResourceCache[relativePath] = ms.ToArray();
                     count++;
-                    if (relativePath.Contains("index.html"))
-                    {
-                        Debug.WriteLine($"[UI] ** Found index.html at: {diskPath}");
-                    }
                 }
             }
 
-            Debug.WriteLine($"[UI] === Resource Loading Complete: {count} resources ===");
-
-            return count > 0 ? tempDir : null;
+            Debug.WriteLine($"[UI] === Resource Loading Complete: {count} resources (memory only) ===");
+            return null; // No disk path — resources served directly from memory
         }
         catch (Exception ex)
         {
@@ -277,9 +277,10 @@ public partial class MainWindow : Window
         }
     }
 
+    // Deprecated: UI resources are now served directly from memory via OnWebResourceRequested
     private string? ExtractUiToTempFolder()
     {
-        return LoadResourcesToMemory("DuckGo.UI.");
+        return null;
     }
 
     private string? GetResourceContent(string path)
@@ -361,7 +362,8 @@ public partial class MainWindow : Window
 
         if (string.IsNullOrEmpty(path) || path == "/") path = "index.html";
 
-        Debug.WriteLine($"[UI] Requested: {path}");
+        var queryIndex = path.IndexOf('?');
+        if (queryIndex > 0) path = path.Substring(0, queryIndex);
 
         var data = GetResourceBytes(path);
         if (data == null)
@@ -372,11 +374,21 @@ public partial class MainWindow : Window
             return;
         }
 
-        Debug.WriteLine($"[UI] 200 OK: {path} ({data.Length} bytes)");
         var mime = GetMimeType(path);
+
         var stream = new MemoryStream(data);
+        stream.Position = 0;
+        
+        lock (_activeStreams) { _activeStreams.Add(stream); }
+
         e.Response = WebView.CoreWebView2.Environment.CreateWebResourceResponse(
-            stream, 200, "OK", $"Content-Type: {mime}\r\n");
+            stream, 200, "OK",
+            $"Content-Type: {mime}\r\n" +
+            "Cache-Control: no-cache, no-store, must-revalidate\r\n" +
+            "Pragma: no-cache\r\n" +
+            "Expires: 0\r\n" +
+            $"Date: {DateTime.UtcNow:R}\r\n" +
+            "Access-Control-Allow-Origin: *");
     }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
@@ -398,7 +410,7 @@ public partial class MainWindow : Window
             if (_dispatcher == null) return;
             var responseJson = await _dispatcher!.DispatchAsync(raw);
             Dispatcher.Invoke(() => {
-                WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({responseJson})");
+                WebView.CoreWebView2?.PostWebMessageAsJson(responseJson);
             });
         }
         catch (Exception ex)
@@ -408,7 +420,7 @@ public partial class MainWindow : Window
                 var errJson = System.Text.Json.JsonSerializer.Serialize(
                     new { type = "response", id = 0, success = false, error = ex.Message });
                 Dispatcher.Invoke(() => {
-                    WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({errJson})");
+                    WebView.CoreWebView2?.PostWebMessageAsJson(errJson);
                 });
             }
             catch { }
@@ -421,7 +433,7 @@ public partial class MainWindow : Window
         {
             var json = System.Text.Json.JsonSerializer.Serialize(new { type = "push", channel, payload });
             Dispatcher.Invoke(() => {
-                WebView.CoreWebView2?.ExecuteScriptAsync($"window.__duckReceive({json})");
+                WebView.CoreWebView2?.PostWebMessageAsJson(json);
             });
         }
         catch { }
@@ -431,11 +443,6 @@ public partial class MainWindow : Window
     {
         _pipeClient?.Dispose();
         _uiResourceCache.Clear();
-
-        if (_uiTempFolder != null && Directory.Exists(_uiTempFolder))
-        {
-            try { Directory.Delete(_uiTempFolder, true); } catch { }
-        }
 
         base.OnClosed(e);
     }

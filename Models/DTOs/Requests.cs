@@ -1,3 +1,5 @@
+using DuckGo.Models.Configs;
+
 namespace DuckGo.Models.DTOs;
 
 public record FingerprintSummaryResponse(
@@ -22,8 +24,6 @@ public record FingerprintSummaryResponse(
     string CanvasMode,
     double? CanvasNoiseLevel,
     string WebGLImageMode,
-    string? ImageSpoofingTextureSeed,
-    string? ImageSpoofingPattern,
     string PluginsMode,
     string FontsMode,
     List<string> Fonts,
@@ -44,7 +44,8 @@ public record FingerprintSummaryResponse(
     double? ClientRectsNoiseLevel,
     string PlatformString,
     string TLSOSMatch,
-    long? StorageQuota
+    long? StorageQuota,
+    ProfileDataConfig? RawConfig = null
 );
 
 public record ProfileCreateRequest(

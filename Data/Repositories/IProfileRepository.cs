@@ -4,7 +4,7 @@ namespace DuckGo.Data.Repositories;
 
 public interface IProfileRepository
 {
-    Task<List<Profile>> GetAllAsync(string? search = null, int? id = null, int? groupId = null, List<int>? tagIds = null, string? browserType = null);
+    Task<List<Profile>> GetAllAsync(string? search = null, string? idStr = null, int? groupId = null, List<int>? tagIds = null, string? browserType = null);
     Task<Profile?> GetByIdAsync(int id);
     Task<int> CreateAsync(Profile profile);
     Task UpdateAsync(Profile profile);

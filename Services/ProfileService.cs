@@ -41,12 +41,13 @@ public class ProfileService
 
     public async Task<ProfileListResponse> GetProfilesAsync(
         string? search = null,
-        int? id = null,
+        string? idStr = null,
         int? groupId = null,
         List<int>? tagIds = null,
-        string? browserType = null)
+        string? browserType = null,
+        string? status = null)
     {
-        var profiles = await _profileRepo.GetAllAsync(search, id, groupId, tagIds, browserType);
+        var profiles = await _profileRepo.GetAllAsync(search, idStr, groupId, tagIds, browserType);
         var allTags = await _tagRepo.GetAllAsync();
         var tagDict = allTags.ToDictionary(t => t.Id, t => t.Name);
 
@@ -54,6 +55,45 @@ public class ProfileService
         {
             p.TagIds = TryDeserialize(p.TagIdsJson, () => JsonSerializer.Deserialize<List<int>>(p.TagIdsJson)) ?? new();
             p.TagNames = p.TagIds.Select(id => tagDict.GetValueOrDefault(id, "")).Where(n => n != "").ToList();
+
+            string platform = "Windows";
+            string? customProxyName = null;
+            if (!string.IsNullOrEmpty(p.ProfileData))
+            {
+                if (p.ProfileData.Contains("\"MacIntel\"") || p.ProfileData.Contains("\"Darwin\"") || p.ProfileData.Contains("\"macOS\"")) platform = "MacOS";
+                else if (p.ProfileData.Contains("\"Linux")) platform = "Linux";
+
+                if (!p.ProxyId.HasValue && p.ProfileData.Contains("\"Network\"") && p.ProfileData.Contains("\"custom\""))
+                {
+                    try {
+                        var doc = System.Text.Json.JsonDocument.Parse(p.ProfileData);
+                        if (doc.RootElement.TryGetProperty("Network", out var net) &&
+                            net.TryGetProperty("Proxy", out var proxy) &&
+                            proxy.TryGetProperty("Mode", out var mode) && mode.GetString() == "custom")
+                        {
+                            var type = proxy.TryGetProperty("Type", out var t) ? t.GetString() : "http";
+                            var host = proxy.TryGetProperty("Host", out var h) ? h.GetString() : "";
+                            
+                            int port = 0;
+                            if (proxy.TryGetProperty("Port", out var pt))
+                            {
+                                if (pt.ValueKind == System.Text.Json.JsonValueKind.Number) port = pt.GetInt32();
+                                else if (pt.ValueKind == System.Text.Json.JsonValueKind.String && int.TryParse(pt.GetString(), out int parsedPort)) port = parsedPort;
+                            }
+                            
+                            if (!string.IsNullOrEmpty(host))
+                            {
+                                customProxyName = $"{type}://{host}:{port}";
+                            }
+                        }
+                    } catch {}
+                }
+            }
+
+            var realStatus = ProfileStatusService.GetStatus(p.Id);
+            var realMessage = ProfileStatusService.GetMessage(p.Id);
+            if (string.IsNullOrEmpty(realMessage)) realMessage = p.Message;
+
             return new ProfileListItem
             {
                 Id = p.Id,
@@ -63,19 +103,30 @@ public class ProfileService
                 TagIds = p.TagIds,
                 TagNames = p.TagNames,
                 ProxyId = p.ProxyId,
-                ProxyName = p.ProxyName,
+                ProxyName = p.ProxyName ?? customProxyName,
                 BrowserType = p.BrowserType,
                 BrowserVersion = p.BrowserVersion,
+                Platform = platform,
                 Notes = p.Notes,
                 Cookies = p.Cookies,
-                Status = p.Status,
+                Status = realStatus,
                 CreatedAt = p.CreatedAt,
                 LastOpened = p.LastOpened,
-                Message = p.Message
+                Message = realMessage
             };
         }).ToList();
 
-        return new ProfileListResponse { Items = items, Total = items.Count };
+        if (!string.IsNullOrEmpty(status))
+        {
+            var st = status.ToLowerInvariant();
+            items = items.Where(i => i.Status?.ToLowerInvariant() == st).ToList();
+        }
+
+        return new ProfileListResponse
+        {
+            Total = items.Count,
+            Items = items
+        };
     }
 
         public async Task<ProfileDetailItem?> GetProfileAsync(int id)
@@ -124,9 +175,12 @@ public class ProfileService
 
     public async Task<ProfileDetailItem> CreateProfileAsync(ProfileCreateRequest req)
     {
+        Console.WriteLine("[ProfileService.CreateAsync] START");
         var normalizedProxyId = NormalizeProxyId(req.ProxyId, req.Fingerprint?.Proxy);
+        Console.WriteLine("[ProfileService.CreateAsync] proxy normalized");
         var normalizedName = EnsureProfileName(req.Name);
         var normalizedReq = req with { Name = normalizedName, ProxyId = normalizedProxyId };
+        Console.WriteLine("[ProfileService.CreateAsync] name normalized");
         string profileData;
         if (!string.IsNullOrWhiteSpace(normalizedReq.ProfileData))
         {
@@ -134,6 +188,7 @@ public class ProfileService
         }
         else
         {
+            Console.WriteLine("[ProfileService.CreateAsync] calling GenerateAsync");
             var cfg = await _fingerprintSvc.GenerateAsync(
                 platform: normalizedReq.Fingerprint?.Platform,
                 browserType: normalizedReq.BrowserType,
@@ -146,11 +201,15 @@ public class ProfileService
                 webglVendor: normalizedReq.Fingerprint?.WebGLVendor,
                 webglRenderer: normalizedReq.Fingerprint?.WebGLRenderer
             );
+            Console.WriteLine("[ProfileService.CreateAsync] GenerateAsync done, calling ApplyFingerprintOverridesAsync");
 
-            ApplyFingerprintOverrides(cfg, normalizedReq);
+            await ApplyFingerprintOverridesAsync(cfg, normalizedReq);
+            Console.WriteLine("[ProfileService.CreateAsync] ApplyFingerprintOverridesAsync done");
             profileData = SerializeProfileData(cfg);
+            Console.WriteLine("[ProfileService.CreateAsync] SerializeProfileData done, profileData length=" + profileData.Length);
         }
 
+        Console.WriteLine("[ProfileService.CreateAsync] creating Profile object");
         var profile = new Profile
         {
             Name = normalizedReq.Name,
@@ -165,13 +224,16 @@ public class ProfileService
             CreatedAt = DateTime.Now
         };
 
+        Console.WriteLine("[ProfileService.CreateAsync] calling _profileRepo.CreateAsync");
         var id = await _profileRepo.CreateAsync(profile);
+        Console.WriteLine("[ProfileService.CreateAsync] CreateAsync done, id=" + id);
         profile.Id = id;
 
         var hydrated = HydrateProfileMetadata(profile.ProfileData, profile, normalizedReq.StartUrl);
         profile.ProfileData = SerializeProfileData(hydrated);
         await _profileRepo.UpdateAsync(profile);
 
+        Console.WriteLine("[ProfileService.CreateAsync] returning GetProfileAsync(id=" + id + ")");
         return (await GetProfileAsync(id))!;
     }
 
@@ -198,6 +260,34 @@ public class ProfileService
         var result = await GetProfileAsync(existing.Id);
         Console.WriteLine($"[ProfileService.UpdateProfileAsync] Returning ProfileDetailItem with ProfileData length={result?.ProfileData?.Length ?? 0}");
         return result!;
+    }
+
+    public async Task UpdateProfileBrowserVersionAsync(int id, string browserVersion, bool autoUpdateUA)
+    {
+        var existing = await _profileRepo.GetByIdAsync(id);
+        if (existing == null) throw new InvalidOperationException($"Profile {id} not found.");
+
+        existing.BrowserVersion = browserVersion;
+
+        var profileData = existing.ProfileData ?? "{}";
+        var cfg = TryDeserialize(profileData, () => JsonSerializer.Deserialize<ProfileDataConfig>(profileData, NoScientificNotationOptions)) ?? new ProfileDataConfig();
+        cfg.System ??= SystemConfig.Default;
+        cfg.System.BrowserVersion = browserVersion;
+
+        if (autoUpdateUA)
+        {
+            var newFp = await _fingerprintSvc.GenerateAsync(
+                platform: cfg.System.Platform?.Value,
+                browserType: existing.BrowserType
+            );
+            if (newFp.System?.UserAgent != null)
+            {
+                cfg.System.UserAgent = newFp.System.UserAgent;
+            }
+        }
+
+        existing.ProfileData = SerializeProfileData(cfg);
+        await _profileRepo.UpdateAsync(existing);
     }
 
     public async Task DeleteProfileAsync(int id)
@@ -257,7 +347,7 @@ public class ProfileService
         };
     }
 
-    private static void ApplyFingerprintOverrides(ProfileDataConfig cfg, ProfileCreateRequest req)
+    private async Task ApplyFingerprintOverridesAsync(ProfileDataConfig cfg, ProfileCreateRequest req)
     {
         cfg.Profile ??= new ProfileMetadataConfig();
         cfg.System ??= SystemConfig.Default;
@@ -273,13 +363,23 @@ public class ProfileService
         if (fp == null) return;
 
         // ── System fields: wrapped in TypedConfig<*>
-        // Language: null/empty = Auto (Real mode, null Value). Specific lang → noise.
-        // NEVER default to "en-US" noise when user left it empty.
-        if (!string.IsNullOrWhiteSpace(fp.Language))
+        // Language: full list from FE → Language.Value = comma-joined string (AcceptLanguage is removed, same purpose).
+        // Empty/null → real (use browser's real language).
+        if (fp.Languages?.Count > 0)
+        {
+            var langsStr = string.Join(",", fp.Languages);
+            cfg.System.Language = new TypedConfig<string>("noise", langsStr);
+        }
+        else if (!string.IsNullOrWhiteSpace(fp.Language))
+        {
             cfg.System.Language = new TypedConfig<string>("noise", fp.Language);
-        else if (!string.IsNullOrWhiteSpace(fp.AcceptLanguage) && fp.AcceptLanguage != "en-US")
-            cfg.System.Language = new TypedConfig<string>("noise", fp.AcceptLanguage);
-        // else → cfg.System.Language stays at default(real,null) from GenerateAsync
+        }
+        else
+        {
+            cfg.System.Language = new TypedConfig<string>("real", null);
+        }
+
+        // AcceptLanguage is deprecated — same purpose as Language. No-op to preserve old profiles.
 
         // Timezone: null/empty means Auto (Real mode → no spoof); only noise when user picks a specific TZ
         if (!string.IsNullOrWhiteSpace(fp.Timezone))
@@ -290,47 +390,67 @@ public class ProfileService
         if (!string.IsNullOrWhiteSpace(fp.BrowserVersion))
             cfg.System.BrowserVersion = fp.BrowserVersion;
 
-        // AcceptLanguage: real when no languages selected or en-US only. noise only when user picks specific langs.
-        if (!string.IsNullOrWhiteSpace(fp.AcceptLanguage))
-            cfg.System.AcceptLanguage = new TypedConfig<string>("noise", fp.AcceptLanguage);
-        else if (fp.Languages?.Count > 0 && !(fp.Languages.Count == 1 && fp.Languages[0] == "en-US"))
-        {
-            var langsStr = string.Join(",", fp.Languages);
-            cfg.System.AcceptLanguage = new TypedConfig<string>("noise", langsStr);
-        }
-        // else → stays real,null from GenerateAsync
-
-        // UserAgent: "real" (null Value), "noise" (custom UA), "default" (null Value, DuckBrowser uses Chromium default)
-        // UseRealUserAgent=true → real mode (null Value). UseRealUserAgent=false + custom UA → noise mode.
+        // UserAgent: "real" (null Value), "noise" (custom UA), "random" (browser-generated from template).
+        // UseRealUserAgent=true → real mode.
+        // UseRealUserAgent=false + explicit UserAgent string → noise mode with explicit Value.
+        // UseRealUserAgent=false + uaMode="random" → keep generated noise value from GenerateAsync.
+        // UseRealUserAgent=false + uaMode="real" → override to real.
+        // UseRealUserAgent=false + no UA and no mode → override to real.
         if (fp.UseRealUserAgent)
+        {
             cfg.System.UserAgent = new TypedConfig<string>("real", null);
-        else if (!string.IsNullOrWhiteSpace(fp.UaMode))
-            cfg.System.UserAgent = new TypedConfig<string>(NormalizeMode(fp.UaMode), null);
-        if (!string.IsNullOrWhiteSpace(fp.UserAgent))
+        }
+        else if (!string.IsNullOrWhiteSpace(fp.UserAgent))
+        {
             cfg.System.UserAgent = new TypedConfig<string>("noise", fp.UserAgent);
+        }
+        else if (!string.IsNullOrWhiteSpace(fp.UaMode))
+        {
+            var uaModeLower = fp.UaMode.Trim().ToLowerInvariant();
+            if (uaModeLower == "random")
+            {
+                // do nothing — keep generated noise+UA from GenerateAsync
+            }
+            else
+            {
+                cfg.System.UserAgent = new TypedConfig<string>(NormalizeMode(fp.UaMode), null);
+            }
+        }
+        else
+        {
+            cfg.System.UserAgent = new TypedConfig<string>("real", null);
+        }
 
-        // Hardware: each field is TypedConfig<T>
-        // Real mode → Mode='real', Value=null (no spoof). Custom mode → Mode='noise', Value=user-selected.
-        // Random mode → Mode='noise', Value=null (browser generates random internally).
+        // Hardware: HardwareConcurrency/DeviceMemory.
+        // Real mode (cpuMode="real" or null/empty): Mode=real, Value=null.
+        // Spoof mode (cpuMode="random"/"noise"/"custom"): keep template values from GenerateAsync.
+        // Explicit HardwareConcurrency/DeviceMemory value from FE: always apply with hwMode.
         var hwMode = NormalizeFingerprintMode(fp.CpuMode);
-        if (fp.HardwareConcurrency.HasValue)
-            cfg.System.HardwareConcurrency = new TypedConfig<int>(hwMode ?? "noise", fp.HardwareConcurrency.Value);
-        else if (!string.IsNullOrWhiteSpace(fp.CpuMode))
-        {
-            cfg.System.HardwareConcurrency = new TypedConfig<int> { Mode = hwMode ?? "noise" };
-        }
-        // else → stays at default(real,null) from GenerateAsync
 
-        if (fp.DeviceMemory.HasValue)
-            cfg.System.DeviceMemory = new TypedConfig<int>(hwMode ?? "noise", fp.DeviceMemory.Value);
-        else if (!string.IsNullOrWhiteSpace(fp.CpuMode))
+        if (hwMode == "real")
         {
-            cfg.System.DeviceMemory = new TypedConfig<int> { Mode = hwMode ?? "noise" };
+            // Override to real,null — user wants no spoof
+            cfg.System.HardwareConcurrency = new TypedConfig<int?> { Mode = "real", Value = null };
+            cfg.System.DeviceMemory = new TypedConfig<int?> { Mode = "real", Value = null };
         }
-        // else → stays at default(real,null) from GenerateAsync
+        else if (fp.HardwareConcurrency is > 0 || fp.DeviceMemory is > 0)
+        {
+            // Explicit user values: apply with spoof mode
+            if (fp.HardwareConcurrency is > 0)
+                cfg.System.HardwareConcurrency = new TypedConfig<int?>(hwMode ?? "noise", fp.HardwareConcurrency.Value);
+            if (fp.DeviceMemory is > 0)
+                cfg.System.DeviceMemory = new TypedConfig<int?>(hwMode ?? "noise", fp.DeviceMemory.Value);
+        }
+        // else: spoof mode with no explicit values → keep template values from GenerateAsync
 
-        // Architecture & Bitness — no dedicated request fields. Always keep generated values from GenerateAsync.
-        // They are NOT tied to CpuMode like HardwareConcurrency/DeviceMemory.
+        // Architecture & Bitness — same logic: only override when cpuMode="real"
+        var archMode = NormalizeFingerprintMode(fp.CpuMode);
+        if (archMode == "real")
+        {
+            cfg.System.Architecture = new TypedConfig<string>("real", null);
+            cfg.System.Bitness = new TypedConfig<string>("real", null);
+        }
+        // else: spoof mode → keep template values from GenerateAsync
 
         // Screen: Real mode → Width/Height/PixelRatio = null (no spoof). Only set when user selects Custom.
         var screenMode = NormalizeFingerprintMode(fp.ScreenMode);
@@ -350,21 +470,48 @@ public class ProfileService
             cfg.System.Screen.ColorDepth = null;
         }
 
-        // Location: Real mode → no coordinates sent. Only set when user picks Custom/Noise mode.
-        cfg.Location.Mode = NormalizeFingerprintMode(fp.LocationMode);
-        if (cfg.Location.Mode == "real")
+        // Location:
+        // - real: block geolocation, null coordinates.
+        // - noise: get real IP geolocation, randomize slightly. Access=allow, real coordinates.
+        // - custom: treat as noise, use FE coordinates if provided, otherwise get real IP location.
+        var locationMode2 = NormalizeFingerprintMode(fp.LocationMode);
+
+        if (locationMode2 == "real")
         {
+            cfg.Location.Mode = "real";
             cfg.Location.Access = "block";
             cfg.Location.Latitude = null;
             cfg.Location.Longitude = null;
             cfg.Location.Accuracy = null;
         }
+        else if (locationMode2 == "custom")
+        {
+            // "custom" in FE means user wants explicit location. Treat as noise.
+            cfg.Location.Mode = "noise";
+            cfg.Location.Access = "allow";
+            if (fp.Latitude.HasValue && fp.Longitude.HasValue)
+            {
+                cfg.Location.Latitude = fp.Latitude.Value;
+                cfg.Location.Longitude = fp.Longitude.Value;
+                cfg.Location.Accuracy = fp.Accuracy ?? 100;
+            }
+            else
+            {
+                var (lat, lng) = await _fingerprintSvc.GetRealLocationAsync(fp.Timezone ?? "UTC");
+                cfg.Location.Latitude = lat;
+                cfg.Location.Longitude = lng;
+                cfg.Location.Accuracy = Random.Shared.Next(50, 500);
+            }
+        }
         else
         {
+            // "noise" or any other spoof mode: get real IP geolocation.
+            cfg.Location.Mode = "noise";
             cfg.Location.Access = "allow";
-            if (fp.Latitude.HasValue) cfg.Location.Latitude = fp.Latitude.Value;
-            if (fp.Longitude.HasValue) cfg.Location.Longitude = fp.Longitude.Value;
-            if (fp.Accuracy.HasValue) cfg.Location.Accuracy = fp.Accuracy.Value;
+            var (lat, lng) = await _fingerprintSvc.GetRealLocationAsync(fp.Timezone ?? "UTC");
+            cfg.Location.Latitude = lat;
+            cfg.Location.Longitude = lng;
+            cfg.Location.Accuracy = Random.Shared.Next(50, 500);
         }
 
         // ── Fingerprint groups
@@ -386,8 +533,20 @@ public class ProfileService
         {
             if (!string.IsNullOrWhiteSpace(fp.WebGLVendor)) cfg.Fingerprint.WebGL.Vendor = fp.WebGLVendor;
             if (!string.IsNullOrWhiteSpace(fp.WebGLRenderer)) cfg.Fingerprint.WebGL.Renderer = fp.WebGLRenderer;
-            if (cfg.Fingerprint.WebGL.ImageSpoofing != null && !string.IsNullOrWhiteSpace(fp.WebGLImageMode))
-                cfg.Fingerprint.WebGL.ImageSpoofing.Mode = NormalizeFingerprintMode(fp.WebGLImageMode);
+            if (cfg.Fingerprint.WebGL.ImageSpoofing != null)
+            {
+                // FE now sends webglImageMode = "default" | "noise" | "solid" (pattern values).
+                // "default" = gradient, no noise; "noise"/"solid" = randomize texture → generate seed.
+                var imgPattern = NormalizeFingerprintMode(fp.WebGLImageMode)
+                    ?? "default";
+
+                cfg.Fingerprint.WebGL.ImageSpoofing.Mode = "noise"; // always noise when spoofing
+                cfg.Fingerprint.WebGL.ImageSpoofing.Pattern = imgPattern;
+                cfg.Fingerprint.WebGL.ImageSpoofing.TextureSeed =
+                    (imgPattern == "noise" || imgPattern == "solid")
+                        ? Guid.NewGuid().ToString("N")[..12]
+                        : null;
+            }
         }
 
         // Canvas
@@ -434,11 +593,15 @@ public class ProfileService
         cfg.Fingerprint.Fonts ??= new FontsConfig();
         var fontsMode = NormalizeFingerprintMode(fp.FontsMode);
         cfg.Fingerprint.Fonts.Mode = fontsMode ?? "real";
-        // Only set FontList when Mode is NOT "real" and user provided fonts
-        if (fp.Fonts?.Count > 0 && fontsMode != "real")
-            cfg.Fingerprint.Fonts.FontList = fp.Fonts;
-        else
+        
+        if (fontsMode == "real")
+        {
             cfg.Fingerprint.Fonts.FontList = new List<string>();
+        }
+        else if (fp.Fonts != null && fp.Fonts.Count > 0)
+        {
+            cfg.Fingerprint.Fonts.FontList = fp.Fonts;
+        }
 
         // Audio
         cfg.Fingerprint.Audio.Mode = NormalizeFingerprintMode(fp.AudioMode);
@@ -470,10 +633,10 @@ public class ProfileService
         cfg.Fingerprint.SpeechVoicesMode = NormalizeFingerprintMode(fp.SpeechVoicesMode) ?? "noise";
         cfg.Fingerprint.WebRTcMode = NormalizeFingerprintMode(fp.WebRtcMode) ?? "disable";
 
-        // DoNotTrack: now has .Mode + .Value
+        // DoNotTrack: "enabled" → Mode=noise, Value="1"; "disabled" → Mode=noise, Value="0"; null/empty → Mode=real, Value=null
+        cfg.Fingerprint.DoNotTrack ??= new DoNotTrackConfig();
         if (!string.IsNullOrWhiteSpace(fp.DoNotTrack))
         {
-            cfg.Fingerprint.DoNotTrack ??= new DoNotTrackConfig();
             cfg.Fingerprint.DoNotTrack.Mode = fp.DoNotTrack switch
             {
                 "enabled" => "noise",
@@ -487,6 +650,11 @@ public class ProfileService
                 _ => null
             };
         }
+        else
+        {
+            cfg.Fingerprint.DoNotTrack.Mode = "real";
+            cfg.Fingerprint.DoNotTrack.Value = null;
+        }
 
         // Network proxy
         if (fp.Proxy is { Mode: not null } proxy)
@@ -497,7 +665,6 @@ public class ProfileService
                 cfg.Network.Proxy = new ProxyConfig
                 {
                     Mode = "custom",
-                    SavedProxyId = null,
                     Type = NormalizeProxyType(proxy.Type),
                     Host = proxy.Host ?? "",
                     Port = proxy.Port ?? 0,
@@ -510,7 +677,6 @@ public class ProfileService
                 cfg.Network.Proxy = new ProxyConfig
                 {
                     Mode = "saved",
-                    SavedProxyId = proxy.SavedProxyId,
                     Type = NormalizeProxyType(proxy.Type),
                     Host = "",
                     Port = 0,
@@ -540,6 +706,8 @@ public class ProfileService
         cfg.Profile.ProfileName = profile.Name;
         cfg.Profile.StartURL = startUrl?.Trim() ?? cfg.Profile.StartURL ?? "";
 
+        EnsureSeedsGenerated(cfg);
+
         return cfg;
     }
 
@@ -564,7 +732,7 @@ public class ProfileService
         cfg.Fingerprint.Connection ??= new ConnectionConfig();
         cfg.Fingerprint.Fonts ??= new FontsConfig();
         cfg.Fingerprint.Plugins ??= new PluginsConfig();
-        cfg.Fingerprint.StorageQuota ??= new TypedConfig<long>();
+        cfg.Fingerprint.StorageQuota ??= new TypedConfig<long?>();
         cfg.Fingerprint.TLSOSMatch ??= new TypedConfig<string>();
         cfg.Fingerprint.DoNotTrack ??= new DoNotTrackConfig();
         cfg.Network ??= new NetworkConfig();
@@ -581,7 +749,43 @@ public class ProfileService
         cfg.Security.PortBlockMode ??= "block_default";
         cfg.Security.PortBlockList ??= new List<string>();
 
+        EnsureSeedsGenerated(cfg);
+
         return cfg;
+    }
+
+    private static void EnsureSeedsGenerated(ProfileDataConfig cfg)
+    {
+        if (cfg.Fingerprint.Canvas.Mode != "real")
+        {
+            cfg.Fingerprint.Canvas.NoiseSeed ??= Guid.NewGuid().ToString("N")[..12];
+            cfg.Fingerprint.Canvas.NoiseLevel ??= 0.00008;
+        }
+        if (cfg.Fingerprint.Audio.Mode != "real")
+        {
+            cfg.Fingerprint.Audio.NoiseSeed ??= Guid.NewGuid().ToString("N")[..12];
+            cfg.Fingerprint.Audio.NoiseLevel ??= 0.000001;
+        }
+        if (cfg.Fingerprint.FontMetrics.Mode != "real")
+        {
+            cfg.Fingerprint.FontMetrics.NoiseSeed ??= Guid.NewGuid().ToString("N")[..12];
+            cfg.Fingerprint.FontMetrics.NoiseLevel ??= 0.0001;
+        }
+        if (cfg.Fingerprint.ClientRects.Mode != "real")
+        {
+            cfg.Fingerprint.ClientRects.NoiseSeed ??= Guid.NewGuid().ToString("N")[..12];
+            cfg.Fingerprint.ClientRects.NoiseLevel ??= 0.000025;
+        }
+        if (cfg.Fingerprint.WebGL.Mode != "real")
+        {
+            cfg.Fingerprint.WebGL.NoiseSeed ??= Guid.NewGuid().ToString("N")[..12];
+            cfg.Fingerprint.WebGL.NoiseLevel ??= 0.0001;
+        }
+        if (cfg.Fingerprint.WebGL.ImageSpoofing?.Mode != "real")
+        {
+            if (cfg.Fingerprint.WebGL.ImageSpoofing != null)
+                cfg.Fingerprint.WebGL.ImageSpoofing.TextureSeed ??= Guid.NewGuid().ToString("N")[..12];
+        }
     }
 
     private static string? NormalizeMode(string? mode) => ModeNormalizer.UiToStorage(mode);
@@ -681,11 +885,11 @@ public class ProfileService
         }
         else if (cfg.System.HardwareConcurrency?.Value == null && cfg.System.HardwareConcurrency?.Mode == null)
         {
-            cfg.System.HardwareConcurrency = new TypedConfig<int> { Mode = "real" };
+            cfg.System.HardwareConcurrency = new TypedConfig<int?> { Mode = "real", Value = null };
         }
         else if (cfg.System.HardwareConcurrency == null)
         {
-            cfg.System.HardwareConcurrency = new TypedConfig<int> { Mode = "real" };
+            cfg.System.HardwareConcurrency = new TypedConfig<int?> { Mode = "real", Value = null };
         }
 
         // DeviceMemory
@@ -695,11 +899,11 @@ public class ProfileService
         }
         else if (cfg.System.DeviceMemory?.Value == null && cfg.System.DeviceMemory?.Mode == null)
         {
-            cfg.System.DeviceMemory = new TypedConfig<int> { Mode = "real" };
+            cfg.System.DeviceMemory = new TypedConfig<int?> { Mode = "real", Value = null };
         }
         else if (cfg.System.DeviceMemory == null)
         {
-            cfg.System.DeviceMemory = new TypedConfig<int> { Mode = "real" };
+            cfg.System.DeviceMemory = new TypedConfig<int?> { Mode = "real", Value = null };
         }
 
         // Architecture
@@ -742,7 +946,7 @@ public class ProfileService
         }
         else if (cfg.Fingerprint.StorageQuota?.Mode == null)
         {
-            cfg.Fingerprint.StorageQuota = new TypedConfig<long> { Mode = "real" };
+            cfg.Fingerprint.StorageQuota = new TypedConfig<long?> { Mode = "real", Value = null };
         }
 
         // TLSOSMatch
@@ -1002,5 +1206,15 @@ public class ProfileService
             WebGLNoiseLevel = cfg.Fingerprint.WebGL.NoiseLevel,
             ImageSeed = cfg.Fingerprint.WebGL.ImageSpoofing?.TextureSeed ?? ""
         };
+    }
+
+    /// <summary>
+    /// Helper to set TypedConfig&lt;T&gt;.Value = null without C# nullable type errors.
+    /// For value types T (int, long), the backing field is Nullable<T> internally;
+    /// we use reflection to set it to null.
+    /// </summary>
+    private static void SetTypedConfigValueNull<T>(TypedConfig<T> cfg) where T : struct
+    {
+        typeof(TypedConfig<T>).GetProperty("Value")!.SetValue(cfg, null);
     }
 }

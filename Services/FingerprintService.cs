@@ -13,6 +13,8 @@ public class FingerprintService
     private static readonly HttpClient _geoClient;
     private static readonly HttpClient _assetClient;
 
+    private const string EmbeddedFingerprintResourceName = "DuckGo.Assets.default_fingerprint.json";
+
     static FingerprintService()
     {
         var assetHandler = new HttpClientHandler
@@ -53,6 +55,25 @@ public class FingerprintService
             FSLog("CACHE_HIT", $"_templates already loaded: {_templates.OS.Count} OSes");
             return _templates;
         }
+        // Load from embedded resource first (local, instant)
+        try
+        {
+            var assembly = typeof(FingerprintService).Assembly;
+            using var stream = assembly.GetManifestResourceStream(EmbeddedFingerprintResourceName);
+            if (stream != null)
+            {
+                using var reader = new StreamReader(stream);
+                var json = await reader.ReadToEndAsync();
+                _templates = FingerprintTemplate.FromJson(json);
+                FSLog("EMBEDDED_OK", $"Loaded from embedded resource: {_templates.OS.Count} OSes");
+                return _templates;
+            }
+        }
+        catch (Exception ex)
+        {
+            FSLog("EMBEDDED_FAIL", $"Embedded load failed: {ex.Message}, trying GitHub...");
+        }
+        // Fallback to GitHub (may timeout in restricted networks)
         try
         {
             FSLog("FETCH_START", $"Fetching {AppConfig.FingerprintTemplateUrl}");
@@ -85,7 +106,8 @@ public class FingerprintService
         string? timezone = null,
         List<string>? languages = null,
         string? webglVendor = null,
-        string? webglRenderer = null)
+        string? webglRenderer = null,
+        string? browserVersion = null)
     {
         var tmpl = await LoadTemplatesAsync();
 
@@ -100,8 +122,14 @@ public class FingerprintService
             : osTmpl.Models[Random.Shared.Next(osTmpl.Models.Count)];
 
         // Browser version (default Chromium 138)
-        var version = "138";
+        var version = browserVersion ?? "138";
         var ua = osModel.UserAgentTemplate.Replace("{VERSION}", version);
+
+        if (!string.IsNullOrEmpty(browserType) && browserType.Equals("Firefox", StringComparison.OrdinalIgnoreCase))
+        {
+            // Simple Firefox UA spoofing for testing
+            ua = $"Mozilla/5.0 ({osModel.Name}; rv:{version}.0) Gecko/20100101 Firefox/{version}.0";
+        }
 
         // Screen
         var screenPreset = screenWidth.HasValue && screenHeight.HasValue
@@ -151,12 +179,12 @@ public class FingerprintService
         var rectsSeed = Guid.NewGuid().ToString("N")[..12];
         var webglSeed = Guid.NewGuid().ToString("N")[..12];
 
-            // Randomize noise levels within reasonable ranges to make each profile unique
-            var webglNoiseLevel = RandomizeNoiseLevel(0.0001, 0.00005, 0.0002);    // ±50% around 0.0001
-            var canvasNoiseLevel = RandomizeNoiseLevel(0.00008, 0.00004, 0.00015);   // ±50% around 0.00008
-            var audioNoiseLevel = RandomizeNoiseLevel(0.000001, 0.0000005, 0.000002); // ±50% around 0.000001
-            var fontNoiseLevel = RandomizeNoiseLevel(0.0001, 0.00005, 0.0002);       // ±50% around 0.0001
-            var rectsNoiseLevel = RandomizeNoiseLevel(0.000025, 0.00001, 0.00005);   // ±50% around 0.000025
+        // Use exact noise levels from the plan (do not randomize the bounds)
+        var webglNoiseLevel = 0.0001;
+        var canvasNoiseLevel = 0.00008;
+        var audioNoiseLevel = 0.000001;
+        var fontNoiseLevel = 0.0001;
+        var rectsNoiseLevel = 0.000025;
 
             return new ProfileDataConfig
             {
@@ -164,12 +192,11 @@ public class FingerprintService
                 {
                     BrowserVersion = version,
                     Platform = new TypedConfig<string>("noise", osModel.PlatformString),
-                    Language = new TypedConfig<string>("noise", langs.FirstOrDefault() ?? "en-US"),
+                    Language = new TypedConfig<string>("noise", acceptLang),
                     UserAgent = new TypedConfig<string>("noise", ua),
-                    AcceptLanguage = new TypedConfig<string>("noise", acceptLang),
                     Timezone = new TypedConfig<string>("noise", tz),
-                    HardwareConcurrency = new TypedConfig<int>("noise", hwTier.Concurrency),
-                    DeviceMemory = new TypedConfig<int>("noise", hwTier.Memory),
+                    HardwareConcurrency = new TypedConfig<int?>("noise", hwTier.Concurrency),
+                    DeviceMemory = new TypedConfig<int?>("noise", hwTier.Memory),
                     Architecture = new TypedConfig<string>("noise", osModel.Architecture),
                     Bitness = new TypedConfig<string>("noise", osModel.Bitness),
                     Screen = new ScreenConfig
@@ -203,18 +230,18 @@ public class FingerprintService
                         NoiseSeed = canvasSeed,
                         NoiseLevel = canvasNoiseLevel
                     },
-                    Audio = new AudioConfig
-                    {
-                        Mode = "real",
-                        NoiseSeed = null,
-                        NoiseLevel = null
-                    },
-                    FontMetrics = new FontMetricsConfig
-                    {
-                        Mode = "real",
-                        NoiseSeed = null,
-                        NoiseLevel = null
-                    },
+                      Audio = new AudioConfig
+                      {
+                          Mode = "noise",
+                          NoiseSeed = Guid.NewGuid().ToString("N")[..12],
+                          NoiseLevel = audioNoiseLevel
+                      },
+                      FontMetrics = new FontMetricsConfig
+                      {
+                          Mode = "noise",
+                          NoiseSeed = Guid.NewGuid().ToString("N")[..12],
+                          NoiseLevel = fontNoiseLevel
+                      },
                     ClientRects = new ClientRectsConfig
                     {
                         Mode = "noise",
@@ -245,7 +272,7 @@ public class FingerprintService
                         AudioOutputs = null
                     },
                     Connection = PickRandomConnectionPreset(osTmpl),
-                    StorageQuota = new TypedConfig<long>("noise", osTmpl.StorageQuota),
+                    StorageQuota = new TypedConfig<long?>("noise", osTmpl.StorageQuota),
                     TLSOSMatch = new TypedConfig<string>("noise", osModel.TLSOSMatch),
                     DoNotTrack = new DoNotTrackConfig { Mode = "real", Value = null }
                 },
@@ -253,16 +280,6 @@ public class FingerprintService
                 Security = new SecurityConfig(),
                 Location = await BuildLocationConfigAsync(tz)
             };
-        }
-
-        private static double RandomizeNoiseLevel(double baseValue, double min, double max)
-        {
-            // Randomize within ±50% of base value, clamped to min/max
-            var variation = (Random.Shared.NextDouble() - 0.5) * baseValue; // ±50% variation
-            var result = Math.Clamp(baseValue + variation, min, max);
-            // #region agent log
-            // #endregion
-            return result;
         }
 
         private static ConnectionConfig PickRandomConnectionPreset(OsTemplate osTmpl)
@@ -308,26 +325,18 @@ public class FingerprintService
 
     private async Task<LocationConfig> BuildLocationConfigAsync(string timezone)
     {
-        var (lat, lng) = await GetRandomLocationAsync(timezone, useOffset: false);
+        var (lat, lng) = await GetRealLocationAsync(timezone);
         return new LocationConfig
         {
-            Mode     = "Noise",
+            Mode     = "noise",
             Latitude = lat,
             Longitude = lng,
             Accuracy = Random.Shared.Next(50, 500)
         };
     }
 
-    public async Task<(double Lat, double Lng)> GetRandomLocationAsync(string timezone, bool useOffset = false)
+    public async Task<(double Lat, double Lng)> GetRealLocationAsync(string timezone)
     {
-        if (useOffset && _cachedGeo.HasValue && DateTime.UtcNow < _geoCacheExpiry)
-        {
-            var b = _cachedGeo.Value;
-            var dLat = (Random.Shared.NextDouble() - 0.5) * 1.0;
-            var dLng = (Random.Shared.NextDouble() - 0.5) * 1.0;
-            return (Math.Round(b.Lat + dLat, 6), Math.Round(b.Lng + dLng, 6));
-        }
-
         try
         {
             var json = await _geoClient.GetStringAsync("http://ip-api.com/json/");
@@ -338,17 +347,26 @@ public class FingerprintService
                 var lng = doc.RootElement.GetProperty("lon").GetDouble();
                 _cachedGeo = (lat, lng);
                 _geoCacheExpiry = DateTime.UtcNow.AddMinutes(5);
-                if (useOffset)
-                {
-                    return (Math.Round(lat + (Random.Shared.NextDouble() - 0.5) * 1.0, 6),
-                            Math.Round(lng + (Random.Shared.NextDouble() - 0.5) * 1.0, 6));
-                }
                 return (Math.Round(lat, 6), Math.Round(lng, 6));
             }
         }
         catch { }
 
         return GetRandomLocationFromTimezoneFallback(timezone);
+    }
+
+    public async Task<(double Lat, double Lng)> GetRandomLocationAsync(string timezone, bool useOffset = false)
+    {
+        // useOffset=true → randomize within ~1 degree around real IP
+        if (useOffset && _cachedGeo.HasValue && DateTime.UtcNow < _geoCacheExpiry)
+        {
+            var b = _cachedGeo.Value;
+            var dLat = (Random.Shared.NextDouble() - 0.5) * 1.0;
+            var dLng = (Random.Shared.NextDouble() - 0.5) * 1.0;
+            return (Math.Round(b.Lat + dLat, 6), Math.Round(b.Lng + dLng, 6));
+        }
+
+        return await GetRealLocationAsync(timezone);
     }
 
     private (double Lat, double Lng) GetRandomLocationFromTimezoneFallback(string timezone)
@@ -387,20 +405,21 @@ public class FingerprintService
     public async Task<FingerprintSummaryResponse> GenerateStructuredAsync(
         string? platform = null,
         string? browserType = null,
-        string? osModelName = null)
+        string? osModelName = null,
+        string? browserVersion = null)
     {
-        var cfg = await GenerateAsync(platform, browserType, osModelName);
-        var langs = cfg.System?.AcceptLanguage?.Value?.Split(',').Select(l => l.Trim()).ToList() ?? new List<string> { "en-US" };
+        var cfg = await GenerateAsync(platform, browserType, osModelName, browserVersion: browserVersion);
+        var langs = cfg.System?.Language?.Value?.Split(',').Select(l => l.Trim()).ToList() ?? new List<string> { "en-US" };
         return new FingerprintSummaryResponse(
             Platform: cfg.System?.Platform?.Value ?? "Win32",
-            BrowserVersion: "138",
+            BrowserVersion: browserVersion ?? "138",
             UserAgent: cfg.System?.UserAgent?.Value ?? "",
             Screen: $"{cfg.System?.Screen.Width}x{cfg.System?.Screen.Height}",
             ScreenWidth: cfg.System?.Screen.Width.ToString() ?? "1920",
             ScreenHeight: cfg.System?.Screen.Height.ToString() ?? "1080",
             ScreenPixelRatio: cfg.System?.Screen.PixelRatio ?? 1.0,
             Timezone: cfg.System?.Timezone?.Value ?? "",
-            AcceptLanguage: cfg.System?.AcceptLanguage?.Value ?? "en-US,en",
+            AcceptLanguage: cfg.System?.Language?.Value ?? "en-US,en",
             Languages: langs,
             HardwareConcurrency: cfg.System?.HardwareConcurrency?.Value ?? 8,
             DeviceMemory: cfg.System?.DeviceMemory?.Value ?? 8,
@@ -412,9 +431,7 @@ public class FingerprintService
             WebGLNoiseLevel: cfg.Fingerprint?.WebGL.NoiseLevel,
             CanvasMode: (cfg.Fingerprint?.Canvas.Mode ?? "noise").ToLowerInvariant(),
             CanvasNoiseLevel: cfg.Fingerprint?.Canvas.NoiseLevel,
-            WebGLImageMode: "noise",
-            ImageSpoofingTextureSeed: cfg.Fingerprint?.WebGL.ImageSpoofing?.TextureSeed,
-            ImageSpoofingPattern: cfg.Fingerprint?.WebGL.ImageSpoofing?.Pattern ?? "default",
+            WebGLImageMode: cfg.Fingerprint?.WebGL.ImageSpoofing?.Pattern ?? "default",
             PluginsMode: (cfg.Fingerprint?.Plugins?.Mode ?? "default").ToLowerInvariant(),
             FontsMode: (cfg.Fingerprint?.Fonts?.Mode ?? "real").ToLowerInvariant(),
             Fonts: cfg.Fingerprint?.Fonts?.FontList ?? new List<string>(),
@@ -435,7 +452,8 @@ public class FingerprintService
             ConnectionType: cfg.Fingerprint?.Connection?.EffectiveType ?? "4g",
             ConnectionDownlink: cfg.Fingerprint?.Connection?.Downlink,
             ConnectionRtt: cfg.Fingerprint?.Connection?.Rtt,
-            StorageQuota: cfg.Fingerprint?.StorageQuota?.Value
+            StorageQuota: cfg.Fingerprint?.StorageQuota?.Value,
+            RawConfig: cfg
         );
     }
 

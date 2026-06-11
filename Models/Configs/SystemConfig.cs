@@ -22,9 +22,9 @@ public class SystemConfig
     public TypedConfig<string> Timezone { get; set; } = new();
 
     /// <summary>navigator.hardwareConcurrency — logical CPU cores. Must be even number.</summary>
-    public TypedConfig<int> HardwareConcurrency { get; set; } = new();
+    public TypedConfig<int?> HardwareConcurrency { get; set; } = new();
     /// <summary>navigator.deviceMemory — RAM in GB. Powers of 2.</summary>
-    public TypedConfig<int> DeviceMemory { get; set; } = new();
+    public TypedConfig<int?> DeviceMemory { get; set; } = new();
     /// <summary>Client Hints API chip architecture.</summary>
     public TypedConfig<string> Architecture { get; set; } = new();
     /// <summary>OS bitness.</summary>

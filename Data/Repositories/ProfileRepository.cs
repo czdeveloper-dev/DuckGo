@@ -9,7 +9,7 @@ public class ProfileRepository : IProfileRepository
 
     public ProfileRepository(DatabaseService db) => _db = db;
 
-    public async Task<List<Profile>> GetAllAsync(string? search = null, int? id = null, int? groupId = null, List<int>? tagIds = null, string? browserType = null)
+    public async Task<List<Profile>> GetAllAsync(string? search = null, string? idStr = null, int? groupId = null, List<int>? tagIds = null, string? browserType = null)
     {
         await using var conn = _db.GetConnection();
         await conn.OpenAsync();
@@ -24,10 +24,35 @@ public class ProfileRepository : IProfileRepository
             WHERE 1=1";
         var args = new List<(string name, object value)>();
 
-        if (id.HasValue)
+        if (!string.IsNullOrWhiteSpace(idStr))
         {
-            sql += " AND p.Id = @id";
-            args.Add(("id", id.Value));
+            var ids = new List<int>();
+            var parts = idStr.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var part in parts)
+            {
+                if (part.Contains('-'))
+                {
+                    var range = part.Split('-', 2);
+                    if (range.Length == 2 && int.TryParse(range[0].Trim(), out var start) && int.TryParse(range[1].Trim(), out var end))
+                    {
+                        if (start <= end) ids.AddRange(Enumerable.Range(start, end - start + 1));
+                    }
+                }
+                else if (int.TryParse(part.Trim(), out var singleId))
+                {
+                    ids.Add(singleId);
+                }
+            }
+            if (ids.Count > 0)
+            {
+                var idParams = string.Join(",", ids.Select((_, i) => $"@id{i}"));
+                sql += $" AND p.Id IN ({idParams})";
+                for (var i = 0; i < ids.Count; i++) args.Add(($"id{i}", ids[i]));
+            }
+            else
+            {
+                sql += " AND 1=0"; // Invalid ID string, return empty
+            }
         }
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -47,10 +72,10 @@ public class ProfileRepository : IProfileRepository
 
         if (tagIds != null && tagIds.Count > 0)
         {
-            var tagClauses = string.Join(" OR ", tagIds.Select((_, i) => $"(p.Tags LIKE @tag{i} ESCAPE '\\')"));
+            var tagClauses = string.Join(" OR ", tagIds.Select((_, i) => $"EXISTS (SELECT 1 FROM json_each(p.Tags) WHERE value = @tag{i})"));
             sql += $" AND ({tagClauses})";
             for (var i = 0; i < tagIds.Count; i++)
-                args.Add(($"tag{i}", $"%{tagIds[i]}%"));
+                args.Add(($"tag{i}", tagIds[i]));
         }
 
         sql += " ORDER BY p.CreatedAt DESC";

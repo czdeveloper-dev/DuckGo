@@ -111,11 +111,12 @@
         }
 
         setValue(value) {
+            this._actualValue = value;
             this.element.dataset.value = value;
         }
 
         getValue() {
-            return this.element.dataset.value;
+            return this._actualValue !== undefined ? this._actualValue : this.element.dataset.value;
         }
 
         destroy() {

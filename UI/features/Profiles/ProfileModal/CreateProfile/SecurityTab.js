@@ -192,7 +192,6 @@
 
         getValues() {
             const fontsMode = this.fontsToggle ? this.fontsToggle.getValue() : 'default';
-            // [DEBUG] security values
             console.log('[DEBUG:SecurityTab.getValues]', JSON.stringify({
                 webrtcMode: this.rtcToggle ? this.rtcToggle.getValue() : 'disable',
                 sslMode: this.sslToggle ? this.sslToggle.getValue() : 'noise',
@@ -211,43 +210,41 @@
                 sslMode: this.sslToggle ? this.sslToggle.getValue() : 'noise',
                 portScan: this.portToggle ? this.portToggle.getValue() : 'protect',
                 portBlockMode: this.portBlockModeSelect ? this.portBlockModeSelect.getValue() : 'block_default',
-                portBlockList: this.portBlockListInput ? this.portBlockListInput.getValues() : [],
+                portBlockList: this.portBlockListInput ? (this.portBlockListInput.getValues?.() || []) : [],
                 mediaDevices: this.mediaToggle ? this.mediaToggle.getValue() : 'noise',
                 audioMode: this.audioToggle ? this.audioToggle.getValue() : 'noise',
                 speechVoices: this.speechToggle ? this.speechToggle.getValue() : 'noise',
                 clientRects: this.rectsToggle ? this.rectsToggle.getValue() : 'noise',
                 fontMetricsMode: this.fontMetricsToggle ? this.fontMetricsToggle.getValue() : 'noise',
-                fontsMode: fontsMode,
-                customFonts: fontsMode === 'custom' && this._fontTagInput ? this._fontTagInput.getValues() : [],
+                fontsMode,
+                customFonts: this._fontTagInput ? (this._fontTagInput.getValues?.() || []) : [],
                 doNotTrack: this.doNotTrackToggle ? this.doNotTrackToggle.getValue() : 'default',
             };
         },
 
-        /** Set values from loaded profile data */
         setValues(values) {
-            // WebRTC mode
+            // WebRTC
             if (values.webrtcMode !== undefined && this.rtcToggle) {
                 this.rtcToggle.setValue(values.webrtcMode);
             }
 
-            // SSL mode
+            // SSL
             if (values.sslMode !== undefined && this.sslToggle) {
                 this.sslToggle.setValue(values.sslMode);
             }
 
-            // Port scan protection
+            // Port Scan Protection
             if (values.portScan !== undefined && this.portToggle) {
                 this.portToggle.setValue(values.portScan);
             }
 
-            // Port block mode
-            if (values.portBlockMode && this.portBlockModeSelect) {
-                this.portBlockModeSelect.setValue(values.portBlockMode);
-                // Show/hide port list using data attribute
-                const portListWrap = this.portBlockModeSelect?.element?.closest('.duck-card-body')?.querySelector('[data-port-list]');
-                if (portListWrap) {
-                    portListWrap.style.display = ['allow_list', 'custom'].includes(values.portBlockMode) ? 'flex' : 'none';
+            // Port Block Mode
+            if (values.portBlockMode !== undefined) {
+                if (this.portBlockModeSelect) {
+                    this.portBlockModeSelect.setValue(values.portBlockMode);
                 }
+                const portListEl = this.portBlockListInput?.element?.closest('.duck-setting-row')?.parentElement?.querySelector('[data-port-list]');
+                if (portListEl) portListEl.style.display = ['allow_list', 'custom'].includes(values.portBlockMode) ? 'flex' : 'none';
             }
 
             // Port block list
@@ -305,6 +302,6 @@
                 }
                 this.doNotTrackToggle.setValue(dntValue);
             }
-        }
+        },
     };
 })();

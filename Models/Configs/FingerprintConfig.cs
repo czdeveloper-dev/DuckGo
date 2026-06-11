@@ -197,7 +197,7 @@ public class FingerprintConfig
     /// <summary>Network Information API — effectiveType, downlink, rtt.</summary>
     public ConnectionConfig Connection { get; set; } = new();
     /// <summary>navigator.storage.estimate() — fake disk quota.</summary>
-    public TypedConfig<long> StorageQuota { get; set; } = new();
+    public TypedConfig<long?> StorageQuota { get; set; } = new();
     /// <summary>TLS OS fingerprint — controls JA3 cipher suite ordering.</summary>
     public TypedConfig<string> TLSOSMatch { get; set; } = new();
     /// <summary>DoNotTrack HTTP header.</summary>
