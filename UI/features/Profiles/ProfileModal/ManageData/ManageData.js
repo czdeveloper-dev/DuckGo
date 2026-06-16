@@ -1,4 +1,4 @@
-// ManageData.js
+﻿// ManageData.js
 
 (function() {
     'use strict';
@@ -10,26 +10,13 @@
         _profileId: null,
         _tabsData: [], // e.g. [{ id: 'tab1', name: 'Table 1', format: ['Username', 'Password'], mode: 'list', rows: [{Username: 'admin', Password: '123'}] }]
         
-        show(profileId) {
+        async show(profileId) {
             this._profileId = profileId;
             
             if (this._modal) {
                 this._modal.destroy();
                 this._modal = null;
             }
-
-            // Mock initial data
-            this._tabsData = [
-                {
-                    id: 'tab1',
-                    name: 'Table 1',
-                    format: ['Username', 'Password', '2FA'],
-                    mode: 'list',
-                    rows: [
-                        { Username: 'admin', Password: '123', '2FA': 'FA' }
-                    ]
-                }
-            ];
 
             const modalBody = document.createElement('div');
             modalBody.style.cssText = 'display: flex; flex-direction: column; gap: 16px; height: 100%;'; 
@@ -80,6 +67,22 @@
 
             this._modal.container.style.height = '80vh';
             this._modal.open();
+
+            // Load data
+            try {
+                this._modal.setLoading(true, 'Loading data...');
+                const res = await DuckBridge.call('profile.getResource', { id: profileId });
+                let dataStr = res?.resource || res?.data?.resource;
+                if (!dataStr) dataStr = '[]';
+                this._tabsData = JSON.parse(dataStr);
+                if (!Array.isArray(this._tabsData)) this._tabsData = [];
+                this._refreshTabs();
+            } catch (err) {
+                this._tabsData = [];
+                this._refreshTabs();
+            } finally {
+                this._modal.setLoading(false);
+            }
         },
 
         _showTableConfigModal(tabData, onSave) {
@@ -109,12 +112,18 @@
                 { text: isEdit ? 'Save Changes' : 'Create Table', class: 'duck-btn-primary', onClick: (e, m) => {
                     const name = nameInput.getValue().trim();
                     const format = formatInput.getValues();
+                    
+                    let hasError = false;
                     if (!name) {
-                        return;
+                        nameInput.setError?.('Table name is required');
+                        hasError = true;
                     }
                     if (format.length === 0) {
-                        return;
+                        formatInput.setError?.('At least one column format is required');
+                        hasError = true;
                     }
+                    if (hasError) return;
+                    
                     onSave({ name, format });
                     m.close();
                 }}
@@ -298,9 +307,10 @@
                 }
 
                 const textarea = window.DuckControls.Textarea.create({
+                icon: 'data_object',
                     placeholder: 'Enter raw data, one record per line. Format: ' + format.join('|'),
                     value: rawText,
-                    height: '100%',
+                    fullHeight: true,
                     onChange: (val) => {
                         tabData._rawBuffer = val; 
                     }
@@ -378,7 +388,7 @@
             return card;
         },
 
-        _saveData() {
+        async _saveData() {
             // First, sync any raw text back to rows
             this._tabsData.forEach(tab => {
                 if (tab.mode === 'raw' && tab._rawBuffer !== undefined) {
@@ -395,7 +405,27 @@
                 }
             });
 
-            if (this._modal) this._modal.close();
+            if (this._modal) {
+                this._modal.setLoading(true, 'Saving...');
+            }
+
+            try {
+                const resourceStr = JSON.stringify(this._tabsData);
+                await DuckBridge.call('profile.updateResource', { id: this._profileId, resource: resourceStr });
+                if (this._modal) {
+                    this._modal.setLoading(false);
+                    this._modal.close();
+                }
+            } catch (err) {
+                if (this._modal) {
+                    this._modal.setLoading(false);
+                }
+                const msg = err?.message || String(err);
+                console.error('[ManageData] Save failed:', msg);
+                window.DuckControls.Toast?.error?.('Save Failed', msg);
+            }
         }
     };
 })();
+
+

@@ -32,7 +32,7 @@ window.ProfileModals.RemoveProxy = {
             size: 'md',
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
-                { text: 'Remove Proxy', class: 'duck-btn-danger', onClick: (e, modal) => {
+                { text: 'Remove Proxy', icon: 'delete_forever', class: 'duck-btn-danger', onClick: (e, modal) => {
                     if (onConfirm) onConfirm(Array.from(selectedIds));
                     modal.close();
                 }}
@@ -40,3 +40,4 @@ window.ProfileModals.RemoveProxy = {
         }).open();
     }
 };
+

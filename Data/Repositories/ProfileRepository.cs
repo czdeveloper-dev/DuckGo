@@ -1,4 +1,5 @@
 using DuckGo.Models.Entities;
+using DuckGo.Infrastructure.Security;
 using Microsoft.Data.Sqlite;
 
 namespace DuckGo.Data.Repositories;
@@ -78,7 +79,7 @@ public class ProfileRepository : IProfileRepository
                 args.Add(($"tag{i}", tagIds[i]));
         }
 
-        sql += " ORDER BY p.CreatedAt DESC";
+        sql += " ORDER BY p.CreatedAt ASC";
 
         var profiles = new List<Profile>();
         await using var cmd = conn.CreateCommand();
@@ -115,10 +116,11 @@ public class ProfileRepository : IProfileRepository
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            INSERT INTO Profiles (Name, GroupId, Tags, ProxyId, BrowserType, BrowserVersion, ProfileData, Notes, Cookies, CreatedAt)
-            VALUES (@name, @groupId, @tagIds, @proxyId, @browserType, @browserVersion, @profileData, @notes, @cookies, @createdAt);
+            INSERT INTO Profiles (Name, Resource, GroupId, Tags, ProxyId, BrowserType, BrowserVersion, ProfileData, Notes, Cookies, CreatedAt)
+            VALUES (@name, @resource, @groupId, @tagIds, @proxyId, @browserType, @browserVersion, @profileData, @notes, @cookies, @createdAt);
             SELECT last_insert_rowid();";
         cmd.Parameters.AddWithValue("@name", profile.Name);
+        cmd.Parameters.AddWithValue("@resource", CryptoService.Encrypt(profile.Resource));
         cmd.Parameters.AddWithValue("@groupId", profile.GroupId.HasValue ? profile.GroupId.Value : DBNull.Value);
         cmd.Parameters.AddWithValue("@tagIds", profile.TagIdsJson);
         cmd.Parameters.AddWithValue("@proxyId", profile.ProxyId.HasValue ? profile.ProxyId.Value : DBNull.Value);
@@ -139,7 +141,7 @@ public class ProfileRepository : IProfileRepository
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             UPDATE Profiles SET
-                Name = @name, GroupId = @groupId, Tags = @tagIds,
+                Name = @name, Resource = @resource, GroupId = @groupId, Tags = @tagIds,
                 ProxyId = @proxyId, BrowserType = @browserType,
                 BrowserVersion = @browserVersion,
                 ProfileData = @profileData, Notes = @notes,
@@ -147,6 +149,7 @@ public class ProfileRepository : IProfileRepository
             WHERE Id = @id";
         cmd.Parameters.AddWithValue("@id", profile.Id);
         cmd.Parameters.AddWithValue("@name", profile.Name);
+        cmd.Parameters.AddWithValue("@resource", CryptoService.Encrypt(profile.Resource));
         cmd.Parameters.AddWithValue("@groupId", profile.GroupId.HasValue ? profile.GroupId.Value : DBNull.Value);
         cmd.Parameters.AddWithValue("@tagIds", profile.TagIdsJson);
         cmd.Parameters.AddWithValue("@proxyId", profile.ProxyId.HasValue ? profile.ProxyId.Value : DBNull.Value);
@@ -216,6 +219,7 @@ public class ProfileRepository : IProfileRepository
         {
             Id = reader.GetInt32(reader.GetOrdinal("Id")),
             Name = reader.GetString(reader.GetOrdinal("Name")),
+            Resource = reader.IsDBNull(reader.GetOrdinal("Resource")) ? "" : CryptoService.Decrypt(reader.GetString(reader.GetOrdinal("Resource"))),
             GroupId = reader.IsDBNull(reader.GetOrdinal("GroupId")) ? null : reader.GetInt32(reader.GetOrdinal("GroupId")),
             TagIdsJson = tagIdsJson,
             TagIds = tagIds,

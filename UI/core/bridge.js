@@ -53,8 +53,11 @@
 
         /**
          * Send a request to C# and return a Promise.
+         * @param {string} action - The action name
+         * @param {object|null} payload - The payload
+         * @param {object} options - Optional settings { signal: AbortSignal }
          */
-        async call(action, payload = null) {
+        async call(action, payload = null, options = null) {
             if (!this._webViewReady) {
                 return this._mockCall(action, payload);
             }
@@ -64,6 +67,19 @@
 
             return new Promise((resolve, reject) => {
                 this._callbacks[id] = { resolve, reject };
+
+                // Handle abort signal
+                if (options?.signal) {
+                    const abortHandler = () => {
+                        delete this._callbacks[id];
+                        reject(new DOMException('Aborted', 'AbortError'));
+                    };
+                    if (options.signal.aborted) {
+                        abortHandler();
+                        return;
+                    }
+                    options.signal.addEventListener('abort', abortHandler, { once: true });
+                }
 
                 try {
                     window.chrome.webview.postMessage(envelope);

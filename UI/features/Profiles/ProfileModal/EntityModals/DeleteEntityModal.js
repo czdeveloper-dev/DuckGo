@@ -19,7 +19,8 @@
                 this._modal = null;
             }
 
-            const isGroup = type === 'group';
+            const isGroup = type === 'group' || type === 'proxygroup';
+            const isProxy = type === 'proxygroup' || type === 'proxytag';
             const entityName = isGroup ? 'Group' : 'Tag';
 
             const modalBody = document.createElement('div');
@@ -91,37 +92,22 @@
                 modalBody.appendChild(radioWrap);
             }
 
-            const footerWrap = document.createElement('div');
-            footerWrap.style.cssText = 'display:flex; justify-content:flex-end; gap:12px; width:100%;';
-
-            const cancelBtn = document.createElement('button');
-            cancelBtn.className = 'duck-btn duck-btn-surface';
-            cancelBtn.textContent = 'Cancel';
-            cancelBtn.addEventListener('click', () => this._modal && this._modal.close());
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'duck-btn duck-btn-danger';
-            deleteBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px; margin-right:4px;">delete</span> Delete';
-            deleteBtn.addEventListener('click', () => {
-                const vals = multiSelect.getValues();
-                if (vals.length === 0) {
-                    return;
-                }
-                if (onDelete) onDelete(vals, isGroup ? deleteProfilesMode : null);
-                if (this._modal) this._modal.close();
-            });
-
-            footerWrap.appendChild(cancelBtn);
-            footerWrap.appendChild(deleteBtn);
-
             this._modal = window.DuckControls.Modal.create({
-            defaultEnter: true,
+                defaultEnter: true,
                 title: `Delete ${entityName}s`,
                 icon: 'delete',
                 content: modalBody,
-                footer: footerWrap,
                 size: 'md',
                 closeOnOverlay: true,
+                buttons: [
+                    { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, m) => m.close() },
+                    { text: 'Delete', icon: 'delete', class: 'duck-btn-danger', onClick: (e, m) => {
+                        const vals = multiSelect.getValues();
+                        if (vals.length === 0) return;
+                        if (onDelete) onDelete(vals, isGroup ? deleteProfilesMode : null);
+                        m.close();
+                    }}
+                ],
                 onClose: () => { this._modal = null; }
             });
 

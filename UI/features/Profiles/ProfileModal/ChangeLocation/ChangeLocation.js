@@ -207,11 +207,52 @@ window.ProfileModals.ChangeLocation = {
             size: 'md',
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
-                { text: 'Save Location', class: 'duck-btn-primary', onClick: (e, modal) => {
-                    const lat = latCtrl.getValue();
-                    const lng = lngCtrl.getValue();
-                    const searchName = searchCtrl.getValue();
-                    modal.close();
+                { text: 'Save Location', icon: 'my_location', class: 'duck-btn-primary', onClick: async (e, modal) => {
+                    const lat = parseFloat(latCtrl.getValue());
+                    const lng = parseFloat(lngCtrl.getValue());
+                    
+                    if (isNaN(lat) || isNaN(lng)) {
+                        if (isNaN(lat)) latCtrl.setError?.('Valid latitude is required (e.g. 21.0285)');
+                        if (isNaN(lng)) lngCtrl.setError?.('Valid longitude is required (e.g. 105.8542)');
+                        return;
+                    }
+
+                    modal.setLoading(true, 'Saving...');
+
+                    try {
+                        const idsArray = Array.isArray(selectedIds) ? selectedIds : [...selectedIds];
+                        for (let id of idsArray) {
+                            let p = await DuckBridge.call('profile.get', { id });
+                            if (!p) continue;
+
+                            let profileData = {};
+                            try { profileData = JSON.parse(p.profileData || p.ProfileData || '{}'); } catch(e){}
+                            profileData.Location = profileData.Location || {};
+                            profileData.Location.Mode = 'custom';
+                            profileData.Location.Latitude = lat;
+                            profileData.Location.Longitude = lng;
+
+                            await DuckBridge.call('profile.update', {
+                                id: p.id ?? p.Id,
+                                name: p.name ?? p.Name,
+                                groupId: p.groupId ?? p.GroupId,
+                                tagIds: p.tagIds ?? p.TagIds,
+                                proxyId: p.proxyId ?? p.ProxyId,
+                                browserType: p.browserType ?? p.BrowserType,
+                                browserVersion: p.browserVersion ?? p.BrowserVersion,
+                                profileData: JSON.stringify(profileData),
+                                notes: p.notes ?? p.Notes,
+                                cookies: p.cookies ?? p.Cookies
+                            });
+                        }
+                        
+                        if (window.ProfilesView?.loadProfiles) window.ProfilesView.loadProfiles();
+                        
+                        modal.close();
+                    } catch (err) {
+                        modal.setLoading(false);
+                        window.DuckControls.Toast?.error?.('Update Failed', err?.message || 'Failed to update location');
+                    }
                 }}
             ],
             onClose: () => {

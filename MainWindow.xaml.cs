@@ -71,13 +71,15 @@ public partial class MainWindow : Window
             var groupRepo = new GroupRepository(_db);
             var tagRepo = new TagRepository(_db);
             var proxyRepo = new ProxyRepository(_db);
+            var profileGroupRepo = new ProfileGroupRepository(_db);
+            var profileTagRepo = new ProfileTagRepository(_db);
             _profileRepo = new ProfileRepository(_db);
             var proxyTypeRepo = new ProxyTypeRepository(_db);
             var installedBrowserRepo = new InstalledBrowserRepository(_db);
 
             _groupService = new GroupService(groupRepo);
             _tagService = new TagService(tagRepo);
-            _proxyService = new ProxyService(proxyRepo);
+            _proxyService = new ProxyService(proxyRepo, profileGroupRepo, profileTagRepo, proxyTypeRepo);
             var fingerprintSvc = new FingerprintService();
             _profileService = new ProfileService(_profileRepo, groupRepo, tagRepo, proxyRepo, fingerprintSvc);
 
@@ -142,6 +144,7 @@ public partial class MainWindow : Window
                 new TagDispatcher(_tagService!),
                 new ProxyDispatcher(_proxyService!),
                 new ProxyTypeDispatcher(proxyTypeRepo),
+                new ClipboardDispatcher(),
             });
 
             WebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(255, 244, 246, 248);

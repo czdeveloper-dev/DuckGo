@@ -18,8 +18,12 @@ public class SystemConfig
     public TypedConfig<string> UserAgent { get; set; } = new();
     /// <summary>Accept-Language HTTP header — e.g. "en-US,en;q=0.9".</summary>
     public TypedConfig<string> AcceptLanguage { get; set; } = new();
+    /// <summary>navigator.languages — array of preferred languages.</summary>
+    public List<string> Languages { get; set; } = new();
     /// <summary>IANA timezone — e.g. "America/New_York". Hooks Intl.DateTimeFormat in V8.</summary>
     public TypedConfig<string> Timezone { get; set; } = new();
+    /// <summary>Timezone offset in minutes from UTC. Backup if IANA fails.</summary>
+    public int? TimezoneOffset { get; set; }
 
     /// <summary>navigator.hardwareConcurrency — logical CPU cores. Must be even number.</summary>
     public TypedConfig<int?> HardwareConcurrency { get; set; } = new();
@@ -29,11 +33,25 @@ public class SystemConfig
     public TypedConfig<string> Architecture { get; set; } = new();
     /// <summary>OS bitness.</summary>
     public TypedConfig<string> Bitness { get; set; } = new();
+    /// <summary>CPU brand string for Client Hints.</summary>
+    public TypedConfig<string> CpuBrand { get; set; } = new();
 
+    /// <summary>Touch configuration.</summary>
+    public TouchConfig Touch { get; set; } = new();
     /// <summary>Screen configuration.</summary>
     public ScreenConfig Screen { get; set; } = new();
 
     public static SystemConfig Default => new();
+}
+
+public class TouchConfig
+{
+    /// <summary>Touch mode: "real", "default", "noise". null = "default".</summary>
+    public string? Mode { get; set; }
+    /// <summary>navigator.maxTouchPoints — number of touch points. Desktop = 0.</summary>
+    public int? MaxTouchPoints { get; set; }
+    /// <summary>navigator.maxTouchPoints > 0 check.</summary>
+    public bool? TouchSupport { get; set; }
 }
 
 public class ScreenConfig
@@ -47,4 +65,12 @@ public class ScreenConfig
     public int? Height { get; set; }
     public int? ColorDepth { get; set; }
     public double? PixelRatio { get; set; }
+    /// <summary>Available screen width (minus taskbar).</summary>
+    public int? AvailWidth { get; set; }
+    /// <summary>Available screen height (minus taskbar).</summary>
+    public int? AvailHeight { get; set; }
+    /// <summary>Available screen left position.</summary>
+    public int? AvailLeft { get; set; }
+    /// <summary>Available screen top position.</summary>
+    public int? AvailTop { get; set; }
 }

@@ -68,7 +68,7 @@ public class ProfileService
                     try {
                         var doc = System.Text.Json.JsonDocument.Parse(p.ProfileData);
                         if (doc.RootElement.TryGetProperty("Network", out var net) &&
-                            net.TryGetProperty("Proxy", out var proxy) &&
+                            net.ValueKind == System.Text.Json.JsonValueKind.Object && net.TryGetProperty("Proxy", out var proxy) &&
                             proxy.TryGetProperty("Mode", out var mode) && mode.GetString() == "custom")
                         {
                             var type = proxy.TryGetProperty("Type", out var t) ? t.GetString() : "http";
@@ -98,6 +98,7 @@ public class ProfileService
             {
                 Id = p.Id,
                 Name = p.Name,
+                Resource = p.Resource,
                 GroupId = p.GroupId,
                 GroupName = p.GroupName,
                 TagIds = p.TagIds,
@@ -153,6 +154,7 @@ public class ProfileService
             {
                 Id = p.Id,
                 Name = p.Name,
+                Resource = p.Resource,
                 GroupId = p.GroupId,
                 GroupName = p.GroupName,
                 TagIds = p.TagIds,
@@ -217,7 +219,7 @@ public class ProfileService
             TagIdsJson = JsonSerializer.Serialize(normalizedReq.TagIds ?? new List<int>()),
             ProxyId = normalizedReq.ProxyId,
             BrowserType = normalizedReq.BrowserType,
-            BrowserVersion = normalizedReq.Fingerprint?.BrowserVersion ?? "",
+            BrowserVersion = normalizedReq.BrowserVersion ?? normalizedReq.Fingerprint?.BrowserVersion ?? "",
             ProfileData = profileData,
             Notes = normalizedReq.Notes ?? "",
             Cookies = normalizedReq.Cookies ?? normalizedReq.CookiesData ?? "[]",
@@ -260,6 +262,14 @@ public class ProfileService
         var result = await GetProfileAsync(existing.Id);
         Console.WriteLine($"[ProfileService.UpdateProfileAsync] Returning ProfileDetailItem with ProfileData length={result?.ProfileData?.Length ?? 0}");
         return result!;
+    }
+
+    public async Task UpdateProfileResourceAsync(int id, string resource)
+    {
+        var existing = await _profileRepo.GetByIdAsync(id);
+        if (existing == null) throw new InvalidOperationException($"Profile {id} not found.");
+        existing.Resource = resource;
+        await _profileRepo.UpdateAsync(existing);
     }
 
     public async Task UpdateProfileBrowserVersionAsync(int id, string browserVersion, bool autoUpdateUA)
@@ -609,6 +619,12 @@ public class ProfileService
         {
             cfg.Fingerprint.Audio.NoiseSeed = null;
             cfg.Fingerprint.Audio.NoiseLevel = null;
+            cfg.Fingerprint.Audio.SampleRate = null;
+        }
+        else
+        {
+            // SampleRate from frontend, default 48000
+            cfg.Fingerprint.Audio.SampleRate = fp.AudioSampleRate ?? 48000;
         }
 
         // FontMetrics

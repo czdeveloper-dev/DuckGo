@@ -58,6 +58,7 @@
             const _emit = (val) => {
                 currentValue = val;
                 updateDisplay();
+                clearError();
                 _handlers.forEach(h => { try { h({ target: { value: val } }); } catch (e) { console.error(e); } });
             };
 
@@ -119,7 +120,27 @@
                 });
                 wrap.appendChild(actions);
             }
-            
+
+            // Error label support
+            let _errorLabel = null;
+            const setError = (message) => {
+                selectContainer.style.borderColor = 'var(--danger, #ef4444)';
+                selectContainer.style.background = 'rgba(239, 68, 68, 0.05)';
+                if (!_errorLabel) {
+                    _errorLabel = document.createElement('div');
+                    _errorLabel.className = 'field-error-label';
+                    _errorLabel.style.cssText = 'font-size: 12px; color: var(--danger, #ef4444); margin-top: 4px; display: flex; align-items: center; gap: 6px; font-weight: 500;';
+                    wrap.appendChild(_errorLabel);
+                }
+                _errorLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:var(--danger,#ef4444)">error</span> ' + message;
+                _errorLabel.style.display = 'flex';
+            };
+            const clearError = () => {
+                selectContainer.style.borderColor = '';
+                selectContainer.style.background = '';
+                if (_errorLabel) _errorLabel.style.display = 'none';
+            };
+
             return {
                 element: wrap,
                 getValue: () => currentValue,
@@ -141,6 +162,8 @@
                     get: () => _handlers[0] || null,
                     set: (fn) => { if (fn) { _handlers = [fn]; } else { _handlers = []; } }
                 },
+                setError,
+                clearError,
                 destroy: () => {
                     if (dropdown) dropdown.destroy();
                 }

@@ -1,4 +1,4 @@
-window.ProfileModals = window.ProfileModals || {};
+﻿window.ProfileModals = window.ProfileModals || {};
 
 window.ProfileModals.DeleteProfiles = {
     show(selectedIds, onConfirm) {
@@ -32,7 +32,7 @@ window.ProfileModals.DeleteProfiles = {
             size: 'md',
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
-                { text: 'Delete', class: 'duck-btn-danger', onClick: (e, modal) => {
+                { text: 'Delete', icon: 'delete_forever', class: 'duck-btn-danger', onClick: (e, modal) => {
                     if (onConfirm) onConfirm(Array.from(selectedIds));
                     modal.close();
                 }}
@@ -40,3 +40,4 @@ window.ProfileModals.DeleteProfiles = {
         }).open();
     }
 };
+

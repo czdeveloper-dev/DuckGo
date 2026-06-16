@@ -26,4 +26,7 @@ public static class AppConfig
     public const string ChromeExeName = "chrome.exe";
 
     public static TimeSpan HeartbeatInterval => TimeSpan.FromSeconds(10);
+
+    // 32-byte (256-bit) AES key for encrypting the Resource column.
+    public static readonly string ResourceEncryptionKey = "duckgo_secure_aes_key_32_bytes!!";
 }

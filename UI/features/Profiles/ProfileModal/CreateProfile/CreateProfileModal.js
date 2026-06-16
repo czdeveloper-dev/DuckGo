@@ -2,8 +2,8 @@
  * CreateProfileModal.js
  *
  * Fingerprint template loaded from backend via profile.getFingerprintTemplate.
- * Cascade: OS select → all OS-dependent controls + Overview sync.
- * Every control change triggers _scheduleSync() → Overview updates live.
+ * Cascade: OS select â†’ all OS-dependent controls + Overview sync.
+ * Every control change triggers _scheduleSync() â†’ Overview updates live.
  */
 (function() {
     'use strict';
@@ -37,7 +37,7 @@
             window.addEventListener('profile-created', this._onProfileCreatedBound);
         },
 
-        // ── Module init ──────────────────────────────────────────────────
+        // â”€â”€ Module init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _init() {
             this._initProfileCreatedListener();
         },
@@ -59,18 +59,7 @@
             return values;
         },
 
-        _normalizeProxyType(type) {
-            const value = String(type || 'http').trim().toLowerCase();
-            return ['http', 'https', 'socks4', 'socks5'].includes(value) ? value : 'http';
-        },
 
-        _proxyLabel(type) {
-            const value = this._normalizeProxyType(type);
-            if (value === 'https') return 'HTTPS';
-            if (value === 'socks4') return 'Socks4';
-            if (value === 'socks5') return 'Socks5';
-            return 'HTTP/HTTPS';
-        },
 
         async _loadEntityData() {
             try {
@@ -193,7 +182,7 @@
             const browserLabel = v.browser
                 ? (this._browserCatalog?.Browsers?.find(b => String(b.BrowserType || '').toLowerCase() === String(v.browser).toLowerCase())?.BrowserType || v.browser)
                 : 'Chromium';
-            set('Browser', `${browserLabel} ${v.browserVersion || '138'}`);
+            set('Browser', `${browserLabel} ${v.browserVersion || ''}`.trim());
             // User-Agent: show based on mode
             // Use DB-loaded values when available (bypasses timing issue: controls may not be set yet)
             // Controls are populated asynchronously via RAF, but _syncSummary runs in a setTimeout
@@ -219,7 +208,7 @@
             set('Timezone', v.timezone || 'Auto (Match IP)');
             set('Language', this._fmtLanguages(v.languages));
             set('Proxy', this._fmtProxy(v));
-            set('Coordinates', v.locationMode === 'custom' && v.customCoordinates ? `${v.customCoordinates.lat || '-'}, ${v.customCoordinates.lng || '-'} (±${v.customCoordinates.accuracy || 100}m)` : this._fmtCoordinates(v));
+            set('Coordinates', v.locationMode === 'custom' && v.customCoordinates ? `${v.customCoordinates.lat || '-'}, ${v.customCoordinates.lng || '-'} (\u00B1${v.customCoordinates.accuracy || 100}m)` : this._fmtCoordinates(v));
             set('Hardware', this._fmtHardware(v));
             set('WebGL', this._fmtWebGL(v));
             const fontsMode = v.fontsMode || 'default';
@@ -239,11 +228,11 @@
             if (screenMode === 'real') return 'Real (system)';
             if (screenMode === 'custom' && v.screenWidth) {
                 const pr = v.screenPixelRatio != null ? ` @${v.screenPixelRatio}x` : '';
-                return `${v.screenWidth}×${v.screenHeight}${pr}`;
+                return `${v.screenWidth}\u00D7${v.screenHeight}${pr}`;
             }
             if (screenMode === 'random') return 'Random';
             if (screenMode === 'default') return 'Default';
-            return v.screenPreset ? v.screenPreset.replace(/x/g, '×') : '1920×1080';
+            return v.screenPreset ? v.screenPreset.replace(/x/g, '\u00D7') : '1920\u00D71080';
         },
 
         _fmtPorts(v) {
@@ -252,9 +241,9 @@
             const labels = { block_default: 'Block Default', block_all: 'Block All', allow_list: 'Allow List', custom: 'Custom' };
             const modeLabel = labels[mode] || mode;
             if (['allow_list', 'custom'].includes(mode) && v.portBlockList?.length > 0) {
-                return `${base} · ${modeLabel} · ${v.portBlockList.join(', ')}`;
+                return `${base} \u00B7 ${modeLabel} \u00B7 ${v.portBlockList.join(', ')}`;
             }
-            return `${base} · ${modeLabel}`;
+            return `${base} \u00B7 ${modeLabel}`;
         },
 
         /**
@@ -331,7 +320,7 @@
 
             // General: Browser version
             if (genTab) {
-                const version = fp?.browserVersion || fp?.BrowserVersion || '138';
+                const version = fp?.browserVersion || fp?.BrowserVersion || null;
                 genTab.browserVersion?.setValue?.(version);
                 const ua = fp?.userAgent || fp?.UserAgent || '';
                 if (ua && genTab.uaModeToggle?.getValue?.() === 'custom') {
@@ -402,7 +391,7 @@
                     // Real mode: no spoof, no UserAgent in DB; Custom mode: save UserAgent
                     uaMode,
                     userAgent: (uaMode === 'real') ? null : (v.userAgent || ''),
-                    browserVersion: v.browserVersion || '138',
+                    browserVersion: v.browserVersion || null,
                     languages: v.languages || ['en-US', 'en'],
                     timezone: v.timezone === 'auto' ? null : (v.timezone || null),
                     screenMode: v.screenMode || 'real',
@@ -417,7 +406,8 @@
                     webglVendor: v.webglMode === 'custom' ? (v.webglVendor || null) : null,
                     webglRenderer: v.webglMode === 'custom' ? (v.webglRenderer || null) : null,
                     canvasMode: v.canvasMode || null,
-                    webglImageMode: v.webglImageMode || null,
+                    // UI 'default' means "no spoof" → send null to backend
+                    webglImageMode: v.webglImageMode === 'default' ? null : (v.webglImageMode || null),
                     pluginsMode: v.pluginsMode || null,
                     plugins: v.pluginsMode === 'custom' ? (v.plugins || []) : null,
                     fontsMode: v.fontsMode || null,
@@ -472,7 +462,7 @@
                     // Real mode: no spoof, no UserAgent in DB; Custom mode: save UserAgent
                     uaMode,
                     userAgent: (uaMode === 'real') ? null : (v.userAgent || ''),
-                    browserVersion: v.browserVersion || '138',
+                    browserVersion: v.browserVersion || null,
                     languages: v.languages || ['en-US', 'en'],
                     timezone: v.timezone === 'auto' ? null : (v.timezone || null),
                     screenMode: v.screenMode || 'real',
@@ -487,7 +477,8 @@
                     webglVendor: v.webglMode === 'custom' ? (v.webglVendor || null) : null,
                     webglRenderer: v.webglMode === 'custom' ? (v.webglRenderer || null) : null,
                     canvasMode: v.canvasMode || null,
-                    webglImageMode: v.webglImageMode || null,
+                    // UI 'default' means "no spoof" → send null to backend
+                    webglImageMode: v.webglImageMode === 'default' ? null : (v.webglImageMode || null),
                     pluginsMode: v.pluginsMode || null,
                     plugins: v.pluginsMode === 'custom' ? (v.plugins || []) : null,
                     fontsMode: v.fontsMode || null,
@@ -527,6 +518,13 @@
             }
         },
 
+        _showFieldError(field, message) {
+            const ctrl = this._getFieldControl(field);
+            if (ctrl && typeof ctrl.setError === 'function') {
+                ctrl.setError(message);
+            }
+        },
+
         _getFieldControl(field) {
             const genTab = window.ProfileModals?.CreateProfile?.GeneralTab;
             const netTab = window.ProfileModals?.CreateProfile?.NetworkTab;
@@ -534,6 +532,7 @@
             const secTab = window.ProfileModals?.CreateProfile?.SecurityTab;
 
             const map = {
+                name: () => this._nameCtrl,
                 userAgent: () => genTab?.uaInput,
                 'proxy.host': () => netTab?.pHost,
                 'proxy.port': () => netTab?.pPort,
@@ -701,8 +700,10 @@
                 const label = v.proxyDisplayName || `Saved Proxy #${v.savedProxyId || '-'}`;
                 return `${label} (${this._proxyLabel(v.proxyProtocol)})`;
             }
-            if (v.proxyMode === 'custom' && v.customProxy) {
-                return `${this._proxyLabel(v.customProxy.type)}://${v.customProxy.host || '-'}:${v.customProxy.port || '-'}`;
+            if (v.proxyMode === 'custom') {
+                const netTab = window.ProfileModals?.CreateProfile?.NetworkTab;
+                const pLabel = netTab ? netTab._proxyTypeLabel(v.proxyProtocol) : String(v.proxyProtocol || 'HTTP').toUpperCase();
+                return `${pLabel}://${v.customProxy?.host || ''}:${v.customProxy?.port || ''}`;
             }
             return 'None';
         },
@@ -718,7 +719,7 @@
             ].join('\n');
         },
 
-        /** Debounced sync — call whenever any control changes. */
+        /** Debounced sync â€” call whenever any control changes. */
         _scheduleSync() {
             // Skip sync during profile loading to prevent overriding loaded values
             if (this._isLoadingProfile) return;
@@ -742,7 +743,7 @@
             const secTab = window.ProfileModals.CreateProfile.SecurityTab;
             const osBlock = tmpl.OS?.[osValue];
 
-            // ── GeneralTab: OS model select ────────────────────────────────
+            // â”€â”€ GeneralTab: OS model select â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             if (genTab) {
                 // OS list (Windows, macOS, Linux...) from template keys
                 const osKeys = tmpl.OS ? Object.keys(tmpl.OS) : [];
@@ -769,11 +770,11 @@
                 }
             }
 
-            // ── HardwareTab ────────────────────────────────────────────────
+            // â”€â”€ HardwareTab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             if (hwTab) {
                 hwTab._currentOsBlock = osBlock;
 
-                // HardwareTiers → cpuChipSelect (value = "Concurrency-Memory")
+                // HardwareTiers â†’ cpuChipSelect (value = "Concurrency-Memory")
                 const tiers = osBlock?.HardwareTiers || [];
                 const cpuTierOpts = tiers.map(t => ({
                     label: `${t.Concurrency} Cores / ${t.Memory} GB`,
@@ -787,10 +788,10 @@
                     }
                 }
 
-                // ScreenPresets → resChipSelect
+                // ScreenPresets â†’ resChipSelect
                 const presets = osBlock?.ScreenPresets || [];
                 const resOpts = presets.map(p => ({
-                    label: `${p.Width} × ${p.Height} @${p.PixelRatio}x`,
+                    label: `${p.Width} Ã— ${p.Height} @${p.PixelRatio}x`,
                     value: `${p.Width}x${p.Height}x${p.PixelRatio}`
                 }));
                 if (hwTab.resChipSelect) {
@@ -800,7 +801,7 @@
                     }
                 }
 
-                // WebGL vendors → cascade to vendor + renderer
+                // WebGL vendors â†’ cascade to vendor + renderer
                 const vendors = osBlock?.WebGL?.VendorGPUs
                     ? Object.keys(osBlock.WebGL.VendorGPUs)
                     : ['Google Inc. (NVIDIA)'];
@@ -827,12 +828,12 @@
                     }
                 }
 
-                // Cascade completes — sync overview immediately (vendor/renderer already set above)
+                // Cascade completes â€” sync overview immediately (vendor/renderer already set above)
                 if (this._syncTimer) clearTimeout(this._syncTimer);
                 this._syncSummary();
             }
 
-            // ── NetworkTab: language options + timezone ────────────────────
+            // â”€â”€ NetworkTab: language options + timezone â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             if (netTab && !this._isLoadingProfile) {
                 if (netTab._langTagInput) {
                     const langOpts = (tmpl.Languages || []).map(l => ({
@@ -855,7 +856,7 @@
                 }
             }
 
-            // ── SecurityTab: font options ─────────────────────────────────
+            // â”€â”€ SecurityTab: font options â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             if (secTab && !this._isLoadingProfile) {
                 if (secTab._fontTagInput) {
                     const fontOpts = (osBlock?.Fonts || []).map(f => ({ label: f, value: f }));
@@ -868,7 +869,7 @@
             this._scheduleSync();
         },
 
-        /** Called when WebGL vendor changes — update renderer select. */
+        /** Called when WebGL vendor changes â€” update renderer select. */
         _cascadeVendorChange(vendor) {
             // Skip cascade during profile loading
             if (this._isLoadingProfile) return;
@@ -891,7 +892,7 @@
             this._scheduleSync();
         },
 
-        /** Deferred WebGL vendor cascade — waits for ContextMenu to close after setValue. */
+        /** Deferred WebGL vendor cascade â€” waits for ContextMenu to close after setValue. */
         _scheduleVendorCascade(vendor) {
             if (this._vendorCascadeTimer) clearTimeout(this._vendorCascadeTimer);
             this._vendorCascadeTimer = setTimeout(() => {
@@ -908,9 +909,9 @@
             this._originalProfileData = null;
             this._loadedDbValues = null; // clear cached DB values from previous load
 
-            // ── Loading / Error state ───────────────────────────────────────
+            // â”€â”€ Loading / Error state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             const loadingWrap = document.createElement('div');
-            loadingWrap.style.cssText = 'display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; height: 100%; gap: 16px;';
+            loadingWrap.style.cssText = 'display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; height: 100%; gap: 12px;';
             const spinner = document.createElement('div');
             spinner.style.cssText = 'width: 40px; height: 40px; border: 3px solid var(--border-default); border-top-color: var(--accent); border-radius: 50%; animation: duckSpin 0.8s linear infinite;';
             const spinKeyframes = document.createElement('style');
@@ -948,7 +949,7 @@
             const submitButtonText = this._mode === 'edit' ? 'Save Changes' : 'Create Profile';
             const submitButtonIcon = this._mode === 'edit' ? 'save' : 'add';
 
-            // Modal — submit button disabled until data loads
+            // Modal â€” submit button disabled until data loads
             this._modal = window.DuckControls.Modal.create({
                 defaultEnter: true,
                 title: modalTitle,
@@ -961,21 +962,32 @@
                     {
                         text: submitButtonText, class: 'duck-btn-primary', isDefault: true, icon: submitButtonIcon, disabled: true,
                         onClick: async () => {
-                            // Prevent double-click
                             if (this._isSubmitting) return;
                             this._isSubmitting = true;
 
-                            const submitBtn = this._modal?.container?.querySelector('.duck-btn-primary');
-                            if (submitBtn) submitBtn.disabled = true;
+                            const _enableSubmit = (disabled) => {
+                                const btn = this._modal?._buttons?.find(b => b.element?.classList?.contains('duck-btn-primary'));
+                                if (btn) btn.setDisabled(disabled);
+                            };
+                            _enableSubmit(true);
 
                             const mode = this._modeCtrl?.getValue?.() || 'single';
                             const qty = mode === 'bulk' ? (this._qtyCtrl?.getValue?.() || 1) : 1;
-                            const nameVal = this._nameInput?.querySelector('input')?.value?.trim() || null;
+                            const nameVal = this._nameInput?.querySelector('input')?.value?.trim?.() || null;
 
                             // Validate before submitting
-                            const validationError = this._validateBeforeSubmit();
+                            let validationError = null;
+                            try {
+                                validationError = this._validateBeforeSubmit();
+                            } catch (err) {
+                                _enableSubmit(false);
+                                this._isSubmitting = false;
+                                window.DuckControls.Toast?.error?.("Validation crashed: " + (err.message || String(err)));
+                                return;
+                            }
+
                             if (validationError) {
-                                if (submitBtn) submitBtn.disabled = false;
+                                _enableSubmit(false);
                                 this._isSubmitting = false;
                                 this._clearFieldError();
                                 if (Array.isArray(validationError)) {
@@ -1018,7 +1030,7 @@
                                 this._modal.setLoading(false);
                                 const msg = err?.message || String(err);
                                 console.error('[CreateProfile] operation failed:', msg);
-                                if (submitBtn) submitBtn.disabled = false;
+                                _enableSubmit(false);
                                 this._isSubmitting = false;
                                 this._clearFieldError();
                                 window.DuckControls.Toast?.error?.(msg);
@@ -1067,7 +1079,7 @@
 
             this._modal.open();
 
-            // ── Load data ───────────────────────────────────────────────────
+            // â”€â”€ Load data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             await this._loadEntityData();
 
             // In edit mode, load profile data and generate defaults for merging
@@ -1152,7 +1164,7 @@
             this._fpTemplate = template;
             this._browserCatalog = browserCatalog;
 
-            // ── Build form and replace skeleton ─────────────────────────────
+            // â”€â”€ Build form and replace skeleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             const container = this._buildFormContainer(template, browserCatalog);
 
             const modalBody = this._modal?.container?.querySelector('.duck-modal-body');
@@ -1192,16 +1204,44 @@
                     console.log('[CreateProfile] setTimeout fired, calling _scheduleSync');
                     // Sync overview once after loading is complete
                     this._scheduleSync();
+                    // Enable submit button after edit profile loads
+                    if (this._modal) {
+                        const primaryBtn = this._modal._buttons?.find(b => b.element?.classList?.contains('duck-btn-primary'));
+                        if (primaryBtn) primaryBtn.setDisabled(false);
+                        else this._modal.container.querySelector('.duck-btn-primary').disabled = false;
+                    }
                 }, 250);
             } else {
-                // Cascade OS defaults — controls now exist in DOM after form build
                 this._cascadeOsChange('Windows');
+                // Automatically generate a fingerprint so the modal is fully populated
+                this._isLoadingProfile = true;
+                DuckBridge.call('profile.generateFingerprint', {
+                    platform: 'Windows',
+                    browser: 'chromium',
+                    version: null,
+                    model: null
+                }).then(fp => {
+                    this._applyFingerprintResponse(fp);
+                }).catch(e => {
+                    console.warn('[CreateProfile] Auto-generate fingerprint failed', e);
+                }).finally(() => {
+                    this._isLoadingProfile = false;
+                    // Enable submit button after fingerprint is ready (or failed)
+                    if (this._modal) {
+                        const primaryBtn = this._modal._buttons?.find(b => b.element?.classList?.contains('duck-btn-primary'));
+                        if (primaryBtn) primaryBtn.setDisabled(false);
+                        else this._modal.container.querySelector('.duck-btn-primary').disabled = false;
+                    }
+                });
             }
 
             // Enable submit button now that form is ready
-            const submitBtn = this._modal?.container?.querySelector('.duck-btn-primary');
-            if (submitBtn) {
-                submitBtn.disabled = false;
+            const primaryBtnFinal = this._modal?._buttons?.find(b => b.element?.classList?.contains('duck-btn-primary'));
+            if (primaryBtnFinal) {
+                primaryBtnFinal.setDisabled(false);
+            } else {
+                const submitBtn = this._modal?.container?.querySelector('.duck-btn-primary');
+                if (submitBtn) submitBtn.disabled = false;
             }
         },
 
@@ -1270,7 +1310,7 @@
             const tcMode = (tc) => {
                 if (tc == null) return null;
                 if (typeof tc === 'object' && 'Mode' in tc) return tc.Mode; // new TypedConfig schema
-                return null; // old schema has no mode → treat as null (real)
+                return null; // old schema has no mode â†’ treat as null (real)
             };
 
             // 1. Apply to Name/Group/Tags in sticky header
@@ -1413,7 +1453,7 @@
                     os: mappedOs,
                     osModel: osModel,
                     browser: getValue(profile.BrowserType || profile.browserType, profileDefaults?.browserType || 'Chromium'),
-                    browserVersion: getValue(profile.BrowserVersion || profile.browserVersion || systemConfig.BrowserVersion, profileDefaults?.browserVersion || '138'),
+                    browserVersion: getValue(profile.BrowserVersion || profile.browserVersion || systemConfig.BrowserVersion, profileDefaults?.browserVersion || null),
                     userAgent: uaRaw,
                     startUrl: getValue(profileData.Profile?.StartURL, ''),
                     uaMode: uaMode,
@@ -1549,9 +1589,9 @@
                     else if (String(dntValue).toLowerCase() === 'disabled') doNotTrackValue = 'disabled';
                 }
 
-                // Fonts: new schema → .FontList array; old schema → raw string[]
+                // Fonts: new schema â†’ .FontList array; old schema â†’ raw string[]
                 const fontsList = fingerprintConfig.Fonts?.FontList || fingerprintConfig.Fonts || [];
-                // FontsMode: new schema → .Mode; old schema → .FontsMode string
+                // FontsMode: new schema â†’ .Mode; old schema â†’ .FontsMode string
                 const fontsMode = tcMode(fingerprintConfig.Fonts) ?? fingerprintConfig.FontsMode ?? fingerprintConfig.Fonts?.Mode;
 
                 const secValues = {
@@ -1620,7 +1660,8 @@
                 cpuMode: v.cpuMode,
                 canvasMode: v.canvasMode,
                 webglMode: v.webglMode,
-                webglImageMode: v.webglImageMode,
+                // UI 'default' means "no spoof" → send null
+                webglImageMode: v.webglImageMode === 'default' ? null : (v.webglImageMode || null),
                 pluginsMode: v.pluginsMode,
                 webrtcMode: v.webrtcMode,
                 mediaDevices: v.mediaDevices,
@@ -1667,7 +1708,7 @@
                     UserAgent: v.uaMode === 'real'
                         ? { Mode: 'real', Value: null }
                         : { Mode: 'noise', Value: v.userAgent || origFp.UserAgent || origSys.UserAgent || null },
-                    BrowserVersion: v.browserVersion || '138',
+                    BrowserVersion: v.browserVersion || null,
                     // AcceptLanguage: 'noise' only when user selects specific languages; 'real' when using defaults
                     AcceptLanguage: {
                         Mode: v.languages?.length > 0 ? 'noise' : 'real',
@@ -1678,9 +1719,9 @@
                         ? { Mode: 'real', Value: null }
                         : { Mode: 'noise', Value: v.timezone === 'auto' ? null : (v.timezone || null) },
                     // Hardware fields: TypedConfig<int>
-                    // Real mode → Mode='real', Value=null (no spoof, browser uses real hardware)
-                    // Custom mode → Mode='noise', Value=user-selected values
-                    // Random mode → Mode='noise', Value=null (browser generates random internally)
+                    // Real mode â†’ Mode='real', Value=null (no spoof, browser uses real hardware)
+                    // Custom mode â†’ Mode='noise', Value=user-selected values
+                    // Random mode â†’ Mode='noise', Value=null (browser generates random internally)
                     HardwareConcurrency: v.cpuMode === 'real'
                         ? { Mode: 'real', Value: null }
                         : { Mode: 'noise', Value: v.concurrency ?? null },
@@ -1689,13 +1730,22 @@
                         : { Mode: 'noise', Value: v.deviceMemory ?? null },
                     Architecture: origSys.Architecture?.Value ? { Mode: 'noise', Value: origSys.Architecture.Value } : { Mode: 'real', Value: null },
                     Bitness: origSys.Bitness?.Value ? { Mode: 'noise', Value: origSys.Bitness.Value } : { Mode: 'real', Value: null },
+                    CpuBrand: origSys.CpuBrand?.Value ? { Mode: 'noise', Value: origSys.CpuBrand.Value } : { Mode: 'real', Value: null },
+                    Touch: {
+                        Mode: 'real',
+                        MaxTouchPoints: 0,
+                        TouchSupport: false
+                    },
+                    Languages: v.languages?.length > 0 ? v.languages : (origSys.Languages?.length > 0 ? origSys.Languages : ['en-US', 'en']),
                     Screen: {
-                        // Real mode → no Width/Height/PixelRatio spoofing
+                        // Real mode â†’ no Width/Height/PixelRatio spoofing
                         Mode: v.screenMode === 'real' ? 'real' : (v.screenMode || 'real'),
                         Width: v.screenMode === 'real' ? null : (v.screenWidth ?? null),
                         Height: v.screenMode === 'real' ? null : (v.screenHeight ?? null),
                         ColorDepth: origSys.Screen?.ColorDepth ?? 24,
-                        PixelRatio: v.screenMode === 'real' ? null : (v.screenPixelRatio ?? null)
+                        PixelRatio: v.screenMode === 'real' ? null : (v.screenPixelRatio ?? null),
+                        AvailWidth: v.screenMode === 'real' ? null : (v.screenWidth ?? null),
+                        AvailHeight: v.screenMode === 'real' ? null : ((v.screenHeight ?? null) ? v.screenHeight - 40 : null)
                     }
                 },
                 Fingerprint: {
@@ -1706,10 +1756,13 @@
                         // NoiseSeed/NoiseLevel: only set when NOT Real mode (Real = null, no noise)
                         NoiseSeed: v.webglMode !== 'real' ? (origFp.WebGL?.NoiseSeed ?? null) : null,
                         NoiseLevel: v.webglMode !== 'real' ? (origFp.WebGL?.NoiseLevel ?? null) : null,
+                        Extensions: origFp.WebGL?.Extensions?.length > 0 ? origFp.WebGL.Extensions : [],
+                        MaxTextureSize: origFp.WebGL?.MaxTextureSize ?? 16384,
                         ImageSpoofing: {
-                            Mode: v.webglImageMode === 'real' ? 'real' : 'noise',
-                            TextureSeed: v.webglImageMode !== 'real' ? (origFp.WebGL?.ImageSpoofing?.TextureSeed ?? null) : null,
-                            Pattern: v.webglImageMode !== 'real' ? (v.webglImageMode || 'default') : 'default'
+                            // 'default' → no spoof (Mode=null), 'real' → 'real', 'noise'/'solid' → 'noise'
+                            Mode: v.webglImageMode === 'default' ? null : (v.webglImageMode === 'real' ? 'real' : 'noise'),
+                            TextureSeed: v.webglImageMode === 'default' || v.webglImageMode === 'real' ? null : (origFp.WebGL?.ImageSpoofing?.TextureSeed ?? null),
+                            Pattern: v.webglImageMode === 'default' || v.webglImageMode === 'real' ? 'default' : (v.webglImageMode || 'default')
                         }
                     },
                     Canvas: {
@@ -1721,7 +1774,8 @@
                     Audio: {
                         Mode: v.audioMode === 'real' ? 'real' : (v.audioMode || 'real'),
                         NoiseSeed: v.audioMode !== 'real' ? (origFp.Audio?.NoiseSeed ?? null) : null,
-                        NoiseLevel: v.audioMode !== 'real' ? (origFp.Audio?.NoiseLevel ?? null) : null
+                        NoiseLevel: v.audioMode !== 'real' ? (origFp.Audio?.NoiseLevel ?? null) : null,
+                        SampleRate: origFp.Audio?.SampleRate ?? 48000
                     },
                     ClientRects: {
                         Mode: v.clientRects === 'real' ? 'real' : (v.clientRects || 'noise'),
@@ -1735,7 +1789,10 @@
                     },
                     Plugins: {
                         Mode: v.pluginsMode === 'real' ? 'real' : (v.pluginsMode || 'default'),
-                        PluginList: []
+                        PluginList: origFp.Plugins?.PluginList?.length > 0 ? origFp.Plugins.PluginList : [
+                            { Name: 'PDF Viewer', Filename: 'internal-pdf-viewer', Description: 'Portable Document Format' },
+                            { Name: 'Chrome PDF Viewer', Filename: 'internal-pdf-viewer', Description: '' }
+                        ]
                     },
                     MediaDevices: {
                         Mode: v.mediaDevices === 'real' ? 'real' : (v.mediaDevices || 'real'),
@@ -1768,7 +1825,14 @@
                     PortBlockMode: v.portBlockMode || origSec.PortBlockMode || null,
                     PortBlockList: v.portBlockList?.length > 0 ? v.portBlockList : (origSec.PortBlockList || null)
                 },
-                Location: this._buildLocationConfigWithOrig(v, origLoc)
+                Location: this._buildLocationConfigWithOrig(v, origLoc),
+                UI: {
+                    Mode: 'GUI',
+                    WindowSize: {
+                        Width: v.screenWidth ?? 1920,
+                        Height: v.screenHeight ?? 1080
+                    }
+                }
             };
 
             console.log('[CreateProfile] _buildUpdatePayload - profileData to save:', JSON.stringify(profileData, null, 2));
@@ -1790,7 +1854,7 @@
                 tagIds: tagIds.length ? tagIds : null,
                 proxyId: v.savedProxyId || null,
                 browserType: (v.browser || 'chromium').charAt(0).toUpperCase() + (v.browser || 'chromium').slice(1),
-                browserVersion: v.browserVersion || this._originalProfileData?.BrowserVersion || '138',
+                browserVersion: v.browserVersion || this._originalProfileData?.BrowserVersion || null,
                 profileData: JSON.stringify(profileData),
                 notes: v.notes || '',
                 cookies: v.cookiesData || this._originalProfileData?.Cookies || ''
@@ -1840,7 +1904,7 @@
                     Accuracy: v.customCoordinates.accuracy || 100
                 };
             }
-            // Real mode → no coordinates spoofing
+            // Real mode â†’ no coordinates spoofing
             if (mode === 'real') {
                 return {
                     Mode: 'real',
@@ -1850,7 +1914,7 @@
                     Accuracy: null
                 };
             }
-            // noise or default mode → clear coordinates (no spoof)
+            // noise or default mode â†’ clear coordinates (no spoof)
             return {
                 Mode: 'noise',
                 Access: access,
@@ -1873,7 +1937,7 @@
                     Accuracy: v.customCoordinates.accuracy || 100
                 };
             }
-            // Real mode → no coordinates spoofing
+            // Real mode â†’ no coordinates spoofing
             if (mode === 'real') {
                 return {
                     Mode: 'real',
@@ -1883,7 +1947,7 @@
                     Accuracy: null
                 };
             }
-            // noise or default mode → clear coordinates (no spoof)
+            // noise or default mode â†’ clear coordinates (no spoof)
             return {
                 Mode: 'noise',
                 Access: access,
@@ -1913,7 +1977,7 @@
 
             // Sticky Header for Name/Group/Tags
             const stickyHeader = document.createElement('div');
-            stickyHeader.style.cssText = 'display: flex; flex-direction: column; gap: 16px; padding: 20px 24px; border-bottom: 1px solid var(--border-default); background: var(--bg-surface); z-index: 10;';
+            stickyHeader.style.cssText = 'display: flex; flex-direction: column; gap: 12px; padding: 20px 24px; border-bottom: 1px solid var(--border-default); background: var(--bg-surface); z-index: 10;';
 
             const createLabelWrap = (labelText, el) => {
                 const w = document.createElement('div');
@@ -1933,7 +1997,7 @@
             const row1 = document.createElement('div');
             row1.style.cssText = this._mode === 'edit' 
                 ? 'display: block; width: 100%; margin-bottom: 16px;'
-                : 'display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; margin-bottom: 16px;';
+                : 'display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; margin-bottom: 12px;';
 
             const nameWrap = document.createElement('div');
             nameWrap.style.cssText = 'display: flex; gap: 12px; align-items: flex-end; width: 100%;';
@@ -1941,6 +2005,7 @@
             const nameInput = window.DuckControls.Input.create({ label: 'Profile Name', placeholder: 'Enter profile name...', icon: 'badge', fullWidth: true });
             nameInput.element.style.flex = '1';
             this._nameInput = nameInput.element;
+            this._nameCtrl = nameInput;
 
             const qtySpin = window.DuckControls.SpinNumber.create({ value: 1, min: 1, max: 100 });
             this._qtyCtrl = qtySpin;
@@ -1974,7 +2039,7 @@
 
             // Row 2: Group + Tags
             const row2 = document.createElement('div');
-            row2.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr; gap: 16px;';
+            row2.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr; gap: 12px;';
 
             const groupSelect = window.DuckControls.Select.create({
                 label: 'Group',
@@ -2096,6 +2161,7 @@
                 icon: 'refresh',
                 onClick: async () => {
                     const genTab = window.ProfileModals.CreateProfile.GeneralTab;
+                    const tabValues = this._collectTabValues();
                     this._modal.setLoading(true, 'Generating new fingerprint...');
                     try {
                         const fp = await DuckBridge.call('profile.generateFingerprint', {
@@ -2105,9 +2171,10 @@
                             model:    tabValues.osModel || null
                         });
                         this._applyFingerprintResponse(fp);
-                        this._modal.setLoading(false);
                     } catch (e) {
                         // toast handled by DuckBridge
+                    } finally {
+                        if (this._modal) this._modal.setLoading(false);
                     }
                 }
             });
@@ -2136,27 +2203,27 @@
                 summaryList.appendChild(row);
             };
             
-            addSummaryItem('Start URL', '—');
-            addSummaryItem('Group', '—');
-            addSummaryItem('Tags', '—');
-            addSummaryItem('Operating System', '—');
-            addSummaryItem('OS Model', '—');
-            addSummaryItem('Browser', '—');
-            addSummaryItem('User Agent', '—');
-            addSummaryItem('Screen Resolution', '—');
-            addSummaryItem('Timezone', '—');
-            addSummaryItem('Language', '—');
-            addSummaryItem('Proxy', '—');
-            addSummaryItem('Coordinates', '—');
-            addSummaryItem('Hardware', '—');
-            addSummaryItem('WebGL', '—');
-            addSummaryItem('Fonts', '—');
-            addSummaryItem('WebRTC', '—');
-            addSummaryItem('SSL', '—');
-            addSummaryItem('Ports', '—');
-            addSummaryItem('Media', '—');
-            addSummaryItem('Speech', '—');
-            addSummaryItem('Rects', '—');
+            addSummaryItem('Start URL', 'â€”');
+            addSummaryItem('Group', 'â€”');
+            addSummaryItem('Tags', 'â€”');
+            addSummaryItem('Operating System', 'â€”');
+            addSummaryItem('OS Model', 'â€”');
+            addSummaryItem('Browser', 'â€”');
+            addSummaryItem('User Agent', 'â€”');
+            addSummaryItem('Screen Resolution', 'â€”');
+            addSummaryItem('Timezone', 'â€”');
+            addSummaryItem('Language', 'â€”');
+            addSummaryItem('Proxy', 'â€”');
+            addSummaryItem('Coordinates', 'â€”');
+            addSummaryItem('Hardware', 'â€”');
+            addSummaryItem('WebGL', 'â€”');
+            addSummaryItem('Fonts', 'â€”');
+            addSummaryItem('WebRTC', 'â€”');
+            addSummaryItem('SSL', 'â€”');
+            addSummaryItem('Ports', 'â€”');
+            addSummaryItem('Media', 'â€”');
+            addSummaryItem('Speech', 'â€”');
+            addSummaryItem('Rects', 'â€”');
 
             summaryWrap.appendChild(summaryList);
             rightPane.appendChild(summaryWrap);
@@ -2174,17 +2241,17 @@
                 if (el) el.textContent = text;
             };
             set('Operating System', fp.platform || 'Windows');
-            set('Browser', `Chromium ${fp.browserVersion || '138'}`);
-            set('User Agent', fp.userAgent ? fp.userAgent.substring(0, 40) + '...' : '—');
-            set('Screen Resolution', fp.screen || '—');
+            set('Browser', `Chromium ${fp.browserVersion || null}`);
+            set('User Agent', fp.userAgent ? fp.userAgent.substring(0, 40) + '...' : 'â€”');
+            set('Screen Resolution', fp.screen || 'â€”');
             set('Timezone', fp.timezone || 'Auto');
-            set('Language', fp.languages || '—');
-            set('Hardware', fp.hardware || '—');
+            set('Language', fp.languages || 'â€”');
+            set('Hardware', fp.hardware || 'â€”');
             set('WebGL', `${fp.webglVendor || ''} / ${fp.webglRenderer || ''}`);
         }
     });
 
-    // ── Language display labels ────────────────────────────────────────────
+    // â”€â”€ Language display labels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const _LANG_LABELS = {
         'en-US': 'English (US)', 'en-GB': 'English (UK)', 'en-AU': 'English (Australia)',
         'en-CA': 'English (Canada)', 'en-IN': 'English (India)',
@@ -2205,3 +2272,8 @@
     // Auto-init
     window.ProfileModals.CreateProfile._init();
 })();
+
+
+
+
+

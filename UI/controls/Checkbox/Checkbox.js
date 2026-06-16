@@ -66,8 +66,15 @@
         toggle() {
             if (this.options.disabled) return;
             
-            this.options.checked = !this.options.checked;
-            this._box.classList.toggle('is-checked', this.options.checked);
+            if (this.options.indeterminate) {
+                this.options.indeterminate = false;
+                this._box.classList.remove('is-indeterminate');
+                this.options.checked = false;
+                this._box.classList.remove('is-checked');
+            } else {
+                this.options.checked = !this.options.checked;
+                this._box.classList.toggle('is-checked', this.options.checked);
+            }
             
             // Trigger native change event for accessibility
             this.element.dispatchEvent(new Event('change', { bubbles: true }));
@@ -76,23 +83,26 @@
         check() {
             if (this.options.disabled) return;
             this.options.checked = true;
+            this.options.indeterminate = false;
             this._box.classList.add('is-checked');
             this._box.classList.remove('is-indeterminate');
-            this.element.dispatchEvent(new Event('change', { bubbles: true }));
+            this.element.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
         uncheck() {
             if (this.options.disabled) return;
             this.options.checked = false;
+            this.options.indeterminate = false;
             this._box.classList.remove('is-checked');
             this._box.classList.remove('is-indeterminate');
-            this.element.dispatchEvent(new Event('change', { bubbles: true }));
+            this.element.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
         setIndeterminate(value) {
             this.options.indeterminate = value;
             this._box.classList.toggle('is-indeterminate', value);
             if (value) {
+                this.options.checked = false;
                 this._box.classList.remove('is-checked');
             }
         }

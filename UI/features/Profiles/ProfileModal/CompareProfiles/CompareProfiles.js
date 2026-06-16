@@ -1,4 +1,4 @@
-window.ProfileModals = window.ProfileModals || {};
+﻿window.ProfileModals = window.ProfileModals || {};
 
 window.ProfileModals.CompareProfiles = {
     _modal: null,
@@ -11,7 +11,22 @@ window.ProfileModals.CompareProfiles = {
 
         const modalBody = document.createElement('div');
         modalBody.style.cssText = 'display:flex;flex-direction:column;gap:20px;';
-        
+
+        this._modal = window.DuckControls.Modal.create({
+            defaultEnter: true,
+            title: 'Compare Profiles',
+            subtitle: 'Analyze fingerprint differences between profiles',
+            icon: 'compare_arrows',
+            content: modalBody,
+            size: 'lg',
+            closeOnOverlay: true,
+            buttons: [
+                { text: 'Close', class: 'duck-btn-surface', onClick: (e, m) => m.close() }
+            ],
+            onClose: () => { this._modal = null; }
+        });
+        this._modal.open();
+
         // 1. TOP BAR: Selectors & Button
         const topBar = document.createElement('div');
         topBar.style.cssText = 'display:flex;gap:12px;align-items:flex-end;';
@@ -30,27 +45,19 @@ window.ProfileModals.CompareProfiles = {
         let val1 = '';
         let val2 = '';
         
-        // Try to preset from selectedIds if requested by UI, but default is empty
-        // The user explicitly requested: "mặc định chúng không chọn profile nào cả"
-        // so we'll leave it empty even if selectedIds exist, or maybe use selectedIds if explicitly passed?
-        // Let's use selectedIds if they checked the boxes, otherwise empty.
-        // Wait, "Compare Profiles mặc định chúng không chọn profile nào cả, để người dùng tự chọn"
-        // I will strictly default to empty.
-
-        
-        const cb1 = window.DuckControls.ComboBox.create({
+        const cb1 = window.DuckControls.Select.create({
             label: 'Profile 1',
             options: opts,
             value: val1,
-            onChange: (e) => val1 = e.target.value
+            onChange: (val) => val1 = val
         });
         sel1Wrap.appendChild(cb1.element);
         
-        const cb2 = window.DuckControls.ComboBox.create({
+        const cb2 = window.DuckControls.Select.create({
             label: 'Profile 2',
             options: opts,
             value: val2,
-            onChange: (e) => val2 = e.target.value
+            onChange: (val) => val2 = val
         });
         sel2Wrap.appendChild(cb2.element);
         
@@ -75,6 +82,11 @@ window.ProfileModals.CompareProfiles = {
         modalBody.appendChild(tableWrap);
         
         const doCompare = () => {
+            let hasError = false;
+            if (!val1) { cb1.setError?.('Please select a profile'); hasError = true; }
+            if (!val2) { cb2.setError?.('Please select a profile'); hasError = true; }
+            if (hasError) return;
+
             const p1 = allProfiles.find(p => String(p.id) === val1) || { name: '-', _empty: true };
             const p2 = allProfiles.find(p => String(p.id) === val2) || { name: '-', _empty: true };
 
@@ -126,13 +138,6 @@ window.ProfileModals.CompareProfiles = {
                     else v2 = 'Noise';
                 }
                 
-                // Add some artificial differences if the profiles are different and we have missing data
-                if (val1 && val2 && val1 !== val2 && !p1._empty && !p2._empty) {
-                    if (f.key === 'clientRects') v2 = 'Real';
-                    if (f.key === 'webrtc') v1 = 'Altered';
-                    if (f.key === 'canvas') v2 = 'Off';
-                }
-                
                 const match = String(v1) === String(v2);
                 const rowBg = match ? 'var(--bg-base)' : 'color-mix(in srgb, var(--danger) 5%, var(--bg-base))';
                 
@@ -155,25 +160,8 @@ window.ProfileModals.CompareProfiles = {
             );
         }
         
-        this._modal = window.DuckControls.Modal.create({
-            defaultEnter: true,
-            title: 'Compare Profiles',
-            subtitle: 'Analyze fingerprint differences between profiles',
-            icon: 'compare_arrows',
-            content: modalBody,
-            size: 'lg',
-            closeOnOverlay: true,
-            buttons: [
-                { text: 'Close', class: 'duck-btn-surface', onClick: (e, m) => m.close() }
-            ],
-            onClose: () => { this._modal = null; }
-        });
-
-        this._modal.open();
-
-        this._modal.open();
-        
-        // Initial render
-        doCompare();
+        // Initial render removed by request
     }
 };
+
+

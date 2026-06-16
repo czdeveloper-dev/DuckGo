@@ -1,4 +1,4 @@
-(function() {
+﻿(function() {
     'use strict';
 
     window.ProfileModals = window.ProfileModals || {};
@@ -24,7 +24,7 @@
             const osVal = genTab?._osSelectCtrl?.getValue?.() || 'Windows';
             const osBlock = tmpl.OS?.[osVal] || {};
 
-            // HardwareTiers → cpuChipSelect
+            // HardwareTiers â†’ cpuChipSelect
             const tiers = osBlock?.HardwareTiers || [];
             const cpuTierOpts = tiers.map(t => ({
                 label: `${t.Concurrency} Cores / ${t.Memory} GB`,
@@ -37,10 +37,10 @@
                 }
             }
 
-            // ScreenPresets → resChipSelect
+            // ScreenPresets â†’ resChipSelect
             const presets = osBlock?.ScreenPresets || [];
             const resOpts = presets.map(p => ({
-                label: `${p.Width} × ${p.Height} @${p.PixelRatio}x`,
+                label: `${p.Width} Ã— ${p.Height} @${p.PixelRatio}x`,
                 value: `${p.Width}x${p.Height}x${p.PixelRatio}`
             }));
             if (this.resChipSelect) {
@@ -154,6 +154,7 @@
             hwTierWrap.appendChild(hwTierLabel);
 
             this.cpuChipSelect = window.DuckControls.ComboBox.create({
+                icon: 'memory',
                 placeholder: 'Search hardware tier...',
                 options: [{ label: 'Loading...', value: '' }],
                 onChange: () => window.ProfileModals?.CreateProfile?._scheduleSync?.()
@@ -193,6 +194,7 @@
             resChipWrap.appendChild(resChipLabel);
 
             this.resChipSelect = window.DuckControls.ComboBox.create({
+                icon: 'memory',
                 placeholder: 'Search resolution...',
                 options: [{ label: 'Loading...', value: '' }],
                 onChange: () => window.ProfileModals?.CreateProfile?._scheduleSync?.()
@@ -402,3 +404,4 @@
         }
     };
 })();
+

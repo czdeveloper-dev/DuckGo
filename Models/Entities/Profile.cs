@@ -6,6 +6,7 @@ public class Profile
 {
     public int Id { get; set; }
     public string Name { get; set; } = "";
+    public string Resource { get; set; } = "";
     public int? GroupId { get; set; }
     public string TagIdsJson { get; set; } = "[]";
     public int? ProxyId { get; set; }

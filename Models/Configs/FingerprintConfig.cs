@@ -97,6 +97,16 @@ public class FingerprintTemplate
                         if (osTemplate != null && osBlock["StorageQuota"] is JsonValue osSq && osSq.TryGetValue<long>(out var osSqVal))
                             osTemplate.StorageQuota = osSqVal;
 
+                        // Parse WebGL extensions and max texture size
+                        if (osTemplate != null && osBlock["WebGL"] is JsonObject webglBlock)
+                        {
+                            if (webglBlock["MaxTextureSize"] is JsonValue maxTexVal && maxTexVal.TryGetValue<int>(out var maxTex))
+                                osTemplate.WebGL.MaxTextureSize = maxTex;
+                            
+                            if (webglBlock["Extensions"] is JsonArray extArr)
+                                osTemplate.WebGL.Extensions = extArr.Select(x => x!.GetValue<string>()).ToList();
+                        }
+
                         tmpl.OS[kvp.Key] = osTemplate!;
                     }
                     catch (Exception ex)
@@ -165,6 +175,10 @@ public class HardwareTier
 public class WebGLTemplate
 {
     public Dictionary<string, List<string>> VendorGPUs { get; set; } = new();
+    /// <summary>List of WebGL extensions. Must match GPU capability.</summary>
+    public List<string> Extensions { get; set; } = new();
+    /// <summary>Max texture size supported by GPU.</summary>
+    public int MaxTextureSize { get; set; } = 16384;
 }
 
 // ─── Fingerprint Config (ProfileData stored in DB) ───────────────────────────
@@ -249,6 +263,10 @@ public class WebGLConfig
     public string? Renderer { get; set; }
     public string? NoiseSeed { get; set; }
     public double? NoiseLevel { get; set; }
+    /// <summary>List of WebGL extensions supported. Must match GPU capability.</summary>
+    public List<string> Extensions { get; set; } = new();
+    /// <summary>Max texture size supported by GPU.</summary>
+    public int? MaxTextureSize { get; set; }
     public ImageSpoofingConfig? ImageSpoofing { get; set; }
 }
 
@@ -279,6 +297,8 @@ public class AudioConfig
     public string? Mode { get; set; }
     public string? NoiseSeed { get; set; }
     public double? NoiseLevel { get; set; }
+    /// <summary>AudioContext sample rate. Default 48000.</summary>
+    public int? SampleRate { get; set; }
 }
 
 // ─── FontMetrics ──────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-(function() {
+﻿(function() {
     'use strict';
 
     window.ProfileModals = window.ProfileModals || {};
@@ -70,6 +70,7 @@
             importWrap.appendChild(orDivider);
 
             const textArea = window.DuckControls.Textarea.create({
+                icon: 'cookie',
                 placeholder: 'Paste your JSON or Netscape cookies here...',
                 rows: 8,
                 onInput: (e) => {
@@ -109,3 +110,4 @@
         }
     };
 })();
+

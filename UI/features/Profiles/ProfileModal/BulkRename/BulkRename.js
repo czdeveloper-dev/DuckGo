@@ -1,4 +1,4 @@
-// BulkRename.js - Bulk Rename Profiles
+﻿// BulkRename.js - Bulk Rename Profiles
 
 (function() {
     'use strict';
@@ -59,6 +59,7 @@
             const prefixContainer = document.createElement('div');
             prefixContainer.style.flex = '1';
             const prefixCtrl = window.DuckControls.Input.create({
+                icon: 'edit_document',
                 label: 'PATTERN / PREFIX',
                 placeholder: 'e.g., ACCOUNT_',
                 icon: 'text_format'
@@ -76,6 +77,7 @@
             const startContainer = document.createElement('div');
             startContainer.style.width = '140px';
             const startCtrl = window.DuckControls.Input.create({
+                icon: 'edit_document',
                 label: 'START NO.',
                 placeholder: '1',
                 icon: 'numbers'
@@ -123,6 +125,7 @@
                 
                 // Use DuckControls Input instead of native input
                 const inputCtrl = window.DuckControls.Input.create({
+                icon: 'edit_document',
                     placeholder: 'New name...',
                     value: item.newName
                 });
@@ -262,3 +265,4 @@
         }
     };
 })();
+

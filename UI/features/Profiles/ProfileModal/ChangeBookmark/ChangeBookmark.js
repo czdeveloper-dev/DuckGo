@@ -1,4 +1,4 @@
-window.ProfileModals = window.ProfileModals || {};
+﻿window.ProfileModals = window.ProfileModals || {};
 
 window.ProfileModals.ChangeBookmark = {
     _modal: null,
@@ -19,6 +19,7 @@ window.ProfileModals.ChangeBookmark = {
         let selectedAction = 'add';
 
         const actionCombo = window.DuckControls.ComboBox.create({
+                icon: 'folder',
             label: 'Action',
             options: [
                 { label: 'Add (Append to existing)', value: 'add' },
@@ -35,6 +36,7 @@ window.ProfileModals.ChangeBookmark = {
         // Textarea for Bookmarks
         const textareaWrap = document.createElement('div');
         const textareaCtrl = DuckControls.Textarea.create({
+                icon: 'bookmarks',
             label: 'Bookmarks (Format: Name|URL)',
             placeholder: 'Example:\nGoogle|https://google.com\nFacebook|https://facebook.com',
             rows: 6
@@ -58,7 +60,7 @@ window.ProfileModals.ChangeBookmark = {
             size: 'md',
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
-                { text: 'Execute Update', class: 'duck-btn-primary', onClick: (e, modal) => {
+                { text: 'Execute Update', icon: 'bookmark', class: 'duck-btn-primary', onClick: (e, modal) => {
                     modal.close();
                 }}
             ],
@@ -71,3 +73,6 @@ window.ProfileModals.ChangeBookmark = {
         this._modal.open();
     }
 };
+
+
+

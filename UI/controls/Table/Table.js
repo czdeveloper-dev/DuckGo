@@ -1,4 +1,17 @@
 window.DuckControls = window.DuckControls || {};
+
+let _globalChPx = null;
+function getGlobalChPx() {
+    if (_globalChPx !== null) return _globalChPx;
+    const tmp = document.createElement('span');
+    tmp.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font-size:13px;font-family:inherit;';
+    tmp.textContent = '0'; // '0' is the reference character for 1ch
+    document.body.appendChild(tmp);
+    _globalChPx = tmp.getBoundingClientRect().width || 8;
+    document.body.removeChild(tmp);
+    return _globalChPx;
+}
+
 window.DuckControls.Table = {
     create(options) {
         // ── Outer wrapper (flex container that fills parent) ─────────
@@ -52,24 +65,11 @@ window.DuckControls.Table = {
         // column config strings like '15ch', '200px', etc.
         // ─────────────────────────────────────────────────────────────
 
-        // Measure 1ch in the actual rendered font of the table header.
-        // We defer this to first use so the element is in the DOM.
-        let _chPx = null;
-        function getChPx() {
-            if (_chPx !== null) return _chPx;
-            const tmp = document.createElement('span');
-            tmp.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font-size:13px;font-family:inherit;';
-            tmp.textContent = '0'; // '0' is the reference character for 1ch
-            document.body.appendChild(tmp);
-            _chPx = tmp.getBoundingClientRect().width || 8;
-            document.body.removeChild(tmp);
-            return _chPx;
-        }
 
         function parseWidthToPx(w) {
             if (!w || w === 'auto' || String(w).endsWith('%')) return 0;
             const s = String(w);
-            if (s.endsWith('ch')) return Math.ceil(parseInt(s) * getChPx());
+            if (s.endsWith('ch')) return Math.ceil(parseInt(s) * getGlobalChPx());
             if (s.endsWith('px')) return parseInt(s);
             return parseInt(s) || 0;
         }
@@ -120,17 +120,15 @@ window.DuckControls.Table = {
                     title: col.title || 'Select all',
                     onChange: e => { 
                         // Synchronize all rows
-                        tbody.querySelectorAll('tr').forEach(tr => {
-                            const firstTd = tr.querySelector('td .duck-checkbox');
-                            if (firstTd) {
-                                // We access the instance
-                                const rowCb = firstTd.closest('td')._duckCheckbox;
-                                if (rowCb) {
-                                    if (e.checked && !rowCb.isChecked()) {
-                                        rowCb.element.click();
-                                    } else if (!e.checked && rowCb.isChecked()) {
-                                        rowCb.element.click();
-                                    }
+                        tbody.querySelectorAll('td').forEach(td => {
+                            const rowCb = td._duckCheckbox;
+                            if (rowCb) {
+                                if (e.checked && !rowCb.isChecked()) {
+                                    rowCb.check();
+                                    td.closest('tr')?.classList.add('selected');
+                                } else if (!e.checked && rowCb.isChecked()) {
+                                    rowCb.uncheck();
+                                    td.closest('tr')?.classList.remove('selected');
                                 }
                             }
                         });
@@ -267,6 +265,7 @@ window.DuckControls.Table = {
             });
             if (totalFixed > 0) {
                 table.style.minWidth = totalFixed + 'px';
+                table.style.width = totalFixed + 'px'; // Prevent browser from stretching columns to 100%
             }
         }
 
@@ -531,6 +530,29 @@ window.DuckControls.Table = {
                             onChange: e => {
                                 if (e.checked) tr.classList.add('selected');
                                 else tr.classList.remove('selected');
+                                
+                                // Update select all checkbox state
+                                let allChecked = true;
+                                let anyChecked = false;
+                                let total = 0;
+                                tbody.querySelectorAll('td').forEach(t => {
+                                    const rc = t._duckCheckbox;
+                                    if (rc) {
+                                        total++;
+                                        if (rc.isChecked()) anyChecked = true;
+                                        else allChecked = false;
+                                    }
+                                });
+                                
+                                if (selectAllCheckbox) {
+                                    if (total > 0 && allChecked) selectAllCheckbox.check();
+                                    else {
+                                        selectAllCheckbox.uncheck();
+                                        if (anyChecked) selectAllCheckbox.setIndeterminate(true);
+                                        else selectAllCheckbox.setIndeterminate(false);
+                                    }
+                                }
+
                                 if (options.onCheckRow) options.onCheckRow(e, row);
                             }
                         });

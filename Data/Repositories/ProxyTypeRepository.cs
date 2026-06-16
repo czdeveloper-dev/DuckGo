@@ -29,4 +29,30 @@ public class ProxyTypeRepository : IProxyTypeRepository
         Label = reader.GetString(reader.GetOrdinal("Label")),
         DisplayOrder = reader.GetInt32(reader.GetOrdinal("DisplayOrder"))
     };
+
+    public async Task<ProxyType?> GetByIdAsync(int id)
+    {
+        await using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT * FROM ProxyTypes WHERE Id = @id";
+        cmd.Parameters.AddWithValue("@id", id);
+        await using var reader = await cmd.ExecuteReaderAsync();
+        if (await reader.ReadAsync())
+            return Read(reader);
+        return null;
+    }
+
+    public async Task<ProxyType?> GetByValueAsync(string value)
+    {
+        await using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT * FROM ProxyTypes WHERE LOWER(Value) = LOWER(@value)";
+        cmd.Parameters.AddWithValue("@value", value);
+        await using var reader = await cmd.ExecuteReaderAsync();
+        if (await reader.ReadAsync())
+            return Read(reader);
+        return null;
+    }
 }

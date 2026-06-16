@@ -66,11 +66,45 @@ window.ProfileModals.ImportProfiles = {
             closeOnOverlay: true,
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
-                { text: 'Import', class: 'duck-btn-primary', onClick: (e, modal) => {
-                    if (selectedFile) {
-                        // Add actual import logic here
-                    }
-                    modal.close();
+                { text: 'Import', icon: 'file_upload', class: 'duck-btn-primary', onClick: async (e, modal) => {
+                    if (!selectedFile) return;
+
+                    modal.setLoading(true, 'Importing...');
+
+                    const ext = selectedFile.name.split('.').pop().toLowerCase();
+                    const reader = new FileReader();
+
+                    reader.onload = async (event) => {
+                        try {
+                            const result = event.target.result;
+                            const idsArray = Array.isArray(selectedIds) ? selectedIds : [...selectedIds];
+                            const targetId = idsArray.length > 0 ? idsArray[0] : null;
+
+                            if (ext === 'duckprofile') {
+                                const parsedData = JSON.parse(result);
+                                await DuckBridge.call('profile.importProfiles', { format: 'duckprofile', data: parsedData });
+                            } else if (ext === 'json') {
+                                const parsedData = JSON.parse(result);
+                                await DuckBridge.call('profile.importProfiles', { format: 'json', data: parsedData, targetId: targetId });
+                            } else if (ext === 'txt') {
+                                await DuckBridge.call('profile.importProfiles', { format: 'txt', data: result, targetId: targetId });
+                            }
+
+                            if (window.ProfilesView?.loadProfiles) window.ProfilesView.loadProfiles();
+                            
+                            modal.close();
+                        } catch (err) {
+                            modal.setLoading(false);
+                            window.DuckControls.Toast?.error?.('Import Failed', err?.message || 'Failed to import file');
+                        }
+                    };
+
+                    reader.onerror = () => {
+                        modal.setLoading(false);
+                        window.DuckControls.Toast?.error?.('Read Error', 'Failed to read the file');
+                    };
+
+                    reader.readAsText(selectedFile);
                 }}
             ],
             onClose: () => {
@@ -85,3 +119,4 @@ window.ProfileModals.ImportProfiles = {
         if (submitBtn) submitBtn.disabled = true;
     }
 };
+

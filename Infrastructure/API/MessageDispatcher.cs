@@ -46,6 +46,14 @@ public class MessageDispatcher
 
             Log($"MD_entry", action, id, null, null, null);
 
+            var securityMiddleware = new DuckGo.Middleware.SecurityMiddleware();
+            var (isSecure, securityError) = await securityMiddleware.ValidateRequestAsync(action, payload);
+            if (!isSecure)
+            {
+                Log($"MD_security_fail", action, id, null, securityError, null);
+                return SerializeResponse(id, false, $"Security Validation Failed: {securityError}", null);
+            }
+
             // Validate before dispatching
             var vr = _validators.Validate(action, payload);
             if (!vr.IsValid)

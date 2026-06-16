@@ -1,4 +1,4 @@
-window.ProfileModals = window.ProfileModals || {};
+﻿window.ProfileModals = window.ProfileModals || {};
 
 window.ProfileModals.Arrange = {
     _modal: null,
@@ -43,6 +43,7 @@ window.ProfileModals.Arrange = {
 
         let currentMonitor = savedState.monitor || '1';
         const monitorCombo = window.DuckControls.ComboBox.create({
+                icon: 'grid_on',
             label: 'Target Screen',
             options: [
                 { label: 'Primary Monitor', value: '1' },
@@ -159,37 +160,33 @@ window.ProfileModals.Arrange = {
         layoutSection.appendChild(gridSettingsWrap);
         modalBody.appendChild(layoutSection);
 
-        // Footer buttons
-        const footerWrap = document.createElement('div');
-        footerWrap.style.cssText = 'display:flex; justify-content:flex-end; gap:12px; width:100%;';
-        
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'duck-btn duck-btn-surface';
-        cancelBtn.textContent = 'Cancel';
-        cancelBtn.addEventListener('click', () => this._modal && this._modal.close());
-        
-        const arrangeBtn = document.createElement('button');
-        arrangeBtn.className = 'duck-btn duck-btn-primary';
-        arrangeBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px; margin-right: 4px;">grid_view</span> Arrange Windows';
-        arrangeBtn.addEventListener('click', () => {
-            if (this._modal) this._modal.close();
-        });
-        
-        footerWrap.appendChild(cancelBtn);
-        footerWrap.appendChild(arrangeBtn);
-
         this._modal = window.DuckControls.Modal.create({
             defaultEnter: true,
-            title: 'Arrange Windows',
+            title: 'Arrange Profiles',
             subtitle: 'Arrange selected profiles dynamically across your monitors.',
             icon: 'grid_view',
             content: modalBody,
-            footer: footerWrap,
             size: 'sm',
             closeOnOverlay: true,
+            buttons: [
+                { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, m) => m.close() },
+                { text: 'Arrange Windows', icon: 'grid_view', class: 'duck-btn-primary', onClick: async (e, m) => {
+                    m.setLoading(true);
+                    try {
+                        const vals = multiSelect.getValues();
+                        if (onArrange) {
+                            await onArrange(Array.from(vals));
+                        }
+                    } finally {
+                        m.setLoading(false);
+                        m.close();
+                    }
+                }}
+            ],
             onClose: () => { this._modal = null; }
         });
 
         this._modal.open();
     }
 };
+

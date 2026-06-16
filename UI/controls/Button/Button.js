@@ -1,4 +1,4 @@
-// Button.js - Button control component
+﻿// Button.js - Button control component
 
 (function() {
     'use strict';
@@ -44,7 +44,7 @@
             // Set icon
             if (this.options.icon) {
                 this.setIcon(this.options.icon, this.options.iconPosition);
-                // Auto-detect icon-only: no text → make it a proper square icon button
+                // Auto-detect icon-only: no text â†’ make it a proper square icon button
                 if (!this.options.text) {
                     this.element.classList.add('duck-btn-icon-only');
                 }
@@ -99,10 +99,11 @@
 
             if (this.options.onClick) {
                 const result = this.options.onClick(e, this);
-                if (result instanceof Promise) {
+                // Only auto-spin if not managed by Modal (no _noAutoSpin flag)
+                if (result instanceof Promise && !this._noAutoSpin) {
                     this.setSpinning(true);
                     this.element.disabled = true;
-                    const minTimePromise = new Promise(resolve => setTimeout(resolve, 500));
+                    const minTimePromise = new Promise(resolve => setTimeout(resolve, 300));
                     try {
                         await Promise.all([result, minTimePromise]);
                     } finally {
@@ -181,11 +182,20 @@
 
         setLoading(loading) {
             this.options.loading = loading;
-            this.element.classList.toggle('duck-btn-loading', loading);
             if (loading) {
+                // Lazy-inject spinner only when first needed
+                if (!this.element.querySelector('.duck-btn-spinner')) {
+                    const spinner = document.createElement('div');
+                    spinner.className = 'duck-btn-spinner';
+                    this.element.prepend(spinner);
+                }
+                this.element.classList.add('duck-btn-loading');
                 this.element.setAttribute('disabled', 'disabled');
-            } else if (!this.options.disabled) {
-                this.element.removeAttribute('disabled');
+            } else {
+                this.element.classList.remove('duck-btn-loading');
+                if (!this.options.disabled) {
+                    this.element.removeAttribute('disabled');
+                }
             }
         }
 
@@ -196,13 +206,12 @@
 
         setDisabled(disabled) {
             this.options.disabled = disabled;
-            this.element.classList.toggle('duck-btn-disabled', disabled);
             this.element.disabled = disabled;
         }
 
         destroy() {
             this.element.removeEventListener('click', this._boundClick);
-            this.element.classList.remove('duck-btn', 'duck-btn-primary', 'duck-btn-secondary', 'duck-btn-ghost', 'duck-btn-danger', 'duck-btn-success', 'duck-btn-sm', 'duck-btn-md', 'duck-btn-lg', 'duck-btn-loading', 'duck-btn-disabled');
+            this.element.classList.remove('duck-btn', 'duck-btn-primary', 'duck-btn-secondary', 'duck-btn-ghost', 'duck-btn-danger', 'duck-btn-success', 'duck-btn-sm', 'duck-btn-md', 'duck-btn-lg', 'duck-btn-loading');
         }
     }
 
@@ -229,3 +238,5 @@
         window.DuckControls.Button.initAll();
     });
 })();
+
+

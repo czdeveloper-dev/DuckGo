@@ -1,0 +1,68 @@
+<div class="page-shell page-shell-profiles">
+
+    <!-- 2-TIER TOPBAR CONTAINER -->
+    <div class="prof-topbar">
+        <!-- TIER 1: Search & Filters -->
+        <div class="prof-topbar-t1 duck-panel-card" style="box-shadow: none;">
+            <div class="prof-t1-left">
+                <div class="duck-panel">
+                    <!-- Search by Name -->
+                    <div id="proxy-ctrl-search"></div>
+
+                    <!-- Search by ID -->
+                    <div id="proxy-ctrl-id"></div>
+
+                    <div class="prof-t1-divider"></div>
+
+                    <!-- Group Select -->
+                    <div id="proxy-ctrl-group"></div>
+
+                    <!-- Tag Select -->
+                    <div id="proxy-ctrl-tag"></div>
+
+                    <!-- Status Select -->
+                    <div id="proxy-ctrl-status"></div>
+                </div>
+            </div>
+
+            <div class="prof-t1-right">
+                <div class="duck-panel">
+                    <!-- Total Proxies Stat -->
+                    <div id="proxy-ctrl-stat"></div>
+
+                    <!-- Header Actions -->
+                    <button type="button" id="proxy-ctrl-refresh" class="duck-btn duck-btn-surface"></button>
+                    <button type="button" id="proxy-ctrl-cols" class="duck-btn duck-btn-surface"></button>
+                    <button type="button" id="proxy-ctrl-create" class="duck-btn duck-btn-primary"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TIER 2: Bulk Action Chips -->
+        <div class="prof-topbar-t2">
+            <div class="prof-action-chips" id="proxy-ctrl-chips"></div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div class="bulk-actions-bar" id="proxy-bulk-actions">
+        <div style="display:flex; align-items:center; gap:6px;">
+            <span class="material-symbols-outlined" style="font-size:15px;color:var(--accent);">checklist</span>
+            <span class="bulk-count" id="proxy-bulk-count">0 selected</span>
+        </div>
+        <div class="bulk-actions-divider"></div>
+        <div id="proxy-ctrl-bulk-check"></div>
+        <div id="proxy-ctrl-bulk-rename"></div>
+        <div id="proxy-ctrl-bulk-delete"></div>
+        <div id="proxy-ctrl-bulk-close"></div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-fill">
+        <div id="proxies-table-view" class="profiles-table-view">
+            <div class="card table-card table-card--profiles data-surface">
+                <!-- Table will be dynamically inserted here by DuckControls.Table -->
+            </div>
+        </div>
+    </div>
+</div>

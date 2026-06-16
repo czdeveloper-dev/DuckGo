@@ -1,4 +1,4 @@
-(function() {
+﻿(function() {
     'use strict';
 
     window.ProfileModals = window.ProfileModals || {};
@@ -21,6 +21,7 @@
             container.appendChild(header);
 
             const notesTextarea = window.DuckControls.Textarea.create({
+                icon: 'notes',
                 label: 'Notes',
                 placeholder: 'Enter your notes here...',
                 rows: 15,
@@ -48,3 +49,4 @@
         }
     };
 })();
+

@@ -1,4 +1,4 @@
-window.ProfileModals = window.ProfileModals || {};
+﻿window.ProfileModals = window.ProfileModals || {};
 
 window.ProfileModals.ManageCookies = {
     _modal: null,
@@ -28,7 +28,7 @@ window.ProfileModals.ManageCookies = {
         const modalBody = document.createElement('div');
         modalBody.style.cssText = 'display:flex;flex-direction:column;gap:16px;height:100%;';
 
-        // ── Cookie count badge ───────────────────────────────────────────
+        // â”€â”€ Cookie count badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         const metaRow = document.createElement('div');
         metaRow.style.cssText = 'display:flex;align-items:center;gap:10px;';
 
@@ -46,7 +46,7 @@ window.ProfileModals.ManageCookies = {
         metaRow.appendChild(lastSaved);
         modalBody.appendChild(metaRow);
 
-        // ── Table ─────────────────────────────────────────────────────────
+        // â”€â”€ Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         const tableContainer = document.createElement('div');
         tableContainer.style.cssText = 'flex:1;overflow-y:auto;border:1px solid var(--border-default);border-radius:var(--r-md);background:var(--bg-elevated);';
 
@@ -67,14 +67,12 @@ window.ProfileModals.ManageCookies = {
         const tbody = document.createElement('tbody');
         tbody.id = '_cookieBody';
         table.appendChild(tbody);
-        tableContainer.appendChild(table);
-        modalBody.appendChild(tableContainer);
-
-        // ── Search / filter ───────────────────────────────────────────────
+        // â”€â”€ Search / filter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         const searchRow = document.createElement('div');
-        searchRow.style.cssText = 'display:flex;gap:8px;';
+        searchRow.style.cssText = 'display:flex;gap:8px;margin-bottom:12px;';
 
         const searchIn = window.DuckControls.Input.create({
+                icon: 'cookie',
             placeholder: 'Filter cookies by name or domain...',
             icon: 'search',
             onInput: (e) => this._renderTable(e.target.value)
@@ -90,17 +88,20 @@ window.ProfileModals.ManageCookies = {
         searchRow.appendChild(addBtn.element);
         modalBody.appendChild(searchRow);
 
-        // ── Pending changes indicator ────────────────────────────────────
+        tableContainer.appendChild(table);
+        modalBody.appendChild(tableContainer);
+
+        // â”€â”€ Pending changes indicator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         const dirtyBanner = document.createElement('div');
         dirtyBanner.id = '_dirtyBanner';
         dirtyBanner.style.cssText = 'display:none;align-items:center;gap:8px;padding:8px 12px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);border-radius:6px;font-size:12px;color:var(--warning,#f59e0b);';
-        dirtyBanner.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px">edit</span> Unsaved changes — click Save to persist.';
+        dirtyBanner.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px">edit</span> Unsaved changes â€” click Save to persist.';
         this._dirtyBanner = dirtyBanner;
         modalBody.appendChild(dirtyBanner);
 
         this._renderTable();
 
-        // ── Buttons ───────────────────────────────────────────────────────
+        // â”€â”€ Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         const buttons = [
             {
                 text: 'Import JSON', icon: 'upload', class: 'duck-btn-surface', position: 'left',
@@ -124,7 +125,7 @@ window.ProfileModals.ManageCookies = {
         this._modal = window.DuckControls.Modal.create({
             defaultEnter: true,
             title: 'Manage Cookies',
-            subtitle: `Profile #${this._profileId} — view, add, or remove cookies`,
+            subtitle: `Profile #${this._profileId} â€” view, add, or remove cookies`,
             icon: 'cookie',
             content: modalBody,
             size: 'xl',
@@ -233,7 +234,7 @@ window.ProfileModals.ManageCookies = {
             lbl.textContent = label;
             const val = document.createElement('div');
             val.style.cssText = `font-size:13px;color:var(--text-primary);word-break:break-all;${mono ? 'font-family:monospace;background:var(--bg-subtle);padding:8px;border-radius:4px;' : ''}`;
-            val.textContent = value || '—';
+            val.textContent = value || 'â€”';
             row.appendChild(lbl);
             row.appendChild(val);
             return row;
@@ -254,11 +255,16 @@ window.ProfileModals.ManageCookies = {
 
     _showAddCookieDialog() {
         const fields = {
-            name: window.DuckControls.Input.create({ label: 'Name *', placeholder: 'e.g. session_id' }),
-            domain: window.DuckControls.Input.create({ label: 'Domain *', placeholder: 'e.g. .google.com' }),
-            value: window.DuckControls.Input.create({ label: 'Value *', placeholder: 'Cookie value...', multiline: true }),
-            path: window.DuckControls.Input.create({ label: 'Path', placeholder: '/', value: '/' }),
-            expires: window.DuckControls.Input.create({ label: 'Expires (ISO 8601)', placeholder: '2026-12-31T23:59:59Z' }),
+            name: window.DuckControls.Input.create({
+                icon: 'cookie', label: 'Name *', placeholder: 'e.g. session_id' }),
+            domain: window.DuckControls.Input.create({
+                icon: 'cookie', label: 'Domain *', placeholder: 'e.g. .google.com' }),
+            value: window.DuckControls.Input.create({
+                icon: 'cookie', label: 'Value *', placeholder: 'Cookie value...', multiline: true }),
+            path: window.DuckControls.Input.create({
+                icon: 'cookie', label: 'Path', placeholder: '/', value: '/' }),
+            expires: window.DuckControls.Input.create({
+                icon: 'cookie', label: 'Expires (ISO 8601)', placeholder: '2026-12-31T23:59:59Z' }),
         };
 
         const content = document.createElement('div');
@@ -289,7 +295,9 @@ window.ProfileModals.ManageCookies = {
                         const domain = fields.domain.getValue?.()?.trim() || '';
                         const value = fields.value.getValue?.()?.trim() || '';
                         if (!name || !domain || !value) {
-                            window.DuckControls?.Toast?.warning?.('Name, domain and value are required.');
+                            if (!name) fields.name.setError?.('Name is required');
+                            if (!domain) fields.domain.setError?.('Domain is required');
+                            if (!value) fields.value.setError?.('Value is required');
                             return;
                         }
                         this._cookies.push({
@@ -402,3 +410,4 @@ window.ProfileModals.ManageCookies = {
         }
     }
 };
+

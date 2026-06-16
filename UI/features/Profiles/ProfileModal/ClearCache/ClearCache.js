@@ -1,4 +1,4 @@
-window.ProfileModals = window.ProfileModals || {};
+﻿window.ProfileModals = window.ProfileModals || {};
 
 window.ProfileModals.ClearCache = {
     show(selectedIds) {
@@ -27,10 +27,11 @@ window.ProfileModals.ClearCache = {
             size: 'md',
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
-                { text: 'Confirm Clear', class: 'duck-btn-danger', onClick: (e, modal) => {
+                { text: 'Confirm Clear', icon: 'cleaning_services', class: 'duck-btn-danger', onClick: (e, modal) => {
                     modal.close();
                 }}
             ]
         }).open();
     }
 };
+

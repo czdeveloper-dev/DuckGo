@@ -20,6 +20,7 @@ public class DatabaseService : IDisposable
         await using var conn = GetConnection();
         await conn.OpenAsync();
 
+        // Old tables - kept for migration reference, not used
         await RunNonQueryAsync(conn, @"
             CREATE TABLE IF NOT EXISTS Groups (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,9 +36,24 @@ public class DatabaseService : IDisposable
             )");
 
         await RunNonQueryAsync(conn, @"
+            CREATE TABLE IF NOT EXISTS ProfileGroups (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT NOT NULL,
+                CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+            )");
+
+        await RunNonQueryAsync(conn, @"
+            CREATE TABLE IF NOT EXISTS ProfileTags (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT NOT NULL,
+                CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+            )");
+
+        await RunNonQueryAsync(conn, @"
             CREATE TABLE IF NOT EXISTS Profiles (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 Name TEXT NOT NULL,
+                Resource TEXT DEFAULT '',
                 GroupId INTEGER,
                 Tags TEXT DEFAULT '[]',
                 ProxyId INTEGER,
@@ -48,21 +64,29 @@ public class DatabaseService : IDisposable
                 Notes TEXT DEFAULT '',
                 CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
                 LastOpened TEXT,
-                FOREIGN KEY (GroupId) REFERENCES Groups(Id) ON DELETE SET NULL
+                FOREIGN KEY (GroupId) REFERENCES ProfileGroups(Id) ON DELETE SET NULL
             )");
 
         await RunNonQueryAsync(conn, @"
             CREATE TABLE IF NOT EXISTS Proxies (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 Name TEXT NOT NULL,
-                Type TEXT DEFAULT 'http',
+                TypeId INTEGER,
+                GroupId INTEGER,
+                Tags TEXT DEFAULT '[]',
                 Host TEXT NOT NULL,
                 Port INTEGER NOT NULL,
                 Username TEXT DEFAULT '',
                 Password TEXT DEFAULT '',
-                Status TEXT DEFAULT 'active',
-                CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+                RotaryApi TEXT DEFAULT '',
+                Notes TEXT DEFAULT '',
+                CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (GroupId) REFERENCES ProfileGroups(Id) ON DELETE SET NULL,
+                FOREIGN KEY (TypeId) REFERENCES ProxyTypes(Id) ON DELETE CASCADE
             )");
+
+        // Add TypeId column if migrating from old schema (without TypeId)
+        await EnsureColumnExistsAsync(conn, "Proxies", "TypeId", "ALTER TABLE Proxies ADD COLUMN TypeId INTEGER REFERENCES ProxyTypes(Id) ON DELETE CASCADE");
 
         await RunNonQueryAsync(conn, @"
             CREATE TABLE IF NOT EXISTS ProxyTypes (

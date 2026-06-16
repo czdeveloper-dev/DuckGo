@@ -38,6 +38,7 @@ public class ProfileListItem
 {
     public int Id { get; set; }
     public string Name { get; set; } = "";
+    public string Resource { get; set; } = "";
     public int? GroupId { get; set; }
     public string? GroupName { get; set; }
     public List<int> TagIds { get; set; } = new();
@@ -61,4 +62,21 @@ public class ProfileListItem
 public class ProfileDetailItem : ProfileListItem
 {
     public string ProfileData { get; set; } = "{}";
+}
+
+public class ProxyBulkCreateResult
+{
+    public bool Success { get; set; } = true;
+    public int Imported { get; set; }
+    public int Failed { get; set; }
+    public List<string> Errors { get; set; } = new();
+
+    public ProxyBulkCreateResult() { }
+    public ProxyBulkCreateResult(int imported, int failed, List<string> errors)
+    {
+        Imported = imported;
+        Failed = failed;
+        Errors = errors;
+        Success = failed == 0;
+    }
 }

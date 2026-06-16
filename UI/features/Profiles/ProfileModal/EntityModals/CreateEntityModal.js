@@ -1,4 +1,4 @@
-// CreateEntityModal.js
+﻿// CreateEntityModal.js
 
 (function() {
     'use strict';
@@ -19,7 +19,8 @@
                 this._modal = null;
             }
 
-            const isGroup = type === 'group';
+            const isGroup = type === 'group' || type === 'proxygroup';
+            const isProxy = type === 'proxygroup' || type === 'proxytag';
             const entityName = isGroup ? 'Group' : 'Tag';
             const isEdit = typeof initialValue === 'string';
 
@@ -34,46 +35,47 @@
             modalBody.appendChild(infoText);
 
             const nameInput = window.DuckControls.Input.create({
+                icon: isGroup ? 'folder' : 'label',
                 label: `${entityName} Name`,
                 placeholder: `e.g. ${isGroup ? 'Facebook Farm' : 'VIP'}`,
-                icon: isGroup ? 'folder' : 'label',
             });
+            
+            // Limit to 30 characters
+            nameInput.input.maxLength = 30;
+            
             if (isEdit) {
                 nameInput.setValue(initialValue);
             }
             modalBody.appendChild(nameInput.element);
 
-            const footerWrap = document.createElement('div');
-            footerWrap.style.cssText = 'display:flex; justify-content:flex-end; gap:12px; width:100%;';
+            const valMsg = document.createElement('div');
+            valMsg.style.cssText = 'font-size: 12px; color: #eab308; display: none; align-items: center; gap: 6px; padding: 8px; background: rgba(234, 179, 8, 0.1); border-radius: 4px;';
+            modalBody.appendChild(valMsg);
 
-            const cancelBtn = document.createElement('button');
-            cancelBtn.className = 'duck-btn duck-btn-surface';
-            cancelBtn.textContent = 'Cancel';
-            cancelBtn.addEventListener('click', () => this._modal && this._modal.close());
-
-            const createBtn = document.createElement('button');
-            createBtn.className = 'duck-btn duck-btn-primary';
-            createBtn.textContent = isEdit ? 'Save' : 'Create';
-            createBtn.addEventListener('click', () => {
-                const val = nameInput.getValue().trim();
-                if (!val) {
-                    return;
-                }
-                if (onSave) onSave(val);
-                if (this._modal) this._modal.close();
-            });
-
-            footerWrap.appendChild(cancelBtn);
-            footerWrap.appendChild(createBtn);
+            const showValMsg = (msg) => {
+                valMsg.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;">error</span> ${msg}`;
+                valMsg.style.display = 'flex';
+            };
 
             this._modal = window.DuckControls.Modal.create({
-            defaultEnter: true,
+                defaultEnter: true,
                 title: isEdit ? `Edit ${entityName}` : `Create New ${entityName}`,
                 icon: isEdit ? 'edit' : (isGroup ? 'folder' : 'label'),
                 content: modalBody,
-                footer: footerWrap,
                 size: 'sm',
                 closeOnOverlay: true,
+                buttons: [
+                    { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, m) => m.close() },
+                    { text: isEdit ? 'Save' : 'Create', icon: isEdit ? 'save' : 'add_circle', class: 'duck-btn-primary', onClick: (e, m) => {
+                        const val = nameInput.getValue().trim();
+                        if (!val) {
+                            return showValMsg(`${entityName} Name is required`);
+                        }
+                        valMsg.style.display = 'none';
+                        if (onSave) onSave(val);
+                        m.close();
+                    }}
+                ],
                 onClose: () => { this._modal = null; }
             });
 
@@ -86,3 +88,4 @@
         }
     };
 })();
+

@@ -25,6 +25,7 @@
             });
 
             const wrap = inputCtrl.element;
+            wrap.dataset.enterLocal = '';
             const input = inputCtrl.input;
             const inputWrap = input.parentElement; // This is the .search-box
             

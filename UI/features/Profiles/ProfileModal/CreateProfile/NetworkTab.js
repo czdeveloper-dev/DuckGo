@@ -29,9 +29,11 @@
             if (this._tzSelect) {
                 const tzOpts = (tmpl.Timezones || []).map(tz => ({ label: tz, value: tz }));
                 this._tzSelect.setOptions([{ label: 'Auto (Match IP)', value: 'auto' }, { label: 'Real', value: 'real' }, ...tzOpts]);
+                this._tzSelect.setValue('auto');
             } else if (this.tzSelect) {
                 const tzOpts = (tmpl.Timezones || []).map(tz => ({ label: tz, value: tz }));
                 this.tzSelect.setOptions([{ label: 'Auto (Match IP)', value: 'auto' }, { label: 'Real', value: 'real' }, ...tzOpts]);
+                this.tzSelect.setValue('auto');
             }
         },
 
@@ -532,13 +534,12 @@
             };
 
             if (proxyMode === 'custom') {
-                res.customProxy = {
-                    mode: 'custom',
-                    type: proxyType,
-                    host: this.pHost ? this.pHost.getValue() : '',
-                    port: this.pPort ? parseInt(this.pPort.getValue() || '0', 10) : 0,
-                    username: this.pUser ? this.pUser.getValue() : '',
-                    password: this.pPass ? this.pPass.getValue() : ''
+                res.proxyConfig = {
+                    Type: proxyType,
+                    Host: this.pHost ? this.pHost.getValue() : '',
+                    Port: this.pPort ? parseInt(this.pPort.getValue() || '0', 10) : 0,
+                    Username: this.pUser ? this.pUser.getValue() : '',
+                    Password: this.pPass ? this.pPass.getValue() : ''
                 };
             } else if (proxyMode === 'saved') {
                 const savedId = this.sProxy ? this.sProxy.getValue() : '';
@@ -582,7 +583,7 @@
                 if (this.pPort) this.pPort.setValue(values.proxyConfig.Port || '');
                 if (this.pUser) this.pUser.setValue(values.proxyConfig.Username || '');
                 if (this.pPass) this.pPass.setValue(values.proxyConfig.Password || '');
-                if (this.pType) this.pType.setValue(values.proxyConfig.Protocol || 'http');
+                if (this.pType) this.pType.setValue(values.proxyConfig.Type || 'http');
             }
             // Timezone
             if (values.timezone && this.tzSelect) {

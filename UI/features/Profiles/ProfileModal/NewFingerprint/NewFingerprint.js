@@ -38,31 +38,28 @@ window.ProfileModals.NewFingerprint = {
             `,
             size: 'md',
             buttons: [
-                { text: 'Cancel', class: 'duck-btn-surface', id: 'new-fp-cancel', onClick: (e, modal) => {
-                    if (isProcessing) return;
+                { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => {
                     modal.close();
                 }},
-                { text: 'Change Fingerprint', class: 'duck-btn-primary', id: 'new-fp-submit', onClick: async (e, modal) => {
-                    if (isProcessing) return;
-                    isProcessing = true;
-
-                    // Update UI to processing state
-                    updateStatus('Processing...');
-                    const submitBtn = document.getElementById('new-fp-submit');
-                    const cancelBtn = document.getElementById('new-fp-cancel');
-                    if (submitBtn) submitBtn.disabled = true;
-                    if (cancelBtn) cancelBtn.disabled = true;
+                { text: 'Change Fingerprint', icon: 'fingerprint', class: 'duck-btn-primary', onClick: async (e, modal) => {
+                    modal.setLoading(true, 'Changing...');
 
                     try {
                         const idsArray = Array.isArray(selectedIds) ? selectedIds : [...selectedIds];
                         await DuckBridge.call('profile.regenerateFingerprint', idsArray);
-                        updateStatus('Fingerprint regenerated successfully.');
-                        setTimeout(() => modal.close(), 500);
+                        if (window.ProfilesView && window.ProfilesView._profilesData) { 
+                            for (let id of idsArray) { 
+                                const profile = window.ProfilesView._profilesData.find(p => p.id === id);
+                                if (profile) {
+                                    profile.message = 'Gernerated fingerprint suscessfully';
+                                    window.ProfilesView._table?.updateRow?.(id, profile);
+                                }
+                            } 
+                        }
+                        modal.close();
                     } catch (err) {
                         updateStatus(err.message || 'Failed to regenerate fingerprint.', true);
-                        isProcessing = false;
-                        if (submitBtn) submitBtn.disabled = false;
-                        if (cancelBtn) cancelBtn.disabled = false;
+                        modal.setLoading(false);
                     }
                 }}
             ],
@@ -72,3 +69,4 @@ window.ProfileModals.NewFingerprint = {
         }).open();
     }
 };
+

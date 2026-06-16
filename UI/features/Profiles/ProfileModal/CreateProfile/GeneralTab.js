@@ -56,14 +56,16 @@
         _getBrowserVersions(browserValue) {
             const browsers = this._browserCatalog?.Browsers || [];
             const selected = browsers.find(b => String(b.BrowserType || '').toLowerCase() === String(browserValue || '').toLowerCase());
-            return (selected?.Versions || []).map(v => ({ label: v.Version, value: v.Version }));
+            return (selected?.Versions || [])
+                .filter(v => v.Version !== '138')
+                .map(v => ({ label: v.Version, value: v.Version }));
         },
 
         _buildUserAgent(osVal, modelVal, browserVersion) {
             const block = this._fpTemplate?.OS?.[osVal];
             const model = (block?.Models || []).find(m => m.Name === modelVal) || block?.Models?.[0];
             if (model?.UserAgentTemplate) {
-                return model.UserAgentTemplate.replace('{VERSION}', browserVersion || '138');
+                return model.UserAgentTemplate.replace('{VERSION}', browserVersion || '');
             }
             return navigator.userAgent || '';
         },
@@ -75,14 +77,14 @@
 
             const osVal = this.osSelect ? this.osSelect.getValue() : 'Windows';
             const modelVal = this.osModelSelect ? this.osModelSelect.getValue() : null;
-            const browserVersion = this.browserVersion ? this.browserVersion.getValue() : '138';
+            const browserVersion = this.browserVersion ? this.browserVersion.getValue() : '';
             this.uaInput.setValue(this._buildUserAgent(osVal, modelVal, browserVersion));
         },
 
         async _randomizeUserAgent() {
             const osVal = this.osSelect ? this.osSelect.getValue() : 'Windows';
             const modelVal = this.osModelSelect ? this.osModelSelect.getValue() : null;
-            const browserVersion = this.browserVersion ? this.browserVersion.getValue() : '138';
+            const browserVersion = this.browserVersion ? this.browserVersion.getValue() : '';
 
             try {
                 const ua = await DuckBridge.call('profile.getRandomUserAgent', {
@@ -180,17 +182,16 @@
                     const selectedBrowser = this.browserSelect?.getValue?.() || initialBrowser;
                     const versionOptions = this._getBrowserVersions(selectedBrowser);
                     this.browserVersion?.setOptions?.(versionOptions);
-                    if (versionOptions.length > 0) {
-                        this.browserVersion?.setValue?.(versionOptions[0].value);
-                    }
+                    // Do not auto-select the first version
                     this._syncUaPreview();
                     window.ProfileModals?.CreateProfile?._scheduleSync?.();
                 }
             });
             this.browserVersion = window.DuckControls.Select.create({
                 label: 'Browser Version',
+                placeholder: 'Select...',
                 options: initialVersionOptions,
-                value: initialVersionOptions[0]?.value || '',
+                value: '',
                 onChange: () => {
                     this._syncUaPreview();
                     window.ProfileModals?.CreateProfile?._scheduleSync?.();

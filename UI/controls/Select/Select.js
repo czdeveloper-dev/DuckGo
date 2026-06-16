@@ -16,6 +16,9 @@ window.DuckControls.Select = {
             const labelEl = document.createElement('span');
             labelEl.className = 'ui-label-sm';
             labelEl.textContent = initialOptions.label;
+            if (initialOptions.required) {
+                labelEl.innerHTML += ' <span style="color: var(--danger, #ef4444);">*</span>';
+            }
             head.appendChild(labelEl);
 
             const actionsContainer = document.createElement('div');

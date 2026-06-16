@@ -179,7 +179,9 @@
           "ANGLE (Intel, Intel(R) HD Graphics 615 Direct3D11 vs_5_0 ps_5_0, D3D11)",
           "ANGLE (Intel, Intel(R) HD Graphics 530 Direct3D11 vs_5_0 ps_5_0, D3D11)"
         ]
-      }
+      },
+      "Extensions": ["WEBGL_debug_renderer_info", "ANGLE_instanced_arrays", "EXT_texture_filter_anisotropic", "EXT_color_buffer_float", "EXT_color_buffer_half_float", "EXT_disjoint_timer_query", "EXT_disjoint_timer_query_webgl2", "EXT_float_blend", "EXT_frag_depth", "EXT_shader_texture_lod", "EXT_sRGB", "EXT_texture_compression_bptc", "EXT_texture_compression_rgtc", "EXT_texture_filter_anisotropic", "EXT_texture_storage", "KHR_parallel_shader_compile", "OES_element_index_uint", "OES_standard_derivatives", "OES_texture_float", "OES_texture_float_linear", "OES_texture_half_float", "OES_texture_half_float_linear", "OES_vertex_array_object", "WEBGL_compressed_texture_s3tc", "WEBGL_compressed_texture_s3tc_srgb", "WEBGL_debug_renderer_info", "WEBGL_debug_shaders", "WEBGL_depth_texture", "WEBGL_draw_buffers", "WEBGL_lose_context", "WEBGL_multi_draw"],
+      "MaxTextureSize": 16384
     },
     "ConnectionTypes": {
       "wifi": [
@@ -267,7 +269,9 @@
           "ANGLE (Intel, Intel(R) Iris(R) Plus Graphics)",
           "ANGLE (Intel, Intel(R) UHD Graphics 617)"
         ]
-      }
+      },
+      "Extensions": ["WEBGL_debug_renderer_info", "ANGLE_instanced_arrays", "EXT_texture_filter_anisotropic", "EXT_color_buffer_float", "EXT_color_buffer_half_float", "EXT_disjoint_timer_query", "EXT_disjoint_timer_query_webgl2", "EXT_float_blend", "EXT_frag_depth", "EXT_shader_texture_lod", "EXT_sRGB", "EXT_texture_compression_bptc", "EXT_texture_compression_rgtc", "EXT_texture_filter_anisotropic", "EXT_texture_storage", "KHR_parallel_shader_compile", "OES_element_index_uint", "OES_standard_derivatives", "OES_texture_float", "OES_texture_float_linear", "OES_texture_half_float", "OES_texture_half_float_linear", "OES_vertex_array_object", "WEBGL_compressed_texture_s3tc", "WEBGL_compressed_texture_s3tc_srgb", "WEBGL_debug_renderer_info", "WEBGL_debug_shaders", "WEBGL_depth_texture", "WEBGL_draw_buffers", "WEBGL_lose_context", "WEBGL_multi_draw"],
+      "MaxTextureSize": 16384
     },
     "StorageQuota": 549755813888,
     "ConnectionTypes": {
@@ -337,7 +341,9 @@
           "Mesa Intel(R) UHD Graphics 770 (Gen12)",
           "llvmpipe (LLVM 18.1.8, 256 bits)"
         ]
-      }
+      },
+      "Extensions": ["WEBGL_debug_renderer_info", "ANGLE_instanced_arrays", "EXT_texture_filter_anisotropic", "EXT_color_buffer_float", "EXT_color_buffer_half_float", "EXT_disjoint_timer_query", "EXT_disjoint_timer_query_webgl2", "EXT_float_blend", "EXT_frag_depth", "EXT_shader_texture_lod", "EXT_sRGB", "EXT_texture_compression_bptc", "EXT_texture_compression_rgtc", "EXT_texture_filter_anisotropic", "EXT_texture_storage", "KHR_parallel_shader_compile", "OES_element_index_uint", "OES_standard_derivatives", "OES_texture_float", "OES_texture_float_linear", "OES_texture_half_float", "OES_texture_half_float_linear", "OES_vertex_array_object", "WEBGL_compressed_texture_s3tc", "WEBGL_compressed_texture_s3tc_srgb", "WEBGL_debug_renderer_info", "WEBGL_debug_shaders", "WEBGL_depth_texture", "WEBGL_draw_buffers", "WEBGL_lose_context", "WEBGL_multi_draw"],
+      "MaxTextureSize": 16384
     },
     "StorageQuota": 274877906944,
     "ConnectionTypes": {
@@ -438,7 +444,9 @@
           "WebGL OpenGL ES 3.0 (Samsung, Mali-G71 MC20)",
           "WebGL OpenGL ES 3.0 (Samsung, Mali-G71 MP18)"
         ]
-      }
+      },
+      "Extensions": ["WEBGL_debug_renderer_info", "ANGLE_instanced_arrays", "EXT_texture_filter_anisotropic", "EXT_color_buffer_float", "EXT_color_buffer_half_float", "OES_element_index_uint", "OES_standard_derivatives", "OES_texture_float", "OES_texture_float_linear", "OES_texture_half_float", "OES_texture_half_float_linear", "OES_vertex_array_object", "WEBGL_compressed_texture_s3tc", "WEBGL_debug_renderer_info", "WEBGL_debug_shaders", "WEBGL_lose_context"],
+      "MaxTextureSize": 8192
     },
     "StorageQuota": 137573171586,
     "ConnectionTypes": {
@@ -530,7 +538,9 @@
           "WebGL OpenGL ES 3.0 (Apple GPU A10X Fusion)",
           "WebGL OpenGL ES 3.0 (Apple GPU A10 Fusion)"
         ]
-      }
+      },
+      "Extensions": ["WEBGL_debug_renderer_info", "ANGLE_instanced_arrays", "EXT_texture_filter_anisotropic", "OES_element_index_uint", "OES_standard_derivatives", "OES_texture_float", "OES_texture_float_linear", "OES_texture_half_float", "OES_texture_half_float_linear", "OES_vertex_array_object", "WEBGL_compressed_texture_s3tc", "WEBGL_debug_renderer_info", "WEBGL_debug_shaders", "WEBGL_lose_context", "WEBGL_multi_draw"],
+      "MaxTextureSize": 16384
     },
     "StorageQuota": 1099511627776,
     "ConnectionTypes": {

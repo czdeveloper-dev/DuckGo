@@ -6,7 +6,7 @@ namespace DuckGo.Infrastructure.API;
 public class FingerprintDispatcher : IDispatcher
 {
     private readonly FingerprintService _svc;
-    private readonly string[] _actions = ["profile.generateFingerprint"];
+    private readonly string[] _actions = ["fingerprint.generateSummary"];
 
     public string Domain => "profile";
 

@@ -1,17 +1,17 @@
 /**
- * Profiles View — wired to DuckBridge (unified JS ↔ C# protocol)
+ * Profiles View â€” wired to DuckBridge (unified JS â†” C# protocol)
  *
  * Data flow:
- *   onShow() → loadGroups() + loadTags() + loadProfiles()
- *              → _updateGroupSelect() / _updateTagSelect()   (live dropdowns)
+ *   onShow() â†’ loadGroups() + loadTags() + loadProfiles()
+ *              â†’ _updateGroupSelect() / _updateTagSelect()   (live dropdowns)
  *
- * Group CRUD:  + Create   →  group.create
- *              Edit       →  group.update
- *              Delete     →  group.delete
+ * Group CRUD:  + Create   â†’  group.create
+ *              Edit       â†’  group.update
+ *              Delete     â†’  group.delete
  *
- * Tag CRUD:    + Create   →  tag.create
- *              Edit       →  (local, tags have no update endpoint)
- *              Delete     →  tag.delete
+ * Tag CRUD:    + Create   â†’  tag.create
+ *              Edit       â†’  (local, tags have no update endpoint)
+ *              Delete     â†’  tag.delete
  */
 (function () {
     'use strict';
@@ -25,19 +25,19 @@
         _tags: [],
         _visibleCols: new Set(['seq', 'name', 'resource', 'group', 'tags', 'proxy', 'note', 'status', 'message', 'created', 'lastopened', 'action']),
 
-        // ── View entry ──────────────────────────────────────────────────
+        // â”€â”€ View entry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         async onShow() {
             if (!this._initialized) {
+                this._initialized = true;
                 this._loadColPreferences();
                 this.initUI();
-                this._initialized = true;
             }
             await this.loadGroups();
             await this.loadTags();
             await this.loadProfiles();
         },
 
-        // ── Data loaders ────────────────────────────────────────────────
+        // â”€â”€ Data loaders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         async loadGroups() {
             try {
                 this._groups = await DuckBridge.call('group.list') || [];
@@ -113,7 +113,7 @@
             return g ? (g.Name ?? g.name) : '';
         },
 
-        // ── Select builders ────────────────────────────────────────────
+        // â”€â”€ Select builders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _buildGroupOptions() {
             return [
                 { label: 'All Groups', value: '' },
@@ -147,7 +147,7 @@
             if (this._tagCtrl) this._tagCtrl.setOptions(this._buildTagOptions());
         },
 
-        // ── Group CRUD ─────────────────────────────────────────────────
+        // â”€â”€ Group CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _buildGroupDeleteItems() {
             return this._groups.map(g => ({ label: g.Name || g.name || '', value: String(g.Id ?? g.id) }));
         },
@@ -211,7 +211,7 @@
             });
         },
 
-        // ── Tag CRUD ──────────────────────────────────────────────────
+        // â”€â”€ Tag CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _buildTagDeleteItems() {
             return this._tags.map(t => ({ label: t.Name || t.name || '', value: String(t.Id ?? t.id) }));
         },
@@ -274,7 +274,7 @@
             });
         },
 
-        // ── Init UI ──────────────────────────────────────────────────
+        // â”€â”€ Init UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         initUI() {
             const refreshEl = document.getElementById('ctrl-refresh');
             if (refreshEl) {
@@ -346,7 +346,14 @@
             this._initSelectControls();
             this._initActionChips();
             this._initBulkActions();
-            this._buildTable();
+            try {
+                this._buildTable();
+            } catch (err) {
+                console.error('[Profiles] _buildTable failed:', err);
+                if (window.DuckControls?.Toast) {
+                    window.DuckControls.Toast.error('Table creation failed: ' + (err.message || String(err)));
+                }
+            }
         },
 
         _initSearchControls() {
@@ -458,7 +465,7 @@
             DuckControls.ContextMenu.create(proxyEl, {
                 items: [
                     { label: 'Check Proxy', icon: 'wifi_tethering', onClick: () => { if (this._selectedIds.size > 0) this._bulkCheckProxy(); } },
-                    { label: 'Import Proxy', icon: 'upload', onClick: () => { window.ProfileModals?.ImportProxy?.show(); } },
+                    { label: 'Import Proxy', icon: 'upload', onClick: () => { window.ProfileModals?.ImportProxy?.show([...this._selectedIds], async () => { await this.loadProfiles(); }); } },
                     { label: 'Copy Proxy', icon: 'content_copy', onClick: () => this._bulkCopyProxy() },
                     'divider',
                     { label: 'Remove Proxy', icon: 'link_off', danger: true, onClick: () => { if (this._selectedIds.size > 0) this._bulkRemoveProxy(); } }
@@ -476,7 +483,7 @@
                 items: [
                     { label: 'Import Profiles', icon: 'publish', onClick: () => { window.ProfileModals?.ImportProfiles?.show([...this._selectedIds]); } },
                     { label: 'Export Profiles', icon: 'download', onClick: () => { if (this._selectedIds.size > 0) window.ProfileModals?.ExportProfiles?.show([...this._selectedIds]); } },
-                    { label: 'Compare Profiles', icon: 'compare_arrows', onClick: () => { if (this._selectedIds.size > 0) window.ProfileModals?.CompareProfiles?.show(this._profilesData, this._selectedIds); } },
+                    { label: 'Compare Profiles', icon: 'compare_arrows', onClick: () => { window.ProfileModals?.CompareProfiles?.show(this._profilesData, this._selectedIds); } },
                     'divider',
                     { label: 'Delete Selected', icon: 'delete_sweep', danger: true, onClick: () => { if (this._selectedIds.size > 0) this._bulkDelete(); } }
                 ]
@@ -526,7 +533,7 @@
             const cols = [
                 { id: 'select', type: 'checkbox', title: 'Select all', locked: true, lockedPosition: 'left', resizable: false, width: '52px', onCheckAll: (e) => this._handleCheckAll(e) },
                 { id: 'seq', label: '#', width: '1ch', minWidth: '1ch', locked: true, lockedPosition: 'left', resizable: false, autoSize: true, align: 'center', render: (r) => { const el = document.createElement('span'); el.textContent = r.seq; return el; } },
-                { id: 'name', label: 'NAME', width: '35ch', maxWidth: '35ch', locked: true, lockedPosition: 'left', resizable: false, render: (r) => _this._renderNameCell(r) },
+                { id: 'name', label: 'NAME', width: '30ch', maxWidth: '30ch', locked: true, lockedPosition: 'left', resizable: false, render: (r) => _this._renderNameCell(r) },
                 { id: 'resource', label: 'RESOURCE', width: '8ch', minWidth: '8ch', resizable: false, autoSize: true, field: 'browserType', render: (r) => _this._renderResourceCell(r) },
                 { id: 'group', label: 'GROUP', width: '20ch', minWidth: '20ch', maxWidth: '30ch', render: (r) => _this._renderGroupCell(r) },
                 { id: 'tags', label: 'TAGS', width: '20ch', minWidth: '20ch', maxWidth: '30ch', render: (r) => _this._renderTagsCell(r) },
@@ -536,6 +543,7 @@
                 { id: 'note', label: 'NOTE', width: '30ch', minWidth: '30ch', maxWidth: '40ch', resizable: true, render: (r) => _this._renderNoteCell(r) },
                 { id: 'created', label: 'CREATED TIME', width: '25ch', minWidth: '25ch', resizable: false, autoSize: true, render: (r) => _this._renderDateCell(r.createdAt) },
                 { id: 'lastopened', label: 'LAST OPENED', width: '25ch', minWidth: '25ch', resizable: false, autoSize: true, render: (r) => _this._renderDateCell(r.lastOpened) },
+                { id: 'filler', fillSpace: true },
                 { id: 'action', label: 'CONTROL', width: '170px', locked: true, lockedPosition: 'right', resizable: false, render: (r) => _this._renderActionCell(r) }
             ];
 
@@ -556,7 +564,7 @@
         },
         _updateStats(profiles)   { if (this._statEl) this._statEl.textContent = `${profiles.length}`; },
 
-        // ── Bulk / row actions ───────────────────────────────────────
+        // â”€â”€ Bulk / row actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         async _startProfile(id) {
             try { await DuckBridge.call('browser.start', { id }); await this.loadProfiles(); }
             catch (e) { console.error('Failed to start profile:', e); }
@@ -620,26 +628,46 @@
                 window.ProfileModals?.CreateProfile?._refreshEntityData?.();
             });
         },
-        _bulkRemoveProxy() { if (this._selectedIds.size > 0) window.ProfileModals?.RemoveProxy?.show(this._selectedIds, async (ids) => { await this.loadProfiles(); }); },
-        _bulkCopyProxy() {
+        _bulkRemoveProxy() { 
+            if (this._selectedIds.size > 0) {
+                window.ProfileModals?.RemoveProxy?.show(this._selectedIds, async (ids) => { 
+                    try {
+                        await DuckBridge.call('profile.removeProxy', { ids: ids });
+                    } catch (e) {
+                        console.error('Failed to remove proxy', e);
+                    }
+                    await this.loadProfiles(); 
+                });
+            }
+        },
+        async _bulkCopyProxy() {
             if (this._selectedIds.size === 0) return;
-            const proxies = [...this._selectedIds].map(id => this._profilesData.find(p => p.id === id)?.proxy).filter(p => p && p !== 'Direct');
-            if (!proxies.length) return;
-            this._copyToClipboard(proxies.join('\n'));
+            try {
+                const res = await DuckBridge.call('profile.copyProxy', { ids: [...this._selectedIds] });
+                if (!res?.success) window.DuckControls.Toast?.error?.('Error', 'No proxies found or copy failed');
+            } catch (e) {
+                window.DuckControls.Toast?.error?.('Error', 'Failed to copy proxies');
+            }
         },
         async _bulkCheckProxy() {
             if (this._selectedIds.size === 0) return;
-            const idsWithProxy = [...this._selectedIds].filter(id => {
+            
+            const idsWithProxy = [];
+            for (const id of this._selectedIds) {
                 const r = this._profilesData.find(p => p.id === id);
-                return r?.proxy && r.proxy !== 'Direct' && r.proxy !== '-';
-            });
-            if (!idsWithProxy.length) return;
-
-            for (const id of idsWithProxy) {
-                const r = this._profilesData.find(p => p.id === id);
-                if (r) { r.status = 'running'; r.message = 'Checking proxy...'; }
+                if (!r) continue;
+                if (r.proxy && r.proxy !== 'Direct' && r.proxy !== '-') {
+                    idsWithProxy.push(id);
+                    r.status = 'running';
+                    r.message = 'Checking proxy...';
+                } else {
+                    r.status = 'ready';
+                    r.message = '[ No Proxy ]';
+                }
             }
             this._loadTableData(this._profilesData);
+
+            if (!idsWithProxy.length) return;
 
             for (const id of idsWithProxy) {
                 const r = this._profilesData.find(p => p.id === id);
@@ -670,11 +698,20 @@
         },
 
         async _checkSingleProxy(row) {
+            if (!row.proxy || row.proxy === 'Direct' || row.proxy === '-') {
+                row.status = 'ready';
+                row.message = '[ No Proxy ]';
+                this._loadTableData(this._profilesData);
+                return;
+            }
+
             row.message = 'Checking proxy...';
+            row.status = 'running';
             this._loadTableData(this._profilesData);
             
             try {
                 const result = await DuckBridge.call('profile.checkProxy', { id: row.id });
+                row.status = 'ready';
                 if (result?.Status === 'alive') {
                     row.message = `[ Proxy Alive ] - ${result.LatencyMs}ms`;
                 } else if (result?.LatencyMs >= 4900 || result?.Status === 'timeout') {
@@ -683,6 +720,7 @@
                     row.message = '[ Proxy Expired ]';
                 }
             } catch (e) {
+                row.status = 'ready';
                 row.message = '[ Proxy Expired ]';
             }
             this._loadTableData(this._profilesData);
@@ -691,7 +729,7 @@
         async _detectScreen(row) {
             try {
                 const info = await DuckBridge.call('profile.detectScreen');
-                const msg = `Screen: ${info.width}×${info.height}\nWork area: ${info.workAreaWidth}×${info.workAreaHeight}\nVirtual: ${info.virtualScreenWidth}×${info.virtualScreenHeight}`;
+                const msg = `Screen: ${info.width}Ã—${info.height}\nWork area: ${info.workAreaWidth}Ã—${info.workAreaHeight}\nVirtual: ${info.virtualScreenWidth}Ã—${info.virtualScreenHeight}`;
                 window.DuckControls.Toast?.info?.('Screen Info', msg);
             } catch (e) {
                 window.DuckControls.Toast?.error?.('Detect Failed', e?.message || 'Unknown error');
@@ -701,8 +739,30 @@
         async _duplicateProfile(row) {
             try {
                 const newProfile = await DuckBridge.call('profile.duplicate', { id: row.id, name: `${row.name} (Copy)` });
-                window.DuckControls.Toast?.success?.('Duplicated', `Profile "${row.name}" has been duplicated`);
-                if (window.ProfilesView?.loadProfiles) window.ProfilesView.loadProfiles();
+                const idx = this._profilesData.findIndex(p => p.id === row.id);
+                if (idx !== -1) {
+                    const mappedProfile = {
+                        ...newProfile,
+                        id:         newProfile.Id ?? newProfile.id ?? 0,
+                        name:       newProfile.Name ?? newProfile.name ?? 'Unknown',
+                        groupName:  newProfile.GroupName ?? this._getGroupName(newProfile.GroupId ?? newProfile.groupId),
+                        tags:       newProfile.TagNames ?? newProfile.tagNames ?? [],
+                        proxy:      newProfile.ProxyName ?? newProfile.proxy ?? 'Direct',
+                        notes:      newProfile.Notes ?? newProfile.notes ?? '',
+                        status:     newProfile.Status ?? newProfile.status ?? 'ready',
+                        message:    newProfile.Message ?? newProfile.message ?? '-',
+                        createdAt:  newProfile.CreatedAt ?? newProfile.createdAt,
+                        lastOpened: newProfile.LastOpened ?? newProfile.lastOpened,
+                        browserType: newProfile.BrowserType ?? newProfile.browserType ?? 'Chromium',
+                        platform:   newProfile.Platform ?? newProfile.platform ?? 'Windows'
+                    };
+                    this._profilesData.splice(idx + 1, 0, mappedProfile);
+                    this._profilesData.forEach((p, i) => p.seq = i + 1);
+                    this._loadTableData(this._profilesData);
+                    this._updateStats(this._profilesData);
+                } else {
+                    if (window.ProfilesView?.loadProfiles) window.ProfilesView.loadProfiles();
+                }
             } catch (e) {
                 window.DuckControls.Toast?.error?.('Duplicate Failed', e?.message || 'Unknown error');
             }
@@ -729,7 +789,7 @@
             if (cnt) cnt.textContent = `${this._selectedIds.size} selected`;
         },
 
-        // ── Cell renderers ───────────────────────────────────────────
+        // â”€â”€ Cell renderers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _renderNameCell(row) {
             const wrap = document.createElement('div');
             wrap.style.cssText = 'width:100%;';
@@ -746,6 +806,7 @@
             
             // Create Input control for inline editing
             const inputCtrl = DuckControls.Input.create({
+                icon: 'badge',
                 placeholder: 'Enter name...',
                 value: row.name || ''
             });
@@ -870,6 +931,7 @@
 
             // Create Input control for inline editing
             const inputCtrl = window.DuckControls.Input.create({
+                icon: 'edit_note',
                 placeholder: 'Enter note...',
                 value: row.notes || ''
             });
@@ -934,7 +996,12 @@
                 const cp = document.createElement('button');
                 cp.style.cssText = 'flex-shrink:0;background:none;border:none;cursor:pointer;padding:0 2px;color:var(--text-muted);display:flex;align-items:center;';
                 cp.innerHTML = '<span class="material-symbols-outlined" style="font-size:13px;">content_copy</span>';
-                cp.onclick = (e) => { e.stopPropagation(); this._copyToClipboard(msg); };
+                cp.onclick = async (e) => { 
+                    e.stopPropagation(); 
+                    await this._copyToClipboard(msg); 
+                    cp.innerHTML = '<span class="material-symbols-outlined" style="font-size:13px;color:var(--success);">check</span>';
+                    setTimeout(() => cp.innerHTML = '<span class="material-symbols-outlined" style="font-size:13px;">content_copy</span>', 1000);
+                };
                 wrap.appendChild(cp);
             }
             const lbl = document.createElement('span');
@@ -1013,9 +1080,14 @@
             DuckControls.ContextMenu.create(null, {
                 items: [
                     { label: 'Copy', icon: 'content_copy', children: [
-                        { label: 'Profile Name', icon: 'badge', onClick: () => this._copyToClipboard(row.name) },
-                        { label: 'Profile ID', icon: 'fingerprint', onClick: () => this._copyToClipboard(row.id.toString()) },
-                        { label: 'Proxy', icon: 'public', onClick: () => { const p = row.proxy || ''; if (p && p !== 'Direct' && p !== '-') this._copyToClipboard(p); } }
+                        { label: 'Profile Name', icon: 'badge', onClick: () => { DuckBridge.call('clipboard.writeText', { text: row.name }); } },
+                        { label: 'Profile ID', icon: 'fingerprint', onClick: () => { DuckBridge.call('clipboard.writeText', { text: row.id.toString() }); } },
+                        { label: 'Proxy', icon: 'public', onClick: async () => {
+                            try {
+                                const res = await DuckBridge.call('profile.copyProxy', { ids: [row.id] });
+                                if (!res?.success) window.DuckControls.Toast?.error?.('Error', 'No proxy found or copy failed');
+                            } catch { window.DuckControls.Toast?.error?.('Error', 'Failed to copy proxy'); }
+                        }}
                     ]},
                     'divider',
                     { label: 'Browser Config', icon: 'settings', children: [
@@ -1034,7 +1106,7 @@
             }).showAt(e.clientX, e.clientY);
         },
 
-        // ── Utilities ───────────────────────────────────────────────
+        // â”€â”€ Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; },
         _formatDate(dateStr) {
             if (!dateStr) return '-';
@@ -1077,3 +1149,4 @@
     window.DuckApp?.registerView('profiles', VIEW);
     window.ProfilesView = VIEW;
 })();
+

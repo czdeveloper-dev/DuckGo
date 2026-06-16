@@ -194,18 +194,32 @@ public class FingerprintService
                     Platform = new TypedConfig<string>("noise", osModel.PlatformString),
                     Language = new TypedConfig<string>("noise", acceptLang),
                     UserAgent = new TypedConfig<string>("noise", ua),
+                    AcceptLanguage = new TypedConfig<string>("noise", acceptLang),
+                    Languages = langs,
                     Timezone = new TypedConfig<string>("noise", tz),
+                    TimezoneOffset = GetTimezoneOffsetMinutes(tz),
                     HardwareConcurrency = new TypedConfig<int?>("noise", hwTier.Concurrency),
                     DeviceMemory = new TypedConfig<int?>("noise", hwTier.Memory),
                     Architecture = new TypedConfig<string>("noise", osModel.Architecture),
                     Bitness = new TypedConfig<string>("noise", osModel.Bitness),
+                    CpuBrand = new TypedConfig<string>("noise", GetCpuBrand(osModel.Architecture)),
+                    Touch = new TouchConfig
+                    {
+                        Mode = "noise",
+                        MaxTouchPoints = 0,
+                        TouchSupport = false
+                    },
                     Screen = new ScreenConfig
                     {
                         Mode = "noise",
                         Width = screenPreset.Width,
                         Height = screenPreset.Height,
                         ColorDepth = 24,
-                        PixelRatio = screenPreset.PixelRatio
+                        PixelRatio = screenPreset.PixelRatio,
+                        AvailWidth = screenPreset.Width,
+                        AvailHeight = screenPreset.Height - 40,
+                        AvailLeft = 0,
+                        AvailTop = 0
                     }
                 },
                 Fingerprint = new FingerprintConfig
@@ -217,6 +231,8 @@ public class FingerprintService
                         Renderer = gpuRenderer,
                         NoiseSeed = webglSeed,
                         NoiseLevel = webglNoiseLevel,
+                        Extensions = osTmpl.WebGL.Extensions,
+                        MaxTextureSize = osTmpl.WebGL.MaxTextureSize,
                         ImageSpoofing = new ImageSpoofingConfig
                         {
                             Mode = "noise",
@@ -266,10 +282,10 @@ public class FingerprintService
                     },
                     MediaDevices = new MediaDevicesConfig
                     {
-                        Mode = "real",
-                        VideoInputs = null,
-                        AudioInputs = null,
-                        AudioOutputs = null
+                        Mode = "noise",
+                        VideoInputs = 1,
+                        AudioInputs = 2,
+                        AudioOutputs = 2
                     },
                     Connection = PickRandomConnectionPreset(osTmpl),
                     StorageQuota = new TypedConfig<long?>("noise", osTmpl.StorageQuota),
@@ -278,7 +294,16 @@ public class FingerprintService
                 },
                 Network = new NetworkConfig(),
                 Security = new SecurityConfig(),
-                Location = await BuildLocationConfigAsync(tz)
+                Location = await BuildLocationConfigAsync(tz),
+                UI = new UIConfig
+                {
+                    Mode = "GUI",
+                    WindowSize = new WindowSizeConfig
+                    {
+                        Width = screenPreset.Width,
+                        Height = screenPreset.Height
+                    }
+                }
             };
         }
 
@@ -473,5 +498,27 @@ public class FingerprintService
             File.AppendAllText(path, JsonSerializer.Serialize(log) + "\n");
         }
         catch { }
+    }
+
+    private static int GetTimezoneOffsetMinutes(string timezone)
+    {
+        try
+        {
+            var tz = TimeZoneInfo.FindSystemTimeZoneById(timezone);
+            return (int)tz.BaseUtcOffset.TotalMinutes;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    private static string GetCpuBrand(string architecture)
+    {
+        return architecture?.ToLowerInvariant() switch
+        {
+            "arm" => "Apple Silicon",
+            _ => "Intel Core i7-9700K"
+        };
     }
 }

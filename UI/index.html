@@ -19,7 +19,7 @@
             <!-- Page Container -->
             <div id="page-container">
                 <div class="page-view active" data-view-name="profiles" id="view-profiles" data-include="http://duckgo.local/features/Profiles/Profiles.html"></div>
-                <div class="page-view" data-view-name="proxies" id="view-proxies"></div>
+                <div class="page-view" data-view-name="proxies" id="view-proxies" data-include="http://duckgo.local/features/Proxies/Proxies.html"></div>
                 <div class="page-view" data-view-name="groups" id="view-groups"></div>
                 <div class="page-view" data-view-name="tags" id="view-tags"></div>
                 <div class="page-view" data-view-name="automation" id="view-automation"></div>
@@ -62,10 +62,12 @@
 
     <!-- Feature CSS -->
     <link rel="stylesheet" href="http://duckgo.local/features/Profiles/Profiles.css?v=30">
+    <link rel="stylesheet" href="http://duckgo.local/features/Proxies/Proxies.css?v=32">
 
     <!-- Scripts - MUST be at end of body so DOM is ready -->
     <script src="http://duckgo.local/core/utils.js?v=30"></script>
     <script src="http://duckgo.local/core/store.js?v=30"></script>
+    <script src="http://duckgo.local/core/FieldValidator.js?v=30"></script>
     <!-- Toast.js must load BEFORE bridge.js (bridge uses DuckControls.Toast) -->
     <script src="http://duckgo.local/controls/Toast/Toast.js?v=30"></script>
     <script src="http://duckgo.local/core/bridge.js?v=30"></script>
@@ -73,13 +75,13 @@
     <script src="http://duckgo.local/layouts/Sidebar/Sidebar.js?v=30"></script>
 
     <!-- Controls Scripts (must load before feature scripts) -->
-    <script src="http://duckgo.local/controls/Modal/Modal.js?v=30"></script>
+    <script src="http://duckgo.local/controls/Modal/Modal.js?v=33"></script>
     <script src="http://duckgo.local/controls/Dropdown/Dropdown.js?v=30"></script>
     <script src="http://duckgo.local/controls/Button/Button.js?v=30"></script>
     <script src="http://duckgo.local/controls/Input/Input.js?v=30"></script>
     <script src="http://duckgo.local/controls/Select/Select.js?v=30"></script>
     <script src="http://duckgo.local/controls/Badge/Badge.js?v=30"></script>
-    <script src="http://duckgo.local/controls/Checkbox/Checkbox.js?v=30"></script>
+    <script src="http://duckgo.local/controls/Checkbox/Checkbox.js?v=31"></script>
     <script src="http://duckgo.local/controls/Table/Table.js?v=30"></script>
     <script src="http://duckgo.local/controls/Radio/Radio.js?v=30"></script>
     <script src="http://duckgo.local/controls/SpinNumber/SpinNumber.js?v=30"></script>
@@ -100,7 +102,7 @@
 
     <!-- Modal Scripts -->
     <script src="http://duckgo.local/features/Profiles/ProfileModal/ClearCache/ClearCache.js?v=30"></script>
-    <script src="http://duckgo.local/features/Profiles/ProfileModal/NewFingerprint/NewFingerprint.js?v=30"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/NewFingerprint/NewFingerprint.js?v=31"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/SetBrowserVersion/SetBrowserVersion.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/ChangeLocation/ChangeLocation.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/BulkRename/BulkRename.js?v=30"></script>
@@ -108,13 +110,13 @@
     <script src="http://duckgo.local/features/Profiles/ProfileModal/EntityModals/DeleteEntityModal.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/ChangeBookmark/ChangeBookmark.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/UpdateStartUrl/UpdateStartUrl.js?v=30"></script>
-    <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/GeneralTab.js?v=31"></script>
-    <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/NetworkTab.js?v=30"></script>
-    <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/HardwareTab.js?v=31"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/GeneralTab.js?v=30"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/NetworkTab.js?v=32"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/HardwareTab.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/SecurityTab.js?v=32"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/CookiesTab.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/NotesTab.js?v=30"></script>
-    <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/CreateProfileModal.js?v=38"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/CreateProfileModal.js?v=44"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/CustomizeColumn/CustomizeColumn.js?v=30"></script>
     <script src="http://duckgo.local/controls/FileUploader/FileUploader.js?v=30"></script>
     <script src="http://duckgo.local/controls/Card/Card.js?v=30"></script>
@@ -129,11 +131,22 @@
     <script src="http://duckgo.local/features/Profiles/ProfileModal/ManageData/ManageData.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/SyncActions/SyncActions.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/Arrange/Arrange.js?v=30"></script>
+    
+    <!-- Proxy Modal Scripts -->
+    <script src="http://duckgo.local/features/Proxies/ProxyModal/CreateProxy/CreateProxyModal.js?v=32"></script>
+    <script src="http://duckgo.local/features/Proxies/ProxyModal/AutoCheckSchedule/AutoCheckSchedule.js?v=32"></script>
+    <script src="http://duckgo.local/features/Proxies/ProxyModal/ProxyUsage/ProxyUsage.js?v=32"></script>
+    <script src="http://duckgo.local/features/Proxies/ProxyModal/ImportProxy/ImportProxy.js?v=32"></script>
+    <script src="http://duckgo.local/features/Proxies/ProxyModal/ExportProxies/ExportProxies.js?v=30"></script>
+    <script src="http://duckgo.local/features/Proxies/ProxyModal/CompareProxies/CompareProxies.js?v=30"></script>
+    <script src="http://duckgo.local/features/Proxies/ProxyModal/BulkRename/BulkRename.js?v=31"></script>
+    <script src="http://duckgo.local/features/Proxies/ProxyModal/CustomizeColumn/CustomizeColumn.js?v=30"></script>
+    <script src="http://duckgo.local/features/Proxies/ProxyDeleteEntityModal.js?v=30"></script>
 
     <!-- Feature Scripts (must load before app.js) -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js?v=30"></script>
-    <script src="http://duckgo.local/features/Profiles/Profiles.js?v=31"></script>
-    <script src="http://duckgo.local/features/Proxies/Proxies.js?v=30"></script>
+    <script src="http://duckgo.local/features/Profiles/Profiles.js?v=32"></script>
+    <script src="http://duckgo.local/features/Proxies/Proxies.js?v=34"></script>
     <script src="http://duckgo.local/features/Groups/Groups.js?v=30"></script>
     <script src="http://duckgo.local/features/Tags/Tags.js?v=30"></script>
     <script src="http://duckgo.local/features/Automation/Automation.js?v=30"></script>

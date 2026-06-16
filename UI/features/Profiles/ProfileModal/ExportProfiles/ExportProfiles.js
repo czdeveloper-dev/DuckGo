@@ -1,4 +1,4 @@
-window.ProfileModals = window.ProfileModals || {};
+﻿window.ProfileModals = window.ProfileModals || {};
 
 window.ProfileModals.ExportProfiles = {
     _modal: null,
@@ -38,6 +38,7 @@ window.ProfileModals.ExportProfiles = {
             let selectedFormat = 'duckprofile';
 
             const formatCtrl = DuckControls.ComboBox.create({
+                icon: 'export_notes',
                 options: items,
                 value: selectedFormat,
                 onChange: (e) => {
@@ -80,8 +81,53 @@ window.ProfileModals.ExportProfiles = {
             closeOnOverlay: true,
             buttons: [
                     { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
-                    { text: 'Export', class: 'duck-btn-primary', onClick: (e, modal) => {
-                        modal.close();
+                    { text: 'Export', icon: 'file_download', class: 'duck-btn-primary', onClick: async (e, modal) => {
+                        modal.setLoading(true, 'Exporting...');
+
+                        try {
+                            const idsArray = Array.isArray(selectedIds) ? selectedIds : [...selectedIds];
+                            const result = await DuckBridge.call('profile.exportProfiles', { format: selectedFormat, ids: idsArray });
+                            
+                            if (result && result.success && result.data) {
+                                // Save file
+                                const blob = new Blob([result.data], { type: 'text/plain;charset=utf-8' });
+                                
+                                if (window.showSaveFilePicker) {
+                                    try {
+                                        const fileHandle = await window.showSaveFilePicker({
+                                            suggestedName: result.fileName || `export.${selectedFormat}`,
+                                            types: [{
+                                                description: `${selectedFormat.toUpperCase()} File`,
+                                                accept: { 'text/plain': [`.${selectedFormat}`] },
+                                            }],
+                                        });
+                                        const writable = await fileHandle.createWritable();
+                                        await writable.write(blob);
+                                        await writable.close();
+                                    } catch (err) {
+                                        if (err.name !== 'AbortError') throw err;
+                                    }
+                                } else {
+                                    const a = document.createElement('a');
+                                    a.href = URL.createObjectURL(blob);
+                                    a.download = result.fileName || `export.${selectedFormat}`;
+                                    a.style.display = 'none';
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    setTimeout(() => {
+                                        document.body.removeChild(a);
+                                        URL.revokeObjectURL(a.href);
+                                    }, 100);
+                                }
+                            } else {
+                                throw new Error(result?.error || 'Failed to export profiles');
+                            }
+                            
+                            modal.close();
+                        } catch (err) {
+                            modal.setLoading(false);
+                            window.DuckControls.Toast?.error?.('Export Failed', err?.message || 'An error occurred while exporting');
+                        }
                     }}
                 ],
             onClose: () => {
@@ -92,3 +138,5 @@ window.ProfileModals.ExportProfiles = {
         this._modal.open();
     }
 };
+
+

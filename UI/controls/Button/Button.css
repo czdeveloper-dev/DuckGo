@@ -35,13 +35,15 @@
     flex-shrink: 0;
 }
 
-/* Button spinner */
+/* Button spinner - hidden by default, shown only in loading state */
 .duck-btn-spinner {
+    position: absolute;
     width: 14px;
     height: 14px;
     border: 2px solid currentColor;
     border-top-color: transparent;
     border-radius: 50%;
+    display: none;
     animation: spin 0.8s linear infinite;
 }
 
@@ -163,8 +165,7 @@
 /* ── Button States ───────────────────────────────────────── */
 
 /* Disabled */
-.duck-btn:disabled,
-.duck-btn.duck-btn-disabled {
+.duck-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     pointer-events: none;
@@ -172,22 +173,30 @@
 
 /* Loading */
 .duck-btn.duck-btn-loading {
-    position: relative;
     pointer-events: none;
-    color: transparent !important;
 }
 
 .duck-btn.duck-btn-loading .duck-btn-icon {
-    visibility: hidden;
+    display: none !important;
 }
 
 .duck-btn.duck-btn-loading .duck-btn-spinner {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    visibility: visible;
-    color: currentColor;
+    display: inline-block;
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+    margin-right: 4px;
+    width: 14px;
+    height: 14px;
+    border-color: var(--text-primary);
+    border-top-color: transparent;
+}
+
+.duck-btn-primary.duck-btn-loading .duck-btn-spinner,
+.duck-btn-danger.duck-btn-loading .duck-btn-spinner {
+    border-color: #ffffff;
+    border-top-color: transparent;
 }
 
 /* ── Icon-only Button ─────────────────────────────────────── */

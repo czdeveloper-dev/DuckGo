@@ -54,6 +54,7 @@ public record ProfileCreateRequest(
     List<int>? TagIds,
     int? ProxyId,
     string BrowserType,
+    string? BrowserVersion,
     string? ProfileData,
     string? Notes,
     string? StartUrl,
@@ -83,6 +84,7 @@ public record FingerprintOptions(
     int? DeviceMemory,
     string? CpuMode,
     string? AudioMode,
+    int? AudioSampleRate,
     string? LocationMode,
     double? Latitude,
     double? Longitude,
@@ -163,21 +165,63 @@ public record TagCreateRequest(string Name);
 public record TagUpdateRequest(int Id, string Name);
 public record TagDeleteRequest(int Id);
 
+// Proxy Group/Tag requests
+public record ProxyGroupCreateRequest(string Name);
+public record ProxyGroupUpdateRequest(int Id, string Name);
+public record ProxyGroupDeleteRequest(int Id);
+public record ProxyTagCreateRequest(string Name);
+public record ProxyTagUpdateRequest(int Id, string Name);
+public record ProxyTagDeleteRequest(int Id);
+
 public record ProxyCreateRequest(
-    string Name,
-    string Type,
+    string? Name,
+    string? Type,
+    int? GroupId,
+    List<int>? TagIds,
+    string? RotaryApi,
     string Host,
     int Port,
-    string Username,
-    string Password
+    string? Username,
+    string? Password,
+    string? Notes
 );
 
 public record ProxyUpdateRequest(
     int Id,
+    string? Name,
+    string? Type,
+    int? GroupId,
+    List<int>? TagIds,
+    string? RotaryApi,
+    string? Host,
+    int? Port,
+    string? Username,
+    string? Password,
+    string? Notes
+);
+
+public record ProxyListResponse(int Total, List<ProxyListItem> Items);
+
+public record ProxyListItem(
+    int Id,
     string Name,
     string Type,
+    int? GroupId,
+    string? GroupName,
+    List<int> TagIds,
+    List<string> TagNames,
     string Host,
     int Port,
-    string Username,
-    string Password
+    string? Username,
+    string? Password,
+    string? RotaryApi,
+    string? Notes,
+    string Status,
+    string? Message,
+    int? LatencyMs,
+    DateTime CreatedAt
 );
+
+public record ProxyNameUpdateRequest(int Id, string Name);
+public record ProxyNotesUpdateRequest(int Id, string Notes);
+public record ProxyBulkCreateRequest(List<string> Proxies);

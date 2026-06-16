@@ -1,4 +1,4 @@
-window.ProfileModals = window.ProfileModals || {};
+﻿window.ProfileModals = window.ProfileModals || {};
 
 window.ProfileModals.SetBrowserVersion = {
     _modal: null,
@@ -44,20 +44,22 @@ window.ProfileModals.SetBrowserVersion = {
             closeOnOverlay: true,
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
-                { text: 'Update Version', class: 'duck-btn-primary', onClick: async (e, modal) => {
+                { text: 'Update Version', icon: 'update', class: 'duck-btn-primary', onClick: async (e, modal) => {
                     const version = versionCombo ? versionCombo.getValue() : '';
                     if (!version) return;
-                    modal.close();
                     
+                    modal.setLoading(true, 'Updating...');
+
                     try {
                         await DuckBridge.call('profile.bulkUpdateBrowserVersion', {
                             ids: idsArray,
                             version: version,
                             autoUpdateUA: autoUpdateUA
                         });
-                        window.DuckControls.Toast?.success?.('Success', 'Browser version updated');
                         if (window.ProfilesView?.loadProfiles) await window.ProfilesView.loadProfiles();
+                        modal.close();
                     } catch (err) {
+                        modal.setLoading(false);
                         window.DuckControls.Toast?.error?.('Update Failed', err?.message || 'Failed to update browser version');
                     }
                 }}
@@ -91,7 +93,7 @@ window.ProfileModals.SetBrowserVersion = {
             const versions = browserDef?.Versions || [];
             
             let options = versions.map(v => ({
-                label: `${browserDef.BrowserType} ${v.Version} ${v.Description ? `(${v.Description})` : ''}`,
+                label: `${browserDef?.BrowserType || browserType} ${v.Version} ${v.Description ? `(${v.Description})` : ''}`,
                 value: v.Version
             }));
 
@@ -109,6 +111,7 @@ window.ProfileModals.SetBrowserVersion = {
             versionWrap.style.cssText = 'background: var(--bg-subtle); padding: 16px; border-radius: 6px; border: 1px solid var(--border-light); display: flex; flex-direction: column; gap: 12px;';
 
             versionCombo = DuckControls.ComboBox.create({
+                icon: 'update',
                 label: `Select Target Version for ${browserType}`,
                 options: options,
                 value: preSelected,
@@ -144,3 +147,5 @@ window.ProfileModals.SetBrowserVersion = {
         });
     }
 };
+
+

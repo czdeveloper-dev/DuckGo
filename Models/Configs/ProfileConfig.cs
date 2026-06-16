@@ -8,6 +8,7 @@ public class ProfileDataConfig
     public NetworkConfig? Network { get; set; }
     public SecurityConfig? Security { get; set; }
     public LocationConfig? Location { get; set; }
+    public UIConfig? UI { get; set; }
 
     public static ProfileDataConfig Default => new()
     {
@@ -16,7 +17,8 @@ public class ProfileDataConfig
         Fingerprint = FingerprintConfig.Default,
         Network = new NetworkConfig(),
         Security = new SecurityConfig(),
-        Location = LocationConfig.Default
+        Location = LocationConfig.Default,
+        UI = new UIConfig()
     };
 }
 

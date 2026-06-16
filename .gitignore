@@ -28,3 +28,10 @@ packages/
 # Local configuration (if any)
 *.local
 appsettings.local.json
+
+# Logs
+*.log
+debug*.log
+
+# Backup files
+*_backup*

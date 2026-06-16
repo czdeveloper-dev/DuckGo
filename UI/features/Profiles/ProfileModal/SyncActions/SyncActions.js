@@ -1,4 +1,4 @@
-window.ProfileModals = window.ProfileModals || {};
+﻿window.ProfileModals = window.ProfileModals || {};
 
 window.ProfileModals.SyncActions = {
     _modal: null,
@@ -59,6 +59,7 @@ window.ProfileModals.SyncActions = {
         leftCol.appendChild(pasteTitleWrap);
         
         pasteTa = window.DuckControls.Textarea.create({
+                icon: 'sync',
             placeholder: 'Text for browser 1...\nText for browser 2...\n(Press Shift+Enter for multiple lines in the same browser)',
             rows: 6
         });
@@ -137,6 +138,7 @@ window.ProfileModals.SyncActions = {
         const opts = allProfiles.map(p => ({ label: p.name, value: String(p.id) }));
         let masterVal = opts.length ? opts[0].value : '';
         const masterComboCtrl = window.DuckControls.ComboBox.create({
+                icon: 'merge',
             options: opts,
             value: masterVal,
             onChange: (e) => masterVal = e.target.value
@@ -183,6 +185,7 @@ window.ProfileModals.SyncActions = {
         monitorWrap.style.flex = '1.5';
         let currentMonitor = savedState.monitor || '1';
         monitorCombo = window.DuckControls.ComboBox.create({
+                icon: 'merge',
             label: 'Target Screen',
             options: [
                 { label: 'Primary Monitor', value: '1' },
@@ -356,3 +359,5 @@ window.ProfileModals.SyncActions = {
         this._modal.open();
     }
 };
+
+
