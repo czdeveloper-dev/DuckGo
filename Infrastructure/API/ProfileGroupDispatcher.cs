@@ -2,13 +2,13 @@ using System.Text.Json;
 
 namespace DuckGo.Infrastructure.API;
 
-public class GroupDispatcher : IDispatcher
+public class ProfileGroupDispatcher : IDispatcher
 {
-    private readonly Services.GroupService _service;
+    private readonly Services.ProfileGroupService _service;
 
     public string Domain => "group";
 
-    public GroupDispatcher(Services.GroupService service) => _service = service;
+    public ProfileGroupDispatcher(Services.ProfileGroupService service) => _service = service;
 
     public bool CanHandle(string action) => action.StartsWith("group.");
 

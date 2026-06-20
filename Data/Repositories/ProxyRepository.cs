@@ -82,7 +82,7 @@ public class ProxyRepository : IProxyRepository
                 args.Add(($"tag{i}", tagIds[i]));
         }
 
-        sql.Append(" ORDER BY p.CreatedAt DESC");
+        sql.Append(" ORDER BY p.CreatedAt ASC");
 
         var proxies = new List<Proxy>();
         await using var cmd = conn.CreateCommand();

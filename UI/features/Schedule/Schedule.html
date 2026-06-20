@@ -1,0 +1,83 @@
+<div class="page-shell page-shell-profiles">
+
+    <!-- 2-TIER TOPBAR -->
+    <div class="prof-topbar">
+        <!-- TIER 1: Search & Filters -->
+        <div class="prof-topbar-t1 duck-panel-card" style="box-shadow: none; flex-direction: column; align-items: stretch; gap: 16px;">
+            <!-- First Row -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; gap: 16px;">
+                <div class="prof-t1-left">
+                    <div class="duck-panel">
+                        <!-- Search by Name -->
+                        <div id="sched-ctrl-search"></div>
+
+                        <div class="prof-t1-divider"></div>
+
+                        <!-- Group Select -->
+                        <div id="sched-ctrl-group"></div>
+
+                        <!-- Tag Select -->
+                        <div id="sched-ctrl-tag"></div>
+
+                        <!-- Status Select -->
+                        <div id="sched-ctrl-status"></div>
+                    </div>
+                </div>
+
+                <div class="prof-t1-right">
+                    <div class="duck-panel">
+                        <!-- Total stat -->
+                        <div id="sched-ctrl-stat"></div>
+
+                        <!-- Refresh -->
+                        <button type="button" id="sched-ctrl-refresh" class="duck-btn duck-btn-surface"></button>
+
+                        <!-- Columns -->
+                        <button type="button" id="sched-ctrl-cols" class="duck-btn duck-btn-surface"></button>
+
+                        <!-- Create Task -->
+                        <button type="button" id="sched-ctrl-create" class="duck-btn duck-btn-primary"></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Second Row -->
+            <div class="prof-t1-left" style="width: 100%;">
+                <div class="duck-panel">
+                    <!-- Type Select -->
+                    <div id="sched-ctrl-type"></div>
+
+                    <!-- Automation ComboBox -->
+                    <div id="sched-ctrl-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TIER 2: Action Chips -->
+        <div class="prof-topbar-t2">
+            <div class="prof-action-chips" id="sched-ctrl-chips"></div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div class="bulk-actions-bar" id="sched-bulk-actions">
+        <div style="display:flex; align-items:center; gap:6px;">
+            <span class="material-symbols-outlined" style="font-size:15px;color:var(--accent);">checklist</span>
+            <span class="bulk-count" id="sched-bulk-count">0 selected</span>
+        </div>
+        <div class="bulk-actions-divider"></div>
+        <div id="sched-ctrl-bulk-run"></div>
+        <div id="sched-ctrl-bulk-pause"></div>
+        <div id="sched-ctrl-bulk-delete"></div>
+        <div id="sched-ctrl-bulk-close"></div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-fill">
+        <div id="schedule-table-view" class="profiles-table-view">
+            <div class="card table-card table-card--profiles data-surface">
+                <!-- Table inserted dynamically -->
+            </div>
+        </div>
+    </div>
+</div>

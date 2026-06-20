@@ -91,10 +91,20 @@ public class ProxyValidator : IValidator
 
     private ValidationResult ValidateDelete(JsonElement? p)
     {
+        // If no payload at all, let the handler deal with it (it will return proper error)
+        if (!p.HasValue) return ValidationResult.Ok();
+        
         var r = ValidationResult.Ok();
-        if (!p.HasValue) return r.WithError("payload", "Request body is required");
-        if (!p.Value.TryGetProperty("id", out var id) || id.GetInt32() <= 0)
-            r.WithError("id", "Valid proxy ID is required");
+        
+        // Accept either "id" (single) or "ids" (array)
+        var hasId = p.Value.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.Number && id.GetInt32() > 0;
+        var hasIds = p.Value.TryGetProperty("ids", out var ids) && ids.ValueKind == JsonValueKind.Array && ids.GetArrayLength() > 0;
+        
+        // If neither id nor ids is present, that's an error
+        if (!hasId && !hasIds) {
+            r.WithError("id", "Valid proxy ID or IDs are required");
+        }
+        
         return r;
     }
 }

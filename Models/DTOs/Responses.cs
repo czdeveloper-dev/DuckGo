@@ -30,7 +30,7 @@ public class ApiResponse
 
 public class ProfileListResponse
 {
-    public List<ProfileListItem> Items { get; set; } = new();
+    public List<ProfileDetailItem> Items { get; set; } = new();
     public int Total { get; set; }
 }
 
@@ -45,9 +45,9 @@ public class ProfileListItem
     public List<string> TagNames { get; set; } = new();
     public int? ProxyId { get; set; }
     public string? ProxyName { get; set; }
-    public string BrowserType { get; set; } = "Chromium";
+    public string? BrowserType { get; set; }
     public string BrowserVersion { get; set; } = "";
-    public string Platform { get; set; } = "Windows";
+    public string? Platform { get; set; }
     public string Notes { get; set; } = "";
     public string Cookies { get; set; } = "[]";
     public string Status { get; set; } = "ready";

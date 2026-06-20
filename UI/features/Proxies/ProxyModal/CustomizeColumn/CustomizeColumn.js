@@ -8,7 +8,7 @@
     window.ProxyModals.CustomizeColumn = {
         _modal: null,
         
-        show(currentVisibleSet, onUpdate) {
+        show(currentVisibleSet, onUpdate, optionalCols, storageKey) {
             if (this._modal) {
                 this._modal.destroy();
                 this._modal = null;
@@ -22,19 +22,18 @@
             checkboxesEl.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
             modalBody.appendChild(checkboxesEl);
 
-            const optionalCols = [
+            const colsToRender = optionalCols || [
                 { id: 'group', label: 'GROUP' },
                 { id: 'tags', label: 'TAG' },
-                { id: 'proxy_detail', label: 'RESOURCE' },
-                { id: 'status', label: 'STATUS' },
-                { id: 'message', label: 'MESSAGE' },
+                { id: 'proxy_detail', label: 'PROXY' },
                 { id: 'note', label: 'NOTE' },
-                { id: 'created', label: 'CREATED TIME' },
-                { id: 'lastopened', label: 'LAST OPENED' }
+                { id: 'created', label: 'CREATED TIME' }
             ];
 
+            const keyToSave = storageKey || 'duck_proxy_visible_cols';
+
             // Create checkboxes
-            optionalCols.forEach(col => {
+            colsToRender.forEach(col => {
                 const isVisible = currentVisibleSet.has(col.id);
                 const cbWrap = document.createElement('div');
                 cbWrap.style.cssText = 'padding: 6px 4px;';
@@ -47,7 +46,7 @@
                         else currentVisibleSet.delete(col.id);
                         
                         // Save to localStorage immediately
-                        localStorage.setItem('duck_proxy_visible_cols', JSON.stringify(Array.from(currentVisibleSet)));
+                        localStorage.setItem(keyToSave, JSON.stringify(Array.from(currentVisibleSet)));
                         
                         // Notify parent to update table
                         if (onUpdate) onUpdate(currentVisibleSet);

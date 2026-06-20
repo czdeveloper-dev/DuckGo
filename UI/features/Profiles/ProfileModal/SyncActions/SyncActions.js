@@ -347,6 +347,7 @@ window.ProfileModals.SyncActions = {
             footer: footerWrap,
             size: 'lg', // Spacious but clean
             closeOnOverlay: false,
+            preventAutoFocus: true,
             onClose: () => { this._modal = null; }
         });
 

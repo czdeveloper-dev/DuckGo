@@ -1,6 +1,4 @@
-﻿// BulkRename.js - Bulk Rename Profiles
-
-(function() {
+﻿(function() {
     'use strict';
 
     window.ProfileModals = window.ProfileModals || {};
@@ -16,9 +14,9 @@
             
             // Generate initial state mapping (profile data uses Id, not id)
             this._computedNames = this._profiles.map(p => ({
-                id: p.Id ?? p.id,
-                oldName: p.Name ?? p.name,
-                newName: p.Name ?? p.name
+                id: p.Id || p.id,
+                oldName: p.Name || p.name,
+                newName: p.Name || p.name
             }));
 
             if (this._modal) {
@@ -30,20 +28,20 @@
 
             // 1. Top Banner
             const banner = document.createElement('div');
-            banner.style.cssText = 'background: #f4f6fc; border: 1px solid #d4ddf1; border-radius: 8px; padding: 16px; display: flex; align-items: flex-start; gap: 12px;';
+            banner.style.cssText = 'background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 8px; padding: 16px; display: flex; align-items: flex-start; gap: 12px;';
             
             const bannerIcon = document.createElement('span');
             bannerIcon.className = 'material-symbols-outlined';
             bannerIcon.textContent = 'playlist_add_check';
-            bannerIcon.style.cssText = 'color: #5a73d8; transform: scaleX(-1); font-size: 22px;'; // Flip icon horizontally to match screenshot
+            bannerIcon.style.cssText = 'color: var(--primary); transform: scaleX(-1); font-size: 22px;'; 
             
             const bannerContent = document.createElement('div');
             bannerContent.style.cssText = 'display: flex; flex-direction: column; gap: 4px;';
             const bannerTitle = document.createElement('div');
-            bannerTitle.style.cssText = 'font-weight: 600; font-size: 14px; color: #1e293b;';
+            bannerTitle.style.cssText = 'font-weight: 600; font-size: 14px; color: var(--text-primary);';
             bannerTitle.textContent = 'Batch Editor active';
             const bannerSub = document.createElement('div');
-            bannerSub.style.cssText = 'font-size: 13px; color: #64748b;';
+            bannerSub.style.cssText = 'font-size: 13px; color: var(--text-secondary);';
             bannerSub.textContent = 'Only rows with a valid non-empty name will be submitted to the database.';
             
             bannerContent.appendChild(bannerTitle);
@@ -59,7 +57,6 @@
             const prefixContainer = document.createElement('div');
             prefixContainer.style.flex = '1';
             const prefixCtrl = window.DuckControls.Input.create({
-                icon: 'edit_document',
                 label: 'PATTERN / PREFIX',
                 placeholder: 'e.g., ACCOUNT_',
                 icon: 'text_format'
@@ -69,7 +66,7 @@
             // Adjust label style
             const pLabel = prefixCtrl.element.querySelector('.ui-label');
             if(pLabel) {
-                pLabel.style.color = '#8e9eab';
+                pLabel.style.color = 'var(--text-secondary)';
                 pLabel.style.fontWeight = '600';
                 pLabel.style.fontSize = '11px';
             }
@@ -77,7 +74,6 @@
             const startContainer = document.createElement('div');
             startContainer.style.width = '140px';
             const startCtrl = window.DuckControls.Input.create({
-                icon: 'edit_document',
                 label: 'START NO.',
                 placeholder: '1',
                 icon: 'numbers'
@@ -87,7 +83,7 @@
             
             const sLabel = startCtrl.element.querySelector('.ui-label');
             if(sLabel) {
-                sLabel.style.color = '#8e9eab';
+                sLabel.style.color = 'var(--text-secondary)';
                 sLabel.style.fontWeight = '600';
                 sLabel.style.fontSize = '12px';
             }
@@ -102,7 +98,7 @@
 
             // 3. Bottom Section (List of rows)
             const listWrap = document.createElement('div');
-            listWrap.style.cssText = 'flex: 1; min-height: 0; border: 1px solid var(--border-default); background: var(--bg-subtle, #f8fafc); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;';
+            listWrap.style.cssText = 'flex: 1; min-height: 0; border: 1px solid var(--border-default); background: var(--bg-surface); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;';
             
             const inputControls = []; // Store Input control refs to update later
 
@@ -111,21 +107,21 @@
                 row.style.cssText = 'display: flex; align-items: center; gap: 16px;';
                 
                 const oldNameDiv = document.createElement('div');
-                oldNameDiv.style.cssText = 'flex: 1; font-size: 13px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 4px;';
+                oldNameDiv.style.cssText = 'flex: 1; font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 4px;';
                 oldNameDiv.textContent = item.oldName || '-';
                 oldNameDiv.title = item.oldName;
                 
                 const arrow = document.createElement('span');
                 arrow.className = 'material-symbols-outlined';
                 arrow.textContent = 'arrow_forward';
-                arrow.style.cssText = 'font-size: 18px; color: #94a3b8;';
+                arrow.style.cssText = 'font-size: 18px; color: var(--text-muted, #94a3b8);';
                 
                 const newNameContainer = document.createElement('div');
                 newNameContainer.style.cssText = 'flex: 1;';
                 
                 // Use DuckControls Input instead of native input
                 const inputCtrl = window.DuckControls.Input.create({
-                icon: 'edit_document',
+                    icon: 'edit_document',
                     placeholder: 'New name...',
                     value: item.newName
                 });
@@ -173,96 +169,64 @@
             applyBtnWrap.appendChild(applyBtnContainer);
 
             this._modal = window.DuckControls.Modal.create({
-            defaultEnter: true,
+                defaultEnter: true,
                 title: 'Bulk Rename Editor',
                 subtitle: 'Rename multiple profiles using a pattern or prefix.',
                 icon: 'edit_note',
                 content: modalBody,
-                size: 'lg',
+                width: '600px',
+                height: '70vh',
                 buttons: [
-                    { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, m) => m.close() },
-                    { text: 'Submit to database', icon: 'save', class: 'duck-btn-primary', onClick: () => {
-                        const validData = this._computedNames.filter(c => c.newName && c.newName.trim() !== '');
-                        if (validData.length === 0) {
-                            return;
+                    { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
+                    { text: 'Submit Changes', icon: 'save', class: 'duck-btn-primary', onClick: async (e, modal) => {
+                        modal.setLoading(true, 'Saving changes...');
+                        try {
+                            const updates = inputControls
+                                .filter(item => item.data.newName && item.data.newName.trim() !== '')
+                                .map(item => ({
+                                    id: item.data.id,
+                                    name: item.data.newName.trim()
+                                }));
+                            
+                            if (updates.length > 0) {
+                                for (const update of updates) {
+                                    // Fetch current profile to preserve other fields
+                                    const profile = await DuckBridge.call('profile.get', { id: update.id });
+                                    if (profile) {
+                                        await DuckBridge.call('profile.update', {
+                                            id: update.id,
+                                            name: update.name,
+                                            groupId: profile.groupId,
+                                            tagIds: profile.tagIds,
+                                            proxyId: profile.proxyId,
+                                            browserType: profile.browserType,
+                                            browserVersion: profile.browserVersion,
+                                            profileData: profile.profileData,
+                                            notes: profile.notes,
+                                            cookies: profile.cookies
+                                        });
+                                    }
+                                }
+                            }
+                            
+                            modal.close();
+                            if (window.DuckApp && window.DuckApp.Profiles) {
+                                window.DuckApp.Profiles.refresh();
+                            }
+                            window.DuckControls.Toast?.success?.('Success', `Updated ${updates.length} profiles successfully.`);
+                        } catch (err) {
+                            modal.setLoading(false);
+                            console.error(err);
+                            window.DuckControls.Toast?.error?.('Update Failed', err?.message || 'An error occurred while saving.');
                         }
-                        this._applyRename();
                     }}
                 ],
-                closeOnOverlay: false,
-                onClose: () => { this._modal = null; }
+                onClose: () => {
+                    this._modal = null;
+                }
             });
 
-            this._modal.container.style.height = '75vh';
             this._modal.open();
-        },
-
-        async _applyRename() {
-            if (!this._computedNames || this._computedNames.length === 0) return;
-            
-            // Filter only valid non-empty names as per the banner warning
-            const changes = this._computedNames
-                .filter(x => x.newName !== x.oldName && x.newName.trim() !== '')
-                .map(x => ({
-                    id: x.id,
-                    name: x.newName.trim()
-                }));
-            
-            if (changes.length === 0) {
-                return;
-            }
-            
-            // Show loading state on submit button
-            const submitBtn = this._modal?.container?.querySelector('.duck-btn-primary');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="material-symbols-outlined duck-btn-icon animate-spin">progress_activity</span> Saving...';
-            }
-            
-            try {
-                // Fetch all profiles first to preserve existing data
-                const profileFetches = changes.map(c => DuckBridge.call('profile.get', { id: c.id }));
-                const profiles = await Promise.all(profileFetches);
-                
-                // Update each profile preserving existing data
-                const updatePromises = changes.map((c, i) => {
-                    const profile = profiles[i];
-                    return DuckBridge.call('profile.update', {
-                        id: c.id,
-                        name: c.name,
-                        groupId: profile?.groupId ?? null,
-                        tagIds: profile?.tagIds ?? null,
-                        proxyId: profile?.proxyId ?? null,
-                        browserType: profile?.browserType ?? 'Chromium',
-                        browserVersion: profile?.browserVersion ?? '138',
-                        profileData: profile?.profileData ?? '{}',
-                        notes: profile?.notes ?? '',
-                        cookies: profile?.cookies ?? null
-                    });
-                });
-                await Promise.all(updatePromises);
-                
-                if (this._modal) this._modal.close();
-                
-                // Refresh profiles, groups, and tags
-                if (window.ProfilesView?.loadProfiles) {
-                    await window.ProfilesView.loadProfiles();
-                }
-                if (window.ProfilesView?.loadGroups) {
-                    await window.ProfilesView.loadGroups();
-                }
-                if (window.ProfilesView?.loadTags) {
-                    await window.ProfilesView.loadTags();
-                }
-            } catch (err) {
-                console.error('Bulk Rename Error:', err);
-                // Reset button state
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span class="material-symbols-outlined duck-btn-icon">save</span> Submit to database';
-                }
-            }
         }
     };
 })();
-

@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DuckGo</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦆</text></svg>">
+    <script>
+    (function() {
+        var t = localStorage.getItem('theme');
+        if (t === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    })();
+    </script>
     <link rel="stylesheet" href="http://duckgo.local/main.css?v=30">
     <link rel="stylesheet" href="http://duckgo.local/controls/FileUploader/FileUploader.css?v=30">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" />
@@ -22,12 +30,12 @@
                 <div class="page-view" data-view-name="proxies" id="view-proxies" data-include="http://duckgo.local/features/Proxies/Proxies.html"></div>
                 <div class="page-view" data-view-name="groups" id="view-groups"></div>
                 <div class="page-view" data-view-name="tags" id="view-tags"></div>
-                <div class="page-view" data-view-name="automation" id="view-automation"></div>
+                <div class="page-view" data-view-name="automation" id="view-automation" data-include="http://duckgo.local/features/Automation/Automation.html"></div>
                 <div class="page-view" data-view-name="extensions" id="view-extensions"></div>
                 <div class="page-view" data-view-name="logs" id="view-logs"></div>
                 <div class="page-view" data-view-name="analytics" id="view-analytics"></div>
                 <div class="page-view" data-view-name="security" id="view-security"></div>
-                <div class="page-view" data-view-name="schedule" id="view-schedule"></div>
+                <div class="page-view" data-view-name="schedule" id="view-schedule" data-include="http://duckgo.local/features/Schedule/Schedule.html"></div>
                 <div class="page-view" data-view-name="settings" id="view-settings"></div>
             </div>
         </div>
@@ -38,10 +46,10 @@
     <link rel="stylesheet" href="http://duckgo.local/controls/Dropdown/Dropdown.css?v=30">
     <link rel="stylesheet" href="http://duckgo.local/controls/Input/Input.css?v=30">
     <link rel="stylesheet" href="http://duckgo.local/controls/Select/Select.css?v=30">
-    <link rel="stylesheet" href="http://duckgo.local/controls/Table/Table.css?v=30">
+    <link rel="stylesheet" href="http://duckgo.local/controls/Table/Table.css?v=35">
     <link rel="stylesheet" href="http://duckgo.local/controls/Badge/Badge.css?v=30">
     <link rel="stylesheet" href="http://duckgo.local/controls/Panel/Panel.css?v=30">
-    <link rel="stylesheet" href="http://duckgo.local/controls/ComboBox/ComboBox.css?v=30">
+    <link rel="stylesheet" href="http://duckgo.local/controls/ComboBox/ComboBox.css?v=33">
     <link rel="stylesheet" href="http://duckgo.local/controls/InlineButton/InlineButton.css?v=30">
     <link rel="stylesheet" href="http://duckgo.local/controls/ContextMenu/ContextMenu.css?v=30">
     <link rel="stylesheet" href="http://duckgo.local/controls/Checkbox/Checkbox.css?v=30">
@@ -62,7 +70,8 @@
 
     <!-- Feature CSS -->
     <link rel="stylesheet" href="http://duckgo.local/features/Profiles/Profiles.css?v=30">
-    <link rel="stylesheet" href="http://duckgo.local/features/Proxies/Proxies.css?v=32">
+    <link rel="stylesheet" href="http://duckgo.local/features/Proxies/Proxies.css?v=33">
+    <link rel="stylesheet" href="http://duckgo.local/features/Schedule/Schedule.css?v=30">
 
     <!-- Scripts - MUST be at end of body so DOM is ready -->
     <script src="http://duckgo.local/core/utils.js?v=30"></script>
@@ -75,26 +84,27 @@
     <script src="http://duckgo.local/layouts/Sidebar/Sidebar.js?v=30"></script>
 
     <!-- Controls Scripts (must load before feature scripts) -->
-    <script src="http://duckgo.local/controls/Modal/Modal.js?v=33"></script>
+    <script src="http://duckgo.local/controls/Modal/Modal.js?v=34"></script>
     <script src="http://duckgo.local/controls/Dropdown/Dropdown.js?v=30"></script>
-    <script src="http://duckgo.local/controls/Button/Button.js?v=30"></script>
+    <script src="http://duckgo.local/controls/Button/Button.js?v=32"></script>
     <script src="http://duckgo.local/controls/Input/Input.js?v=30"></script>
+    <script src="http://duckgo.local/controls/DateTimeInput/DateTimeInput.js?v=30"></script>
     <script src="http://duckgo.local/controls/Select/Select.js?v=30"></script>
     <script src="http://duckgo.local/controls/Badge/Badge.js?v=30"></script>
     <script src="http://duckgo.local/controls/Checkbox/Checkbox.js?v=31"></script>
-    <script src="http://duckgo.local/controls/Table/Table.js?v=30"></script>
+    <script src="http://duckgo.local/controls/Table/Table.js?v=45"></script>
     <script src="http://duckgo.local/controls/Radio/Radio.js?v=30"></script>
     <script src="http://duckgo.local/controls/SpinNumber/SpinNumber.js?v=30"></script>
     <script src="http://duckgo.local/controls/Toast/Toast.js?v=30"></script>
     <script src="http://duckgo.local/controls/Panel/Panel.js?v=30"></script>
-    <script src="http://duckgo.local/controls/ComboBox/ComboBox.js?v=30"></script>
+    <script src="http://duckgo.local/controls/ComboBox/ComboBox.js?v=32"></script>
     <script src="http://duckgo.local/controls/InlineButton/InlineButton.js?v=30"></script>
     <script src="http://duckgo.local/controls/ContextMenu/ContextMenu.js?v=30"></script>
     <script src="http://duckgo.local/controls/Autocomplete/Autocomplete.js?v=30"></script>
     <script src="http://duckgo.local/controls/ChipSelect/ChipSelect.js?v=30"></script>
     <script src="http://duckgo.local/controls/ToggleGroup/ToggleGroup.js?v=30"></script>
     <script src="http://duckgo.local/controls/MultiSelectComboBox/MultiSelectComboBox.js?v=30"></script>
-    <script src="http://duckgo.local/controls/Textarea/Textarea.js?v=30"></script>
+    <script src="http://duckgo.local/controls/Textarea/Textarea.js?v=31"></script>
     <script src="http://duckgo.local/controls/Tooltip/Tooltip.js?v=30"></script>
     <script src="http://duckgo.local/controls/TagInput/TagInput.js?v=30"></script>
     <script src="http://duckgo.local/controls/ComboBoxTag/ComboBoxTag.js?v=30"></script>
@@ -111,19 +121,19 @@
     <script src="http://duckgo.local/features/Profiles/ProfileModal/ChangeBookmark/ChangeBookmark.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/UpdateStartUrl/UpdateStartUrl.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/GeneralTab.js?v=30"></script>
-    <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/NetworkTab.js?v=32"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/NetworkTab.js?v=33"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/HardwareTab.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/SecurityTab.js?v=32"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/CookiesTab.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/NotesTab.js?v=30"></script>
-    <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/CreateProfileModal.js?v=44"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/CreateProfile/CreateProfileModal.js?v=47"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/CustomizeColumn/CustomizeColumn.js?v=30"></script>
     <script src="http://duckgo.local/controls/FileUploader/FileUploader.js?v=30"></script>
     <script src="http://duckgo.local/controls/Card/Card.js?v=30"></script>
     <script src="http://duckgo.local/controls/SettingRow/SettingRow.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/ImportProfiles/ImportProfiles.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/ExportProfiles/ExportProfiles.js?v=30"></script>
-    <script src="http://duckgo.local/features/Profiles/ProfileModal/CompareProfiles/CompareProfiles.js?v=30"></script>
+    <script src="http://duckgo.local/features/Profiles/ProfileModal/CompareProfiles/CompareProfiles.js?v=35"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/ImportProxy/ImportProxy.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/DeleteProfiles/DeleteProfiles.js?v=30"></script>
     <script src="http://duckgo.local/features/Profiles/ProfileModal/RemoveProxy/RemoveProxy.js?v=30"></script>
@@ -135,18 +145,23 @@
     <!-- Proxy Modal Scripts -->
     <script src="http://duckgo.local/features/Proxies/ProxyModal/CreateProxy/CreateProxyModal.js?v=32"></script>
     <script src="http://duckgo.local/features/Proxies/ProxyModal/AutoCheckSchedule/AutoCheckSchedule.js?v=32"></script>
-    <script src="http://duckgo.local/features/Proxies/ProxyModal/ProxyUsage/ProxyUsage.js?v=32"></script>
+    <script src="http://duckgo.local/features/Proxies/ProxyModal/ProxyUsage/ProxyUsage.js?v=34"></script>
     <script src="http://duckgo.local/features/Proxies/ProxyModal/ImportProxy/ImportProxy.js?v=32"></script>
     <script src="http://duckgo.local/features/Proxies/ProxyModal/ExportProxies/ExportProxies.js?v=30"></script>
-    <script src="http://duckgo.local/features/Proxies/ProxyModal/CompareProxies/CompareProxies.js?v=30"></script>
-    <script src="http://duckgo.local/features/Proxies/ProxyModal/BulkRename/BulkRename.js?v=31"></script>
-    <script src="http://duckgo.local/features/Proxies/ProxyModal/CustomizeColumn/CustomizeColumn.js?v=30"></script>
-    <script src="http://duckgo.local/features/Proxies/ProxyDeleteEntityModal.js?v=30"></script>
+    <script src="http://duckgo.local/features/Proxies/ProxyModal/CompareProxies/CompareProxies.js?v=36"></script>
+    <script src="http://duckgo.local/features/Proxies/ProxyModal/BulkRename/BulkRename.js?v=32"></script>
+    <script src="http://duckgo.local/features/Proxies/ProxyModal/CustomizeColumn/CustomizeColumn.js?v=31"></script>
+    <script src="http://duckgo.local/features/Proxies/ProxyModal/ProxyScanner/ProxyScanner.js?v=33"></script>
+    <script src="http://duckgo.local/features/Proxies/ProxyModal/DeleteProxies/DeleteProxies.js?v=32"></script>
+
+    <!-- Schedule Modal Scripts -->
+    <script src="http://duckgo.local/features/Schedule/ScheduleModal/CreateTask.js?v=30"></script>
 
     <!-- Feature Scripts (must load before app.js) -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js?v=30"></script>
-    <script src="http://duckgo.local/features/Profiles/Profiles.js?v=32"></script>
-    <script src="http://duckgo.local/features/Proxies/Proxies.js?v=34"></script>
+    <script src="http://duckgo.local/features/Profiles/Profiles.js?v=35"></script>
+    <script src="http://duckgo.local/features/Proxies/Proxies.js?v=38"></script>
+    <script src="http://duckgo.local/features/Schedule/Schedule.js?v=30"></script>
     <script src="http://duckgo.local/features/Groups/Groups.js?v=30"></script>
     <script src="http://duckgo.local/features/Tags/Tags.js?v=30"></script>
     <script src="http://duckgo.local/features/Automation/Automation.js?v=30"></script>
@@ -158,6 +173,9 @@
 
     <!-- Bootstrap -->
     <script>
+        window.onerror = function(msg, src, line, col, err) {
+            document.body.innerHTML = '<div style="padding:32px;font-family:monospace;color:red;background:#fff;position:fixed;inset:0;z-index:99999;overflow:auto;"><h2>JS Error</h2><pre>' + msg + '\n\nFile: ' + src + '\nLine: ' + line + ':' + col + '\n\n' + (err && err.stack ? err.stack : '') + '</pre></div>';
+        };
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 // IMPORTANT: Init bridge first, then layout, then app
@@ -165,7 +183,7 @@
                 await window.DuckLayout.init();
                 await window.DuckApp.init();
             } catch (e) {
-                console.error('[DuckGo] Initialization failed:', e);
+                document.body.innerHTML = '<div style="padding:32px;font-family:monospace;color:red;background:#fff;position:fixed;inset:0;z-index:99999;overflow:auto;"><h2>Init Error</h2><pre>' + e.message + '\n\n' + (e.stack || '') + '</pre></div>';
             }
         });
     </script>

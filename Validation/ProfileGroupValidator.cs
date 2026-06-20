@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace DuckGo.Validation;
 
-public class GroupValidator : IValidator
+public class ProfileGroupValidator : IValidator
 {
     public string[] SupportedActions => new[] { "group.create", "group.update", "group.delete", "group.list" };
 

@@ -26,11 +26,7 @@
             }
 
             // Timezone options
-            if (this._tzSelect) {
-                const tzOpts = (tmpl.Timezones || []).map(tz => ({ label: tz, value: tz }));
-                this._tzSelect.setOptions([{ label: 'Auto (Match IP)', value: 'auto' }, { label: 'Real', value: 'real' }, ...tzOpts]);
-                this._tzSelect.setValue('auto');
-            } else if (this.tzSelect) {
+            if (this.tzSelect) {
                 const tzOpts = (tmpl.Timezones || []).map(tz => ({ label: tz, value: tz }));
                 this.tzSelect.setOptions([{ label: 'Auto (Match IP)', value: 'auto' }, { label: 'Real', value: 'real' }, ...tzOpts]);
                 this.tzSelect.setValue('auto');
@@ -101,36 +97,95 @@
 
         _getSelectedSavedProxy() {
             const selectedId = String(this.sProxy?.getValue?.() || '');
-            return this._savedProxies.find(p => String(p.Id ?? p.id) === selectedId) || null;
+            return this._savedProxies.find(p => String(p.Id || p.id) === selectedId) || null;
         },
 
-        async _loadSavedProxies() {
+        async _loadSavedProxies(savedProxyId = null) {
             try {
-                const proxies = await DuckBridge.call('proxy.list');
-                this._savedProxies = Array.isArray(proxies) ? proxies : [];
+                const proxies = await DuckBridge.call('proxy.list', {});
+                const groups = await DuckBridge.call('proxygroup.list', {});
+                const tags = await DuckBridge.call('proxytag.list', {});
+                
+                this._savedProxies = Array.isArray(proxies?.Items || proxies) ? (proxies?.Items || proxies) : [];
+                this._proxyGroups = Array.isArray(groups) ? groups : [];
+                this._proxyTags = Array.isArray(tags) ? tags : [];
             } catch (e) {
-                console.warn('[NetworkTab] Failed to load proxies', e);
+                console.warn('[NetworkTab] Failed to load proxies metadata', e);
                 this._savedProxies = [];
+                this._proxyGroups = [];
+                this._proxyTags = [];
             }
 
-            const options = this._savedProxies.map(proxy => {
-                const id = String(proxy.Id ?? proxy.id);
-                const type = this._proxyTypeLabel(proxy.Type || proxy.type);
-                const host = proxy.Host || proxy.host || '-';
-                const port = proxy.Port || proxy.port || '-';
-                const name = proxy.Name || proxy.name || `Proxy #${id}`;
-                return {
-                    label: `${name} · ${type} · ${host}:${port}`,
-                    value: id
-                };
+            if (this.sGroup) {
+                const groupOpts = [{ label: 'All Groups', value: '' }];
+                this._proxyGroups.forEach(g => groupOpts.push({ label: g.Name || g.name, value: String(g.Id || g.id) }));
+                this.sGroup.setOptions(groupOpts);
+            }
+
+            if (this.sTags) {
+                const tagOpts = this._proxyTags.map(t => ({ label: t.Name || t.name, value: String(t.Id || t.id) }));
+                this.sTags.setOptions(tagOpts);
+            }
+
+            let proxyToSelect = null;
+            if (savedProxyId != null) {
+                const proxyIdStr = String(savedProxyId);
+                proxyToSelect = this._savedProxies.find(p => String(p.Id || p.id) === proxyIdStr);
+                if (proxyToSelect) {
+                    const groupId = proxyToSelect.GroupId || proxyToSelect.groupId;
+                    const tagIds = proxyToSelect.TagIds || proxyToSelect.tagIds || [];
+                    if (groupId && this.sGroup) this.sGroup.setValue(String(groupId));
+                    if (tagIds.length > 0 && this.sTags) this.sTags.setValues(tagIds.map(String));
+                }
+            }
+
+            this._filterSavedProxies(savedProxyId);
+            this._loadProxyTypes();
+        },
+
+        _filterSavedProxies(forceSelectId = null) {
+            const groupId = this.sGroup?.getValue?.();
+            const tagIds = this.sTags?.getValues?.() || [];
+
+            const filtered = this._savedProxies.filter(proxy => {
+                if (groupId && groupId !== '') {
+                    const pGroupId = String(proxy.GroupId || proxy.groupId || '');
+                    if (pGroupId !== String(groupId)) return false;
+                }
+                if (tagIds.length > 0) {
+                    const pTagIds = (proxy.TagIds || proxy.tagIds || []).map(String);
+                    const hasTag = tagIds.some(id => pTagIds.includes(String(id)));
+                    if (!hasTag) return false;
+                }
+                return true;
             });
 
-            this.sProxy?.setOptions(options);
-            if (options.length > 0 && !this.sProxy?.getValue?.()) {
-                this.sProxy.setValue(options[0].value);
+            const options = filtered.map(proxy => {
+                const id = String(proxy.Id || proxy.id);
+                const name = proxy.Name || proxy.name || '';
+                return { label: name ? `${id} - ${name}` : `Proxy #${id}`, value: id };
+            });
+
+            if (options.length === 0) {
+                options.push({ label: 'No proxies found', value: '' });
+            } else {
+                options.unshift({ label: 'Select Proxy...', value: '' });
             }
-            this._updateProtocolHint();
-            this._loadProxyTypes();
+
+            if (this.sProxy) {
+                this.sProxy.setOptions(options);
+                const currentVal = forceSelectId != null ? String(forceSelectId) : this.sProxy.getValue();
+                const exists = options.some(o => o.value === currentVal);
+                
+                if (exists && currentVal) {
+                    this.sProxy.setValue(currentVal);
+                } else if (options.length > 0 && options[0].value !== '') {
+                    this.sProxy.setValue(options[0].value);
+                } else {
+                    this.sProxy.setValue('');
+                }
+                this._updateProtocolHint();
+            }
         },
 
         async _loadProxyTypes() {
@@ -278,6 +333,26 @@
             const savedProxyForm = document.createElement('div');
             savedProxyForm.style.cssText = 'display: none; flex-direction: column; gap: 12px;';
             this._savedProxyForm = savedProxyForm;
+
+            const filterRow = document.createElement('div');
+            filterRow.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr; gap: 12px;';
+
+            this.sGroup = window.DuckControls.Select.create({
+                label: 'Proxy Group',
+                options: [{ label: 'All Groups', value: '' }],
+                onChange: () => this._filterSavedProxies()
+            });
+
+            this.sTags = window.DuckControls.MultiSelectComboBox.create({
+                label: 'Proxy Tags',
+                options: [],
+                onChange: () => this._filterSavedProxies()
+            });
+
+            filterRow.appendChild(this.sGroup.element);
+            filterRow.appendChild(this.sTags.element);
+            savedProxyForm.appendChild(filterRow);
+
             this.sProxy = window.DuckControls.Select.create({
                 label: 'Saved Proxy',
                 options: [{ label: 'Loading proxies...', value: '' }],
@@ -388,7 +463,7 @@
                         }
 
                         const status = res?.status || res?.Status || 'dead';
-                        const latency = res?.latency ?? res?.Latency ?? null;
+                        const latency = res?.latency || res?.Latency || null;
                         this._setProxyStatus?.(status, latency);
 
                         if (status === 'dead') {
@@ -565,6 +640,7 @@
 
         setValues(values) {
             if (!values) return;
+            
             // Proxy type
             if (values.proxyMode && this.proxyTypeToggle) {
                 this.proxyTypeToggle.setValue(values.proxyMode);
@@ -573,10 +649,23 @@
                     this._toggleProxyInputs(values.proxyMode);
                 }, 0);
             }
-            // Saved proxy
-            if (values.savedProxyId != null && this.sProxy) {
-                this.sProxy.setValue(String(values.savedProxyId));
+            
+            // Saved proxy - load proxies list first then set value
+            if (values.savedProxyId != null) {
+                // Load proxies with the saved proxy ID pre-selected
+                this._loadSavedProxies(values.savedProxyId);
+                // Also switch to saved mode if not already
+                if (this.proxyTypeToggle && this.proxyTypeToggle.getValue() !== 'saved') {
+                    this.proxyTypeToggle.setValue('saved');
+                    setTimeout(() => {
+                        this._toggleProxyInputs('saved');
+                    }, 0);
+                }
+            } else {
+                // Just load proxies normally for create mode
+                this._loadSavedProxies();
             }
+            
             // Custom proxy fields
             if (values.proxyConfig) {
                 if (this.pHost) this.pHost.setValue(values.proxyConfig.Host || '');
@@ -585,14 +674,17 @@
                 if (this.pPass) this.pPass.setValue(values.proxyConfig.Password || '');
                 if (this.pType) this.pType.setValue(values.proxyConfig.Type || 'http');
             }
+            
             // Timezone
             if (values.timezone && this.tzSelect) {
                 this.tzSelect.setValue(values.timezone);
             }
+            
             // Languages
             if (values.languages && this.langTagInput) {
                 this.langTagInput.setValues(Array.isArray(values.languages) ? values.languages : [values.languages]);
             }
+            
             // Location mode
             if (values.locationMode && this.locationModeToggle) {
                 this.locationModeToggle.setValue(values.locationMode);
@@ -600,6 +692,7 @@
                     if (this._toggleLocationInputs) this._toggleLocationInputs(values.locationMode);
                 }, 0);
             }
+            
             // Custom coordinates
             if (values.customCoordinates) {
                 if (this.latIn) this.latIn.setValue(String(values.customCoordinates.lat || 0));

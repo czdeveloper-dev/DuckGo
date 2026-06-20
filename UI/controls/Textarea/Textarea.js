@@ -1,4 +1,4 @@
-﻿// Textarea.js - Multiline text input component
+// Textarea.js - Multiline text input component
 
 (function() {
     'use strict';
@@ -13,15 +13,19 @@
          * - value: string
          * - rows: number
          * - onInput: function(e)
+         * - required: boolean (optional)
          */
         create(options = {}) {
             const wrap = document.createElement('div');
             wrap.className = 'duck-textarea-wrap';
 
+            let _required = options.required || false;
+            let _errorLabel = null;
+
             if (options.label) {
                 const label = document.createElement('div');
                 label.className = 'duck-textarea-label';
-                label.textContent = options.label;
+                label.innerHTML = (options.label || '') + (_required ? ' <span style="color: var(--danger, #ef4444);">*</span>' : '');
                 wrap.appendChild(label);
             }
 
@@ -45,7 +49,7 @@
             if (options.icon) {
                 textarea.style.paddingLeft = '36px';
             }
-            
+
             if (options.placeholder) textarea.placeholder = options.placeholder;
             if (options.value) textarea.value = options.value;
             if (options.rows) textarea.rows = options.rows;
@@ -56,11 +60,10 @@
                 textarea.style.flex = '1';
                 textarea.style.resize = 'none';
             }
-            
+
             inputContainer.appendChild(textarea);
             wrap.appendChild(inputContainer);
 
-            let _errorLabel = null;
             const setError = (message) => {
                 textarea.style.borderColor = 'var(--danger, #ef4444)';
                 textarea.style.background = 'rgba(239, 68, 68, 0.05)';
@@ -68,7 +71,7 @@
                     _errorLabel = document.createElement('div');
                     _errorLabel.className = 'field-error-label';
                     _errorLabel.style.cssText = 'font-size: 12px; color: var(--danger, #ef4444); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; font-weight: 500;';
-                    wrap.insertBefore(_errorLabel, textarea);
+                    wrap.prepend(_errorLabel);
                 }
                 _errorLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:var(--danger,#ef4444)">error</span> ' + message;
                 _errorLabel.style.display = 'flex';
@@ -94,7 +97,15 @@
                 getValue: () => textarea.value,
                 setValue: (val) => { textarea.value = val; clearError(); },
                 setError,
-                clearError
+                clearError,
+                isRequired: () => _required,
+                validate: () => {
+                    if (_required && !textarea.value.trim()) {
+                        setError('This field is required');
+                        return false;
+                    }
+                    return true;
+                }
             };
         }
     };

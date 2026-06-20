@@ -4,11 +4,11 @@ using DuckGo.Models.Entities;
 
 namespace DuckGo.Services;
 
-public class GroupService
+public class ProfileGroupService
 {
-    private readonly IGroupRepository _repo;
+    private readonly IProfileGroupRepository _repo;
 
-    public GroupService(IGroupRepository repo) => _repo = repo;
+    public ProfileGroupService(IProfileGroupRepository repo) => _repo = repo;
 
     public async Task<List<ProfileGroup>> GetGroupsAsync()
         => await _repo.GetAllAsync();

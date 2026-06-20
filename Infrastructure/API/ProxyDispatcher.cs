@@ -45,6 +45,13 @@ public class ProxyDispatcher : IDispatcher
             "proxy.copyFormat" => await CopyFormatAsync(payload),
             "proxy.checkProxies" => await CheckProxiesAsync(payload),
             "proxy.parseFile" => await ParseFileAsync(payload),
+            "proxy.detectType" => await DetectTypeAsync(payload),
+            "proxy.bulkRename" => await BulkRenameAsync(payload),
+            "proxy.duplicate" => await DuplicateAsync(payload),
+            "proxy.scheduleAutoCheck" => await ScheduleAutoCheckAsync(payload),
+            "proxy.getSchedule" => await GetScheduleAsync(),
+            "proxy.getScheduleStatus" => await GetScheduleStatusAsync(),
+            "proxy.getUsage" => await GetUsageAsync(payload),
             _ => (false, $"Unknown action: {action}", null)
         };
     }
@@ -388,7 +395,31 @@ public class ProxyDispatcher : IDispatcher
                 Console.WriteLine("[ScanAndImport] No 'proxies' array in payload");
             }
 
+            // Parse groupId and tagIds
+            int? groupId = null;
+            if (payload.Value.TryGetProperty("groupId", out var groupIdProp))
+            {
+                if (groupIdProp.ValueKind == JsonValueKind.Number)
+                    groupId = groupIdProp.GetInt32();
+                else if (groupIdProp.ValueKind == JsonValueKind.String && int.TryParse(groupIdProp.GetString(), out var parsedGroupId))
+                    groupId = parsedGroupId;
+            }
+            
+            List<int>? tagIds = null;
+            if (payload.Value.TryGetProperty("tagIds", out var tagIdsProp) && tagIdsProp.ValueKind == JsonValueKind.Array)
+            {
+                tagIds = new List<int>();
+                foreach (var tagItem in tagIdsProp.EnumerateArray())
+                {
+                    if (tagItem.ValueKind == JsonValueKind.Number)
+                        tagIds.Add(tagItem.GetInt32());
+                    else if (tagItem.ValueKind == JsonValueKind.String && int.TryParse(tagItem.GetString(), out var parsedTagId))
+                        tagIds.Add(parsedTagId);
+                }
+            }
+
             Console.WriteLine($"[ScanAndImport] Parsed {proxyStrings.Count} proxy strings");
+            Console.WriteLine($"[ScanAndImport] GroupId: {groupId}, TagIds: {(tagIds != null ? string.Join(",", tagIds) : "null")}");
 
             if (proxyStrings.Count == 0)
             {
@@ -399,7 +430,7 @@ public class ProxyDispatcher : IDispatcher
             Console.WriteLine($"[ScanAndImport] Calling CreateBulkProxiesAsync with {proxyStrings.Count} proxies...");
             
             // Import directly without scanning
-            var createResult = await _service.CreateBulkProxiesAsync(proxyStrings);
+            var createResult = await _service.CreateBulkProxiesAsync(proxyStrings, groupId, tagIds);
             
             Console.WriteLine($"[ScanAndImport] CreateBulkProxiesAsync returned: Success={createResult?.Success}, Imported={createResult?.Imported}");
             if (createResult?.Errors?.Count > 0)
@@ -428,6 +459,34 @@ public class ProxyDispatcher : IDispatcher
         }
     }
     
+    // Detect proxy type (HTTP, SOCKS4, SOCKS5)
+    private async Task<(bool, string?, JsonElement?)> DetectTypeAsync(JsonElement? payload)
+    {
+        if (!payload.HasValue) return (false, "Missing payload", null);
+        
+        try
+        {
+            var host = payload.Value.GetProperty("host").GetString();
+            var port = payload.Value.GetProperty("port").GetInt32();
+            var username = payload.Value.TryGetProperty("username", out var u) ? u.GetString() : null;
+            var password = payload.Value.TryGetProperty("password", out var pw) ? pw.GetString() : null;
+            
+            if (string.IsNullOrEmpty(host) || port <= 0)
+                return (false, "Invalid host or port", null);
+            
+            Console.WriteLine($"[DetectType] Detecting type for {host}:{port}");
+            var detectedType = await _service.DetectProxyTypeAsync(host, port, username, password);
+            Console.WriteLine($"[DetectType] Detected: {detectedType}");
+            
+            return (true, null, WrapInElement(new { type = detectedType }));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DetectType] Exception: {ex}");
+            return (false, ex.Message, null);
+        }
+    }
+
     // Helper to parse proxy string
     private (string Host, int Port, string? Type, string? Username, string? Password)? ParseProxyString(string proxyStr)
     {
@@ -806,6 +865,189 @@ public class ProxyDispatcher : IDispatcher
                 proxies = items,
                 total = items.Count
             }));
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message, null);
+        }
+    }
+
+    // Bulk rename proxies
+    private async Task<(bool, string?, JsonElement?)> BulkRenameAsync(JsonElement? payload)
+    {
+        if (!payload.HasValue) return (false, "Missing payload", null);
+
+        try
+        {
+            var changes = new List<(int Id, string Name)>();
+            
+            if (payload.Value.TryGetProperty("changes", out var changesProp) && changesProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in changesProp.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.Object)
+                    {
+                        var id = item.TryGetProperty("id", out var idProp) ? idProp.GetInt32() : 0;
+                        var name = item.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "" : "";
+                        if (id > 0 && !string.IsNullOrEmpty(name))
+                        {
+                            changes.Add((id, name));
+                        }
+                    }
+                }
+            }
+
+            if (changes.Count == 0)
+                return (false, "No valid changes provided", null);
+
+            // Update each proxy name
+            foreach (var (id, name) in changes)
+            {
+                await _service.UpdateProxyNameAsync(id, name);
+            }
+
+            return (true, null, WrapInElement(new { updated = changes.Count }));
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message, null);
+        }
+    }
+
+    // Duplicate a proxy
+    private async Task<(bool, string?, JsonElement?)> DuplicateAsync(JsonElement? payload)
+    {
+        if (!payload.HasValue) return (false, "Missing payload", null);
+
+        try
+        {
+            int? id = null;
+            string? name = null;
+            
+            if (payload.Value.TryGetProperty("id", out var idProp) && idProp.ValueKind != JsonValueKind.Null)
+                id = idProp.GetInt32();
+            
+            if (payload.Value.TryGetProperty("name", out var nameProp) && nameProp.ValueKind == JsonValueKind.String)
+                name = nameProp.GetString();
+
+            if (!id.HasValue)
+                return (false, "Missing proxy id", null);
+
+            var proxy = await _service.GetProxyAsync(id.Value);
+            if (proxy == null)
+                return (false, "Proxy not found", null);
+
+            // Create duplicate
+            var newId = await _service.DuplicateProxyAsync(id.Value, name ?? $"{proxy.Name} (Copy)");
+            
+            // Get the newly created proxy to return full data
+            var newProxy = await _service.GetProxyAsync(newId);
+            
+            return (true, null, WrapInElement(newProxy));
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message, null);
+        }
+    }
+
+    // Schedule auto check - start/stop/update cron task
+    private async Task<(bool, string?, JsonElement?)> ScheduleAutoCheckAsync(JsonElement? payload)
+    {
+        if (!payload.HasValue) return (false, "Missing payload", null);
+
+        try
+        {
+            var enabled = payload.Value.TryGetProperty("enabled", out var enProp) && enProp.ValueKind == JsonValueKind.True;
+            var hours = payload.Value.TryGetProperty("hours", out var hProp) ? hProp.GetInt32() : 0;
+            var minutes = payload.Value.TryGetProperty("minutes", out var mProp) ? mProp.GetInt32() : 0;
+            var seconds = payload.Value.TryGetProperty("seconds", out var sProp) ? sProp.GetInt32() : 0;
+            var delayMs = payload.Value.TryGetProperty("delayMs", out var dProp) ? dProp.GetInt32() : 1000;
+
+            // Save to database
+            await _service.SaveScheduleSettingsAsync(new ProxyScheduleSettings
+            {
+                Enabled = enabled,
+                Hours = hours,
+                Minutes = minutes,
+                Seconds = seconds,
+                DelayMs = delayMs
+            });
+
+            // Update runtime scheduler
+            ProxySchedulerService.UpdateSchedule(enabled, hours, minutes, seconds, delayMs);
+
+            return (true, null, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message, null);
+        }
+    }
+
+    // Get current schedule settings
+    private async Task<(bool, string?, JsonElement?)> GetScheduleAsync()
+    {
+        try
+        {
+            var settings = await _service.GetScheduleSettingsAsync();
+            return (true, null, WrapInElement(settings ?? new ProxyScheduleSettings()));
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message, null);
+        }
+    }
+
+    // Get runtime schedule status
+    private async Task<(bool, string?, JsonElement?)> GetScheduleStatusAsync()
+    {
+        try
+        {
+            var isRunning = ProxySchedulerService.IsRunning;
+            var nextRun = ProxySchedulerService.GetNextRunTime();
+            var lastRun = ProxySchedulerService.GetLastRunTime();
+            var message = ProxySchedulerService.GetMessage();
+            
+            return (true, null, WrapInElement(new
+            {
+                isRunning,
+                nextRun = nextRun?.ToString("yyyy-MM-dd HH:mm:ss"),
+                lastRun = lastRun?.ToString("yyyy-MM-dd HH:mm:ss"),
+                message
+            }));
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message, null);
+        }
+    }
+
+    // Get profiles using a specific proxy
+    private async Task<(bool, string?, JsonElement?)> GetUsageAsync(JsonElement? payload)
+    {
+        if (!payload.HasValue) return (false, "Missing payload", null);
+
+        try
+        {
+            int? proxyId = null;
+            
+            if (payload.Value.TryGetProperty("proxyId", out var pProp) && pProp.ValueKind != JsonValueKind.Null)
+                proxyId = pProp.GetInt32();
+
+            if (!proxyId.HasValue)
+                return (false, "Missing proxyId", null);
+
+            var profiles = await _service.GetProfilesUsingProxyAsync(proxyId.Value);
+            
+            var items = profiles.Select(p => new {
+                id = p.Id,
+                name = p.Name ?? "Unnamed",
+                groupName = p.GroupName ?? "-",
+                tagNames = p.TagNames ?? new List<string>()
+            });
+
+            return (true, null, WrapInElement(items));
         }
         catch (Exception ex)
         {

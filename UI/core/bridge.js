@@ -118,7 +118,7 @@
                         console.log('[DuckBridge] ProfileData FOUND in response, length:', data?.ProfileData?.length);
                         console.log('[DuckBridge] Full response keys:', Object.keys(data || {}));
                         console.log('[DuckBridge] Response data:', JSON.stringify(data, null, 2));
-                        cb.resolve(data ?? null);
+                        cb.resolve(data || null);
                     } else {
                         const errMsg = (error === null || error === undefined || error === 'null' || error === '') ? 'Unknown error' : String(error);
                         const err = new Error(errMsg);
@@ -249,8 +249,22 @@
                     } else if (action === 'browser.listVersions') {
                         resolve({
                             Browsers: [
-                                { BrowserType: 'chrome', Versions: [{ Version: '120.0', Description: 'Chrome 120' }] },
-                                { BrowserType: 'firefox', Versions: [{ Version: '121.0', Description: 'Firefox 121' }] }
+                                { BrowserType: 'chromium', Versions: [{ Version: '150.0.7849.0', Description: 'Chromium 150' }] },
+                                { BrowserType: 'firefox', Versions: [{ Version: '121.0', Description: 'Firefox 121' }] },
+                                { BrowserType: 'edge', Versions: [{ Version: '120.0.2210.91', Description: 'Edge 120' }] }
+                            ]
+                        });
+                    } else if (action === 'profile.getCatalog') {
+                        resolve({
+                            browsers: [
+                                { type: 'chromium', name: 'Chromium', defaultVersion: '150.0.7849.0' },
+                                { type: 'firefox', name: 'Firefox', defaultVersion: '121.0' },
+                                { type: 'edge', name: 'Edge', defaultVersion: '120.0.2210.91' }
+                            ],
+                            platforms: [
+                                { osKey: 'Windows', displayName: 'Windows', platformString: 'Win32', bitness: '64' },
+                                { osKey: 'macOS', displayName: 'macOS', platformString: 'Darwin', bitness: '64' },
+                                { osKey: 'Linux', displayName: 'Linux', platformString: 'Linux', bitness: '64' }
                             ]
                         });
                     } else {

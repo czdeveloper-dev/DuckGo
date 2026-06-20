@@ -95,8 +95,7 @@ window.DuckControls.Select = {
                 label: opt.label,
                 value: opt.value,
                 icon: opt.icon,
-                actions: opt.actions,
-                disabled: !!opt.isPlaceholder
+                actions: opt.actions
             }));
         };
 
@@ -142,8 +141,8 @@ window.DuckControls.Select = {
                 _errorLabel = document.createElement('div');
                 _errorLabel.className = 'field-error-label';
                 _errorLabel.style.cssText = 'font-size: 12px; color: var(--danger, #ef4444); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; font-weight: 500;';
-                // Insert BEFORE the trigger button (at the top of the control)
-                wrap.insertBefore(_errorLabel, triggerBtn);
+                // Insert at the top of the control
+                wrap.prepend(_errorLabel);
             }
             _errorLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:var(--danger,#ef4444)">error</span> ' + message;
             _errorLabel.style.display = 'flex';

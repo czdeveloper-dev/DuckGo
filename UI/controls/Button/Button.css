@@ -31,8 +31,20 @@
 
 /* Button icon */
 .duck-btn-icon {
-    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
+}
+
+.duck-btn-icon.material-symbols-outlined {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.duck-btn-icon svg {
+    width: 16px;
+    height: 16px;
 }
 
 /* Button spinner - hidden by default, shown only in loading state */
@@ -145,6 +157,11 @@
     font-size: 14px;
 }
 
+.duck-btn-sm .duck-btn-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
 /* Medium (default) */
 .duck-btn-md {
     padding: 8px 16px;
@@ -160,6 +177,11 @@
 
 .duck-btn-lg .duck-btn-icon {
     font-size: 18px;
+}
+
+.duck-btn-lg .duck-btn-icon svg {
+    width: 18px;
+    height: 18px;
 }
 
 /* ── Button States ───────────────────────────────────────── */
@@ -180,23 +202,34 @@
     display: none !important;
 }
 
-.duck-btn.duck-btn-loading .duck-btn-spinner {
-    display: inline-block;
-    position: relative;
-    left: auto;
-    top: auto;
-    transform: none;
+.duck-btn.duck-btn-loading .duck-btn-icon-spinner {
+    display: inline-flex;
+    align-items: center;
     margin-right: 4px;
-    width: 14px;
-    height: 14px;
-    border-color: var(--text-primary);
-    border-top-color: transparent;
 }
 
-.duck-btn-primary.duck-btn-loading .duck-btn-spinner,
-.duck-btn-danger.duck-btn-loading .duck-btn-spinner {
-    border-color: #ffffff;
-    border-top-color: transparent;
+.duck-btn.duck-btn-loading .duck-btn-icon-spinner .spinner-svg {
+    animation: btn-icon-spin 0.8s linear infinite;
+}
+
+@keyframes btn-icon-spin {
+    to { transform: rotate(360deg); }
+}
+
+.duck-btn.duck-btn-loading .duck-btn-spinner {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 4px;
+}
+
+.duck-btn.duck-btn-loading .duck-btn-spinner .spinner-svg {
+    animation: btn-icon-spin 0.8s linear infinite;
+    stroke: currentColor;
+}
+
+.duck-btn-primary.duck-btn-loading .duck-btn-spinner .spinner-svg,
+.duck-btn-danger.duck-btn-loading .duck-btn-spinner .spinner-svg {
+    stroke: #ffffff;
 }
 
 /* ── Icon-only Button ─────────────────────────────────────── */
@@ -304,9 +337,4 @@
 @keyframes duck-spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
-}
-
-.duck-btn-spin .duck-btn-icon {
-    display: inline-block;
-    animation: duck-spin 1s linear infinite;
 }

@@ -96,10 +96,19 @@
                     el.appendChild(cbWrap);
                 } else {
                     if (item.icon) {
-                        const icon = document.createElement('span');
-                        icon.className = 'material-symbols-outlined duck-dropdown-icon';
-                        icon.textContent = item.icon;
-                        el.appendChild(icon);
+                        if (item.icon.includes('/') || item.icon.includes('.')) {
+                            const icon = document.createElement('img');
+                            icon.src = item.icon;
+                            icon.style.cssText = 'width:18px;height:18px;object-fit:contain;margin-right:8px;vertical-align:middle;';
+                            el.appendChild(icon);
+                        } else {
+                            const icon = document.createElement('span');
+                            icon.className = 'material-symbols-outlined duck-dropdown-icon';
+                            icon.style.marginRight = '8px';
+                            icon.style.verticalAlign = 'middle';
+                            icon.textContent = item.icon;
+                            el.appendChild(icon);
+                        }
                     }
 
                     if (item.label) {

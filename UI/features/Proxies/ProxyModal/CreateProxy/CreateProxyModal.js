@@ -9,9 +9,10 @@ window.ProxyModals.CreateProxy = {
     _validator: null,
     _cancelRequested: false,
 
-    async show(onSuccess) {
+    async show(onSuccess, editProxyData = null) {
         if (this._modal) this._modal.destroy();
         this._onSuccess = onSuccess;
+        this._editData = editProxyData;
         this._isLoading = true;
         this._cancelRequested = false;
 
@@ -34,7 +35,7 @@ window.ProxyModals.CreateProxy = {
         
         const nameCol = document.createElement('div');
         nameCol.style.flex = '1';
-        this._nameCtrl = DuckControls.Input.create({ label: 'PROXY NAME', placeholder: 'Leave empty for auto-generate', icon: 'badge', width: '100%' });
+        this._nameCtrl = DuckControls.Input.create({ label: 'PROXY NAME', placeholder: 'Leave empty for auto-generate', icon: 'badge', width: '100%', value: this._editData ? this._editData.name : '' });
         nameCol.appendChild(this._nameCtrl.element);
         basicGroup.appendChild(nameCol);
         
@@ -67,36 +68,47 @@ window.ProxyModals.CreateProxy = {
         quickInputGroup.appendChild(quickInput.element);
         detailsTab.appendChild(quickInputGroup);
 
-        // Protocol + Group Row
-        const typeGroupRow = document.createElement('div');
-        typeGroupRow.style.cssText = 'display:flex; gap:12px;';
+        // Protocol + Group + Tags Row
+        const typeGroupTagsRow = document.createElement('div');
+        typeGroupTagsRow.style.cssText = 'display:grid; grid-template-columns:1fr 2fr 2fr; gap:16px;';
         
         const typeCol = document.createElement('div');
-        typeCol.style.flex = '1';
         this._typeCtrl = DuckControls.Select.create({
             label: 'PROTOCOL',
             options: this._proxyTypes.map(t => ({ label: t.label, value: t.value })),
             width: '100%',
-            required: true
+            required: true,
+            value: this._editData ? this._editData.proxy_type : 'http'
         });
         typeCol.appendChild(this._typeCtrl.element);
         
         const groupCol = document.createElement('div');
-        groupCol.style.flex = '1';
         this._groupCtrl = DuckControls.Select.create({
             label: 'GROUP',
             placeholder: 'No Group',
             options: [
                 { label: 'No Group', value: '' },
-                ...this._proxyGroups.map(g => ({ label: g.Name || g.name || '', value: String(g.Id ?? g.id) }))
+                ...this._proxyGroups.map(g => ({ label: g.Name || g.name || '', value: String(g.Id || g.id) }))
             ],
-            width: '100%'
+            width: '100%',
+            value: this._editData && this._editData.groupId ? String(this._editData.groupId) : ''
         });
         groupCol.appendChild(this._groupCtrl.element);
         
-        typeGroupRow.appendChild(typeCol);
-        typeGroupRow.appendChild(groupCol);
-        detailsTab.appendChild(typeGroupRow);
+        const tagCol = document.createElement('div');
+        this._tagCtrl = DuckControls.MultiSelectComboBox.create({
+            label: 'TAGS',
+            placeholder: 'Select tags...',
+            options: this._proxyTags.map(t => ({ label: t.Name || t.name || '', value: String(t.Id || t.id) })),
+            width: '100%',
+            values: this._editData && this._editData.tagIds ? this._editData.tagIds.map(String) : []
+        });
+        tagCol.appendChild(this._tagCtrl.element);
+        
+        typeGroupTagsRow.appendChild(typeCol);
+        typeGroupTagsRow.appendChild(groupCol);
+        typeGroupTagsRow.appendChild(tagCol);
+        detailsTab.appendChild(typeGroupTagsRow);
 
         // Connection Group
         const connGroup = document.createElement('div');
@@ -104,12 +116,12 @@ window.ProxyModals.CreateProxy = {
         
         const hostCol = document.createElement('div');
         hostCol.style.flex = '1';
-        this._hostCtrl = DuckControls.Input.create({ label: 'IP / HOST', placeholder: '127.0.0.1', icon: 'dns', width: '100%', required: true });
+        this._hostCtrl = DuckControls.Input.create({ label: 'IP / HOST', placeholder: '127.0.0.1', icon: 'dns', width: '100%', required: true, value: this._editData ? this._editData.host : '' });
         hostCol.appendChild(this._hostCtrl.element);
         
         const portCol = document.createElement('div');
         portCol.style.flex = '1';
-        this._portCtrl = DuckControls.Input.create({ label: 'PORT', placeholder: '8080', icon: 'numbers', width: '100%', required: true });
+        this._portCtrl = DuckControls.Input.create({ label: 'PORT', placeholder: '8080', icon: 'numbers', width: '100%', required: true, value: this._editData ? String(this._editData.port) : '' });
         portCol.appendChild(this._portCtrl.element);
 
         connGroup.appendChild(hostCol);
@@ -127,33 +139,17 @@ window.ProxyModals.CreateProxy = {
         
         const userCol = document.createElement('div');
         userCol.style.flex = '1';
-        this._userCtrl = DuckControls.Input.create({ label: 'USERNAME', placeholder: 'Optional', icon: 'person', width: '100%' });
+        this._userCtrl = DuckControls.Input.create({ label: 'USERNAME', placeholder: 'Optional', icon: 'person', width: '100%', value: this._editData ? this._editData.username : '' });
         userCol.appendChild(this._userCtrl.element);
         
         const passCol = document.createElement('div');
         passCol.style.flex = '1';
-        this._passCtrl = DuckControls.Input.create({ label: 'PASSWORD', placeholder: 'Optional', icon: 'key', width: '100%' });
+        this._passCtrl = DuckControls.Input.create({ label: 'PASSWORD', placeholder: 'Optional', icon: 'key', width: '100%', value: this._editData ? this._editData.password : '' });
         passCol.appendChild(this._passCtrl.element);
 
         authGroup.appendChild(userCol);
         authGroup.appendChild(passCol);
         detailsTab.appendChild(authGroup);
-
-        // Tags Row (Full Width)
-        const tagGroup = document.createElement('div');
-        tagGroup.style.cssText = 'display:flex; gap:12px;';
-        
-        const tagCol = document.createElement('div');
-        tagCol.style.flex = '1';
-        this._tagCtrl = DuckControls.MultiSelectComboBox.create({
-            label: 'TAGS',
-            placeholder: 'Select tags...',
-            options: this._proxyTags.map(t => ({ label: t.Name || t.name || '', value: String(t.Id ?? t.id) })),
-            width: '100%'
-        });
-        tagCol.appendChild(this._tagCtrl.element);
-        tagGroup.appendChild(tagCol);
-        detailsTab.appendChild(tagGroup);
 
         // Advanced Group
         const advGroup = document.createElement('div');
@@ -167,7 +163,8 @@ window.ProxyModals.CreateProxy = {
             label: 'ROTATE API URL',
             placeholder: 'https://proxy-provider.com/rotate?key=...',
             icon: 'autorenew',
-            width: '100%'
+            width: '100%',
+            value: this._editData ? this._editData.rotaryApi : ''
         });
         advGroup.appendChild(this._apiCtrl.element);
         detailsTab.appendChild(advGroup);
@@ -179,7 +176,8 @@ window.ProxyModals.CreateProxy = {
             label: 'NOTE',
             placeholder: 'Add any notes for this proxy...',
             width: '100%',
-            height: '100px'
+            height: '100px',
+            value: this._editData ? this._editData.note : ''
         });
         noteTab.appendChild(this._noteCtrl.element);
 
@@ -215,12 +213,13 @@ window.ProxyModals.CreateProxy = {
 
         this._modal = DuckControls.Modal.create({
             defaultEnter: false,
-            title: 'Create Proxy',
-            subtitle: '<span class="material-symbols-outlined" style="font-size:14px;">add_circle</span> Add a new proxy connection to your database.',
+            title: this._editData ? 'Edit Proxy' : 'Create Proxy',
+            subtitle: this._editData ? '<span class="material-symbols-outlined" style="font-size:14px;">edit</span> Update your proxy details.' : '<span class="material-symbols-outlined" style="font-size:14px;">add_circle</span> Add a new proxy connection to your database.',
             icon: 'dns',
             content: content,
-            size: 'md',
+            size: 'lg',
             closeOnOverlay: true,
+            preventAutoFocus: true,
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => { 
                     modal.close(); 
@@ -378,9 +377,12 @@ window.ProxyModals.CreateProxy = {
                 notes: this._noteCtrl?.getValue?.()?.trim() || null
             };
             
-            await DuckBridge.call('proxy.create', data);
-            
-            window.DuckControls.Toast?.success?.('Success', 'Proxy created');
+            if (this._editData) {
+                data.id = this._editData.id;
+                await DuckBridge.call('proxy.update', data);
+            } else {
+                await DuckBridge.call('proxy.create', data);
+            }
             
             if (this._onSuccess) this._onSuccess();
             
@@ -390,6 +392,7 @@ window.ProxyModals.CreateProxy = {
                 window.ProxiesView.loadProxies?.();
             }
             
+            modal.setLoading(false);
             modal.close();
         } catch (err) {
             console.error('[CreateProxy] Save failed:', err);

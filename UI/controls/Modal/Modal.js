@@ -48,7 +48,7 @@
             if (!defaultBtn) {
                 defaultBtn = top.container.querySelector('.duck-btn-primary');
             }
-            if (defaultBtn && !defaultBtn.disabled) {
+            if (defaultBtn && !defaultBtn.disabled && !top._locked) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 defaultBtn.click();
@@ -109,7 +109,11 @@
                     title.style.display = 'flex';
                     title.style.alignItems = 'center';
                     title.style.gap = '8px';
-                    title.innerHTML = `<span class="material-symbols-outlined" style="font-size: 20px; color: var(--text-secondary);">${this.options.icon}</span> <span>${this.options.title}</span>`;
+                    if (this.options.icon.includes('/') || this.options.icon.includes('.')) {
+                        title.innerHTML = `<img src="${this.options.icon}" style="width:20px;height:20px;object-fit:contain;"> <span>${this.options.title}</span>`;
+                    } else {
+                        title.innerHTML = `<span class="material-symbols-outlined" style="font-size: 20px; color: var(--text-secondary);">${this.options.icon}</span> <span>${this.options.title}</span>`;
+                    }
                 } else {
                     title.textContent = this.options.title;
                 }
@@ -195,7 +199,11 @@
                         } else {
                             btn.className = `duck-btn ${btnDef.class || 'duck-btn-surface'}`;
                             if (btnDef.icon) {
-                                btn.innerHTML = `<span class="material-symbols-outlined duck-btn-icon" style="font-size:16px; margin-right:4px;">${btnDef.icon}</span>${btnDef.text}`;
+                                if (btnDef.icon.includes('/') || btnDef.icon.includes('.')) {
+                                    btn.innerHTML = `<img src="${btnDef.icon}" style="width:16px;height:16px;object-fit:contain;margin-right:6px;pointer-events:none;">${btnDef.text}`;
+                                } else {
+                                    btn.innerHTML = `<span class="material-symbols-outlined duck-btn-icon" style="font-size:16px; margin-right:4px;">${btnDef.icon}</span>${btnDef.text}`;
+                                }
                             } else {
                                 btn.textContent = btnDef.text;
                             }
@@ -254,20 +262,25 @@
                 this.options.onOpen();
             }
 
-            // Focus first input, or default button
-            setTimeout(() => {
-                const inputFocusable = this.container.querySelector('input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])');
-                if (inputFocusable) {
-                    inputFocusable.focus();
-                } else {
-                    let defaultBtn = this.container.querySelector('[data-duck-default="true"]');
-                    if (!defaultBtn) defaultBtn = this.container.querySelector('.duck-btn-primary');
-                    if (defaultBtn) defaultBtn.focus();
-                }
-            }, 100);
+            // Focus first input, or default button (skip if preventAutoFocus is true)
+            if (!this.options.preventAutoFocus) {
+                setTimeout(() => {
+                    const inputFocusable = this.container.querySelector('input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])');
+                    if (inputFocusable) {
+                        inputFocusable.focus();
+                    } else {
+                        let defaultBtn = this.container.querySelector('[data-duck-default="true"]');
+                        if (!defaultBtn) defaultBtn = this.container.querySelector('.duck-btn-primary');
+                        if (defaultBtn) defaultBtn.focus();
+                    }
+                }, 100);
+            }
         }
 
         close() {
+            // Prevent closing when locked
+            if (this._locked) return;
+
             this.isOpen = false;
             this.overlay.classList.remove('duck-modal-open');
 
@@ -310,25 +323,63 @@
             let buttonSpun = false;
 
             if (isLoading) {
-                if (this._lastClickedBtn) {
-                    this._lastClickedBtn.setLoading(true);
-                    buttonSpun = true;
-                    this._buttonWasSpun = this._lastClickedBtn;
-                } else if (this._lastClickedBtnFallback) {
-                    if (!this._lastClickedBtnFallback.querySelector('.duck-btn-spinner')) {
-                        const spinner = document.createElement('div');
-                        spinner.className = 'duck-btn-spinner';
-                        this._lastClickedBtnFallback.appendChild(spinner);
-                    }
-                    this._lastClickedBtnFallback.classList.add('duck-btn-loading');
-                    buttonSpun = true;
-                    this._buttonWasSpunFallback = this._lastClickedBtnFallback;
+                // Store original disabled state for ALL buttons before disabling
+                if (this._buttons) {
+                    this._buttons.forEach(b => {
+                        b._origDisabled = b.element.disabled;
+                    });
+                } else {
+                    this.container.querySelectorAll('button').forEach(b => {
+                        b._origDisabled = b.disabled;
+                    });
                 }
 
+                // Find the primary button (the one with duck-btn-primary class)
+                const primaryBtn = this._buttons?.find(b => b.element?.classList?.contains('duck-btn-primary'));
+                const primaryBtnFallback = primaryBtn?.element || this.container.querySelector('button.duck-btn-primary');
+
+                if (primaryBtnFallback) {
+                    // Hide existing icon if any
+                    const existingIcon = primaryBtnFallback.querySelector('.duck-btn-icon');
+                    if (existingIcon) {
+                        existingIcon.style.display = 'none';
+                        this._fallbackBtnOriginalIcon = existingIcon;
+                    }
+
+                    // Find or create spinner
+                    let spinner = primaryBtnFallback.querySelector('.duck-btn-icon-spinner');
+                    if (!spinner) {
+                        spinner = document.createElement('span');
+                        spinner.className = 'duck-btn-icon-spinner';
+                        spinner.innerHTML = `<svg class="spinner-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>`;
+                        primaryBtnFallback.prepend(spinner);
+                    }
+                    spinner.style.display = '';
+                    primaryBtnFallback.classList.add('duck-btn-loading');
+                    buttonSpun = true;
+                    this._buttonWasSpunFallback = primaryBtnFallback;
+
+                    // Disable the primary button as well
+                    if (primaryBtn) {
+                        primaryBtn.setDisabled(true);
+                    } else {
+                        primaryBtnFallback.disabled = true;
+                    }
+                }
+
+                // Disable ALL buttons (primary was already disabled above, this handles non-primary)
                 if (this._buttons) {
-                    this._buttons.forEach(b => { if (b !== this._lastClickedBtn) { b._origDisabled = b.element.disabled; b.setDisabled(true); } });
+                    this._buttons.forEach(b => {
+                        if (!b.element?.classList?.contains('duck-btn-primary')) {
+                            b.setDisabled(true);
+                        }
+                    });
                 } else {
-                    this.container.querySelectorAll('button').forEach(b => { if (b !== this._lastClickedBtnFallback) b.disabled = true; });
+                    this.container.querySelectorAll('button').forEach(b => {
+                        if (!b.classList?.contains('duck-btn-primary')) {
+                            b.disabled = true;
+                        }
+                    });
                 }
 
                 if (!buttonSpun) {
@@ -366,27 +417,72 @@
                     });
                 }
             } else {
-                if (this._buttonWasSpun) {
-                    this._buttonWasSpun.setLoading(false);
-                    this._buttonWasSpun = null;
-                }
+                // Restore primary button state
                 if (this._buttonWasSpunFallback) {
                     this._buttonWasSpunFallback.classList.remove('duck-btn-loading');
+                    const spinner = this._buttonWasSpunFallback.querySelector('.duck-btn-icon-spinner');
+                    if (spinner) spinner.style.display = 'none';
+                    if (this._fallbackBtnOriginalIcon) {
+                        this._fallbackBtnOriginalIcon.style.display = '';
+                        this._fallbackBtnOriginalIcon = null;
+                    }
+                    
+                    // Restore disabled state
+                    const primaryBtnInst = this._buttons?.find(b => b.element === this._buttonWasSpunFallback);
+                    if (primaryBtnInst) {
+                        if (primaryBtnInst._origDisabled !== undefined) {
+                            primaryBtnInst.setDisabled(primaryBtnInst._origDisabled);
+                            delete primaryBtnInst._origDisabled;
+                        }
+                    } else {
+                        if (this._buttonWasSpunFallback._origDisabled !== undefined) {
+                            this._buttonWasSpunFallback.disabled = this._buttonWasSpunFallback._origDisabled;
+                            delete this._buttonWasSpunFallback._origDisabled;
+                        }
+                    }
                     this._buttonWasSpunFallback = null;
                 }
 
                 if (this._buttons) {
                     this._buttons.forEach(b => { if (b._origDisabled !== undefined) { b.setDisabled(b._origDisabled); delete b._origDisabled; } else { b.setDisabled(false); } });
                 } else {
-                    this.container.querySelectorAll('button').forEach(b => b.disabled = false);
+                    this.container.querySelectorAll('button').forEach(b => {
+                        if (b._origDisabled !== undefined) {
+                            b.disabled = b._origDisabled;
+                            delete b._origDisabled;
+                        } else {
+                            b.disabled = false;
+                        }
+                    });
                 }
 
                 if (this._loaderOverlay) {
                     this._loaderOverlay.classList.remove('active');
                 }
-                
-                this._lastClickedBtn = null;
-                this._lastClickedBtnFallback = null;
+            }
+        }
+
+        /**
+         * Lock/unlock modal - prevents close, ESC, overlay click, and disables all buttons except Cancel
+         */
+        setLocked(locked, disableCancel = false) {
+            this._locked = locked;
+            if (this._buttons) {
+                this._buttons.forEach(btn => {
+                    const isCancel = btn.element.textContent.trim().toLowerCase() === 'cancel';
+                    if (locked && disableCancel && isCancel) return;
+                    if (!isCancel || !disableCancel) {
+                        btn.setDisabled(locked);
+                    }
+                });
+            } else if (this.container) {
+                this.container.querySelectorAll('button').forEach(btn => {
+                    const isCancel = btn.textContent.trim().toLowerCase() === 'cancel';
+                    if (locked && disableCancel && isCancel) return;
+                    if (!isCancel || !disableCancel) {
+                        btn.disabled = locked;
+                    }
+                });
             }
         }
 

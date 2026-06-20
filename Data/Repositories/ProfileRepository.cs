@@ -18,10 +18,18 @@ public class ProfileRepository : IProfileRepository
         var sql = @"
             SELECT p.*,
                    g.Name as GroupName,
-                   pr.Name as ProxyName
+                   CASE 
+                       WHEN pr.Host IS NOT NULL AND pr.Host != '' THEN 
+                           COALESCE(pt.Value, 'http') || '://' || pr.Host || ':' || pr.Port || 
+                           CASE WHEN pr.Username IS NOT NULL AND pr.Username != '' 
+                                THEN ':' || pr.Username || ':' || pr.Password 
+                                ELSE '' END
+                       ELSE pr.Name 
+                   END as ProxyName
             FROM Profiles p
-            LEFT JOIN Groups g ON p.GroupId = g.Id
+            LEFT JOIN ProfileGroups g ON p.GroupId = g.Id
             LEFT JOIN Proxies pr ON p.ProxyId = pr.Id
+            LEFT JOIN ProxyTypes pt ON pr.TypeId = pt.Id
             WHERE 1=1";
         var args = new List<(string name, object value)>();
 
@@ -104,10 +112,29 @@ public class ProfileRepository : IProfileRepository
         await using var conn = _db.GetConnection();
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT * FROM Profiles WHERE Id = @id";
+        cmd.CommandText = @"
+            SELECT p.*,
+                   g.Name as GroupName,
+                   CASE 
+                       WHEN pr.Host IS NOT NULL AND pr.Host != '' THEN 
+                           COALESCE(pt.Value, 'http') || '://' || pr.Host || ':' || pr.Port || 
+                           CASE WHEN pr.Username IS NOT NULL AND pr.Username != '' 
+                                THEN ':' || pr.Username || ':' || pr.Password 
+                                ELSE '' END
+                       ELSE pr.Name 
+                   END as ProxyName
+            FROM Profiles p
+            LEFT JOIN ProfileGroups g ON p.GroupId = g.Id
+            LEFT JOIN Proxies pr ON p.ProxyId = pr.Id
+            LEFT JOIN ProxyTypes pt ON pr.TypeId = pt.Id
+            WHERE p.Id = @id";
         cmd.Parameters.AddWithValue("@id", id);
         await using var reader = await cmd.ExecuteReaderAsync();
-        return await reader.ReadAsync() ? ReadProfile(reader) : null;
+        if (!await reader.ReadAsync()) return null;
+        var p = ReadProfile(reader);
+        p.GroupName = reader.IsDBNull(reader.GetOrdinal("GroupName")) ? null : reader.GetString(reader.GetOrdinal("GroupName"));
+        p.ProxyName = reader.IsDBNull(reader.GetOrdinal("ProxyName")) ? null : reader.GetString(reader.GetOrdinal("ProxyName"));
+        return p;
     }
 
     public async Task<int> CreateAsync(Profile profile)

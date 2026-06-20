@@ -6,7 +6,6 @@
 
     window.ProfileModals.CreateProfile.GeneralTab = {
         _fpTemplate: null,
-        _browserCatalog: null,
         _defaultStartUrl: '',
 
         _setTemplate(template) {
@@ -16,12 +15,8 @@
                 const osOptions = this._getOsOptions();
                 this.osSelect.setOptions(osOptions);
             }
-        },
-
-        _setBrowserCatalog(browserCatalog) {
-            this._browserCatalog = browserCatalog;
-            // Populate browser options after catalog is loaded
-            if (this.browserSelect && this._browserCatalog) {
+            // Populate browser options
+            if (this.browserSelect) {
                 const browserOptions = this._getBrowserOptions();
                 this.browserSelect.setOptions(browserOptions);
                 // Also update browser version options
@@ -49,16 +44,25 @@
         },
 
         _getBrowserOptions() {
-            const browsers = this._browserCatalog?.Browsers || [];
-            return browsers.map(b => ({ label: b.BrowserType, value: String(b.BrowserType || '').toLowerCase() }));
+            if (!this._browserCatalog || !this._browserCatalog.Browsers) {
+                return [{ label: 'Loading...', value: 'chromium' }];
+            }
+            const browsers = this._browserCatalog.Browsers || [];
+            if (browsers.length === 0) {
+                return [{ label: 'No Browsers', value: '' }];
+            }
+            return browsers.map(b => {
+                const type = b.BrowserType || b.browserType || '';
+                const label = type.charAt(0).toUpperCase() + type.slice(1);
+                return { label: label || 'Unknown', value: type.toLowerCase() };
+            });
         },
 
         _getBrowserVersions(browserValue) {
-            const browsers = this._browserCatalog?.Browsers || [];
-            const selected = browsers.find(b => String(b.BrowserType || '').toLowerCase() === String(browserValue || '').toLowerCase());
-            return (selected?.Versions || [])
-                .filter(v => v.Version !== '138')
-                .map(v => ({ label: v.Version, value: v.Version }));
+            if (!this._browserCatalog || !this._browserCatalog.Browsers) return [{ label: 'Loading...', value: '' }];
+            const b = this._browserCatalog.Browsers.find(x => (x.BrowserType || x.browserType || '').toLowerCase() === browserValue);
+            if (!b || !b.Versions || b.Versions.length === 0) return [{ label: 'No versions found', value: '' }];
+            return b.Versions.map(v => ({ label: v.Version || v.version, value: v.Version || v.version }));
         },
 
         _buildUserAgent(osVal, modelVal, browserVersion) {
@@ -102,6 +106,28 @@
         },
 
         render() {
+            // Fetch dynamic browser versions catalog from backend
+            DuckBridge.call('browser.listVersions').then(catalog => {
+                this._browserCatalog = catalog;
+                if (this.browserSelect && this.browserVersion) {
+                    const browserOptions = this._getBrowserOptions();
+                    this.browserSelect.setOptions(browserOptions);
+                    
+                    const currentBrowser = this.browserSelect.getValue() || browserOptions[0]?.value;
+                    if (!this.browserSelect.getValue() && currentBrowser) {
+                        this.browserSelect.setValue(currentBrowser);
+                    }
+                    
+                    const versionOptions = this._getBrowserVersions(currentBrowser);
+                    this.browserVersion.setOptions(versionOptions);
+                    // Retain selected value if valid, else pick first
+                    const currentVal = this.browserVersion.getValue();
+                    if (!versionOptions.find(v => v.value === currentVal) && versionOptions.length > 0) {
+                        this.browserVersion.setValue(versionOptions[0].value);
+                    }
+                }
+            }).catch(e => console.error("Failed to fetch browser versions", e));
+
             const container = document.createElement('div');
             container.style.cssText = 'display: flex; flex-direction: column; gap: 32px; width: 100%;';
 
@@ -173,6 +199,7 @@
             const browserOptions = this._getBrowserOptions();
             const initialBrowser = browserOptions[0]?.value || 'chromium';
             const initialVersionOptions = this._getBrowserVersions(initialBrowser);
+            const initialVersionValue = initialVersionOptions.length > 0 ? initialVersionOptions[0].value : '';
             this.browserSelect = window.DuckControls.Select.create({
                 label: 'Browser Kernel',
                 options: browserOptions,
@@ -182,7 +209,10 @@
                     const selectedBrowser = this.browserSelect?.getValue?.() || initialBrowser;
                     const versionOptions = this._getBrowserVersions(selectedBrowser);
                     this.browserVersion?.setOptions?.(versionOptions);
-                    // Do not auto-select the first version
+                    // Auto-select first version when browser changes
+                    if (versionOptions.length > 0) {
+                        this.browserVersion?.setValue?.(versionOptions[0].value);
+                    }
                     this._syncUaPreview();
                     window.ProfileModals?.CreateProfile?._scheduleSync?.();
                 }
@@ -191,7 +221,7 @@
                 label: 'Browser Version',
                 placeholder: 'Select...',
                 options: initialVersionOptions,
-                value: '',
+                value: initialVersionValue,
                 onChange: () => {
                     this._syncUaPreview();
                     window.ProfileModals?.CreateProfile?._scheduleSync?.();

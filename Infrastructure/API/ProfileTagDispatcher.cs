@@ -2,13 +2,13 @@ using System.Text.Json;
 
 namespace DuckGo.Infrastructure.API;
 
-public class TagDispatcher : IDispatcher
+public class ProfileTagDispatcher : IDispatcher
 {
-    private readonly Services.TagService _service;
+    private readonly Services.ProfileTagService _service;
 
     public string Domain => "tag";
 
-    public TagDispatcher(Services.TagService service) => _service = service;
+    public ProfileTagDispatcher(Services.ProfileTagService service) => _service = service;
 
     public bool CanHandle(string action) => action.StartsWith("tag.");
 

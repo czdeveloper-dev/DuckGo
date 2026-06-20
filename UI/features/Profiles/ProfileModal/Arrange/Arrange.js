@@ -168,6 +168,7 @@ window.ProfileModals.Arrange = {
             content: modalBody,
             size: 'sm',
             closeOnOverlay: true,
+            preventAutoFocus: true,
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, m) => m.close() },
                 { text: 'Arrange Windows', icon: 'grid_view', class: 'duck-btn-primary', onClick: async (e, m) => {

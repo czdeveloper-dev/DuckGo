@@ -21,7 +21,7 @@
         _populateHardwareOptions(tmpl, skipRandomize = false) {
             if (!tmpl) return;
             const genTab = window.ProfileModals?.CreateProfile?.GeneralTab;
-            const osVal = genTab?._osSelectCtrl?.getValue?.() || 'Windows';
+            const osVal = genTab?._osSelectCtrl?.getValue?.() || null;
             const osBlock = tmpl.OS?.[osVal] || {};
 
             // HardwareTiers â†’ cpuChipSelect
@@ -224,12 +224,12 @@
 
             this.webglImgToggle = window.DuckControls.ToggleGroup.create({
                 options: [
+                    { label: 'Noise', value: 'noise' },
                     { label: 'Real', value: 'real' },
                     { label: 'Default', value: 'default' },
-                    { label: 'Noise', value: 'noise' },
                     { label: 'Solid', value: 'solid' }
                 ],
-                value: 'real'
+                value: 'noise'
             });
             emuSec.appendChild(window.DuckControls.SettingRow.create({ title: 'WebGL Image', desc: 'Spoof WebGL image rendering fingerprints', control: this.webglImgToggle.element, alignTop: false }).element);
 
@@ -359,13 +359,13 @@
             }
 
             // Screen Resolution settings - key is 'screenMode' from hwValues
-            const screenModeVal = values.screenMode ?? values.resMode;
+            const screenModeVal = values.screenMode || values.resMode;
             if (screenModeVal !== undefined && this.resToggle) {
                 this.resToggle.setValue(screenModeVal);
                 const resWrap = this.resToggle.element?.closest('.duck-card-body')?.querySelector('[data-res-chip]');
                 if (resWrap) resWrap.style.display = screenModeVal === 'custom' ? 'flex' : 'none';
                 if (screenModeVal === 'custom' && values.screenWidth && values.screenHeight && this.resChipSelect) {
-                    const pr = values.screenPixelRatio ?? 1.0;
+                    const pr = values.screenPixelRatio || 1.0;
                     this.resChipSelect.setValue(`${values.screenWidth}x${values.screenHeight}x${pr}`);
                 }
             }

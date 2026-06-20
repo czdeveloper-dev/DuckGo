@@ -39,7 +39,7 @@ public class ProfileValidator : IValidator
         if (string.IsNullOrWhiteSpace(bt))
             r.WithError("browserType", "Browser type is required");
         else if (!NormalizeBrowserType(bt, out _))
-            r.WithError("browserType", "Browser type must be Chromium or Firefox");
+            r.WithError("browserType", "Invalid browser type");
 
         ValidateUserAgent(p.Value, r);
         ValidateProxy(p.Value, r);
@@ -78,7 +78,7 @@ public class ProfileValidator : IValidator
         if (string.IsNullOrWhiteSpace(bt))
             r.WithError("browserType", "Browser type is required");
         else if (!NormalizeBrowserType(bt, out _))
-            r.WithError("browserType", "Browser type must be Chromium or Firefox");
+            r.WithError("browserType", "Invalid browser type");
 
         if (!p.Value.TryGetProperty("profileData", out var profileDataEl) || profileDataEl.ValueKind != JsonValueKind.String)
         {
@@ -176,12 +176,21 @@ public class ProfileValidator : IValidator
         // Real mode (useRealUserAgent=true) and Random mode (uaMode=random) are valid without UA
     }
 
+    private static readonly string[] KnownBrowserTypes = { "chromium", "firefox", "edge", "brave", "opera", "chrome" };
+    
     private static bool NormalizeBrowserType(string? input, out string normalized)
     {
         normalized = "";
         if (string.IsNullOrWhiteSpace(input)) return false;
         var lower = input.Trim().ToLowerInvariant();
-        if (lower is "chromium" or "firefox") { normalized = char.ToUpperInvariant(lower[0]) + lower[1..]; return true; }
+        
+        // Accept any known browser type and normalize the casing
+        var known = KnownBrowserTypes.FirstOrDefault(b => b.Equals(lower, StringComparison.OrdinalIgnoreCase));
+        if (known != null)
+        {
+            normalized = char.ToUpperInvariant(known[0]) + known[1..];
+            return true;
+        }
         return false;
     }
 }

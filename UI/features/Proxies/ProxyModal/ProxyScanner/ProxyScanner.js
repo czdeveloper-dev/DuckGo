@@ -8,10 +8,14 @@ window.ProxyModals.ProxyScanner = {
     _results: [],
     _maxThreads: 50,
     _pollInterval: null,
+    _onComplete: null,
 
-    show(selectedIds) {
+    show(selectedIds, onComplete) {
         if (!selectedIds) selectedIds = new Set();
         const count = selectedIds.size !== undefined ? selectedIds.size : (selectedIds.length || 0);
+        
+        // Store the callback
+        this._onComplete = onComplete || null;
         
         if (this._modal) {
             this._cancelScan();
@@ -255,8 +259,8 @@ window.ProxyModals.ProxyScanner = {
         // Sort: alive first, then timeout, then dead, then by latency
         const sorted = [...proxies].sort((a, b) => {
             const order = { alive: 0, timeout: 1, dead: 2 };
-            const statusA = order[a.status] ?? 3;
-            const statusB = order[b.status] ?? 3;
+            const statusA = order[a.status] || 3;
+            const statusB = order[b.status] || 3;
             if (statusA !== statusB) return statusA - statusB;
             return (a.latencyMs || 9999) - (b.latencyMs || 9999);
         });
@@ -341,9 +345,15 @@ window.ProxyModals.ProxyScanner = {
             });
         }
         
+        // Call the completion callback if provided
+        if (this._onComplete) {
+            this._onComplete();
+            this._onComplete = null;
+        }
+        
         // Refresh proxy list
-        if (window.ProxyModals?.Proxies) {
-            window.ProxyModals.Proxies.loadProxies();
+        if (window.ProxiesView) {
+            window.ProxiesView.loadProxies();
         }
         
         window.DuckControls.Toast?.success?.('Scan Complete', `Scanned ${this._results.length || 0} proxies`);
@@ -363,6 +373,12 @@ window.ProxyModals.ProxyScanner = {
             DuckBridge.call('proxy.cancelScan', { scanId: this._scanId }).catch(() => {});
             console.log('[ProxyScanner] Cancelled scan:', this._scanId);
         }
+        
+        // Call the completion callback if provided (with cancelled flag)
+        if (this._onComplete) {
+            this._onComplete(true);
+            this._onComplete = null;
+        }
     },
     
     _cleanup() {
@@ -371,6 +387,7 @@ window.ProxyModals.ProxyScanner = {
         this._selectedIds = null;
         this._results = [];
         this._pollInterval = null;
+        this._onComplete = null;
     },
     
     _escapeHtml(text) {

@@ -88,9 +88,9 @@
                 seq:        idx + 1,
                 name:       p.Name ?? p.name ?? 'Unknown',
                 groupName:  p.GroupName ?? this._getGroupName(p.GroupId ?? p.groupId),
-                tags:       p.TagNames ?? p.tagNames ?? [],
-                proxy:      p.ProxyName ?? p.proxy ?? 'Direct',
-                notes:      p.Notes ?? p.notes ?? '',
+                tags:       p.TagNames ?? p.tagNames ?? p.Tags ?? p.tags ?? [],
+                proxy:      p.proxyName ?? p.ProxyName ?? p.proxy ?? 'Direct',
+                note:       p.Notes ?? p.notes ?? '',
                 status:    p.Status ?? p.status ?? 'ready',
                 message:   p.Message ?? p.message ?? '-',
                 createdAt: p.CreatedAt ?? p.createdAt,
@@ -113,7 +113,7 @@
             return g ? (g.Name ?? g.name) : '';
         },
 
-        // â”€â”€ Select builders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ——— Select builders ————————————————————————————————————————————————
         _buildGroupOptions() {
             return [
                 { label: 'All Groups', value: '' },
@@ -147,7 +147,7 @@
             if (this._tagCtrl) this._tagCtrl.setOptions(this._buildTagOptions());
         },
 
-        // â”€â”€ Group CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ——— Group CRUD —————————————————————————————————————————————————————
         _buildGroupDeleteItems() {
             return this._groups.map(g => ({ label: g.Name || g.name || '', value: String(g.Id ?? g.id) }));
         },
@@ -211,7 +211,7 @@
             });
         },
 
-        // â”€â”€ Tag CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ——— Tag CRUD ——————————————————————————————————————————————————————
         _buildTagDeleteItems() {
             return this._tags.map(t => ({ label: t.Name || t.name || '', value: String(t.Id ?? t.id) }));
         },
@@ -274,7 +274,7 @@
             });
         },
 
-        // â”€â”€ Init UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ——— Init UI ————————————————————————————————————————————————————————
         initUI() {
             const refreshEl = document.getElementById('ctrl-refresh');
             if (refreshEl) {
@@ -532,17 +532,17 @@
             const _this = this;
             const cols = [
                 { id: 'select', type: 'checkbox', title: 'Select all', locked: true, lockedPosition: 'left', resizable: false, width: '52px', onCheckAll: (e) => this._handleCheckAll(e) },
-                { id: 'seq', label: '#', width: '1ch', minWidth: '1ch', locked: true, lockedPosition: 'left', resizable: false, autoSize: true, align: 'center', render: (r) => { const el = document.createElement('span'); el.textContent = r.seq; return el; } },
-                { id: 'name', label: 'NAME', width: '30ch', maxWidth: '30ch', locked: true, lockedPosition: 'left', resizable: false, render: (r) => _this._renderNameCell(r) },
-                { id: 'resource', label: 'RESOURCE', width: '8ch', minWidth: '8ch', resizable: false, autoSize: true, field: 'browserType', render: (r) => _this._renderResourceCell(r) },
-                { id: 'group', label: 'GROUP', width: '20ch', minWidth: '20ch', maxWidth: '30ch', render: (r) => _this._renderGroupCell(r) },
-                { id: 'tags', label: 'TAGS', width: '20ch', minWidth: '20ch', maxWidth: '30ch', render: (r) => _this._renderTagsCell(r) },
-                { id: 'proxy', label: 'PROXY', width: '25ch', minWidth: '25ch', maxWidth: '30ch', render: (r) => _this._renderProxyCell(r) },
-                { id: 'status', label: 'STATUS', width: '15ch', minWidth: '15ch', resizable: false, autoSize: true, render: (r) => _this._renderStatusBadge(r) },
-                { id: 'message', label: 'MESSAGE', width: '30ch', minWidth: '30ch', maxWidth: '50ch', render: (r) => _this._renderMessageCell(r) },
-                { id: 'note', label: 'NOTE', width: '30ch', minWidth: '30ch', maxWidth: '40ch', resizable: true, render: (r) => _this._renderNoteCell(r) },
-                { id: 'created', label: 'CREATED TIME', width: '25ch', minWidth: '25ch', resizable: false, autoSize: true, render: (r) => _this._renderDateCell(r.createdAt) },
-                { id: 'lastopened', label: 'LAST OPENED', width: '25ch', minWidth: '25ch', resizable: false, autoSize: true, render: (r) => _this._renderDateCell(r.lastOpened) },
+                { id: 'seq', label: '#', width: '40px', minWidth: '40px', locked: true, lockedPosition: 'left', resizable: false, align: 'center', render: (r) => { const el = document.createElement('span'); el.textContent = r.seq; return el; } },
+                { id: 'name', label: 'NAME', width: '240px', minWidth: '120px', locked: true, lockedPosition: 'left', resizable: true, render: (r) => _this._renderNameCell(r) },
+                { id: 'resource', label: 'RESOURCE', width: '100px', minWidth: '100px', resizable: false, field: 'browserType', align: 'center', render: (r) => _this._renderResourceCell(r) },
+                { id: 'group', label: 'GROUP', width: '160px', minWidth: '160px', maxWidth: '240px', render: (r) => _this._renderGroupCell(r) },
+                { id: 'tags', label: 'TAGS', width: '160px', minWidth: '160px', maxWidth: '240px', render: (r) => _this._renderTagsCell(r) },
+                { id: 'proxy', label: 'PROXY', width: '240px', minWidth: '240px', maxWidth: '320px', render: (r) => _this._renderProxyCell(r) },
+                { id: 'status', label: 'STATUS', width: '144px', minWidth: '144px', resizable: false, render: (r) => _this._renderStatusBadge(r) },
+                { id: 'message', label: 'MESSAGE', width: '240px', minWidth: '240px', maxWidth: '400px', render: (r) => _this._renderMessageCell(r) },
+                { id: 'note', label: 'NOTE', width: '240px', minWidth: '240px', maxWidth: '320px', resizable: true, render: (r) => _this._renderNoteCell(r) },
+                { id: 'created', label: 'CREATED TIME', width: '200px', minWidth: '200px', resizable: false, render: (r) => _this._renderDateCell(r.createdAt) },
+                { id: 'lastopened', label: 'LAST OPENED', width: '200px', minWidth: '200px', resizable: false, render: (r) => _this._renderDateCell(r.lastOpened) },
                 { id: 'filler', fillSpace: true },
                 { id: 'action', label: 'CONTROL', width: '170px', locked: true, lockedPosition: 'right', resizable: false, render: (r) => _this._renderActionCell(r) }
             ];
@@ -564,7 +564,7 @@
         },
         _updateStats(profiles)   { if (this._statEl) this._statEl.textContent = `${profiles.length}`; },
 
-        // â”€â”€ Bulk / row actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ——— Bulk / row actions ————————————————————————————————————————————
         async _startProfile(id) {
             try { await DuckBridge.call('browser.start', { id }); await this.loadProfiles(); }
             catch (e) { console.error('Failed to start profile:', e); }
@@ -675,16 +675,18 @@
                 try {
                     const result = await DuckBridge.call('profile.checkProxy', { id: r.id });
                     r.status = 'ready';
-                    if (result?.Status === 'alive') {
-                        r.message = `[ Proxy Alive ] - ${result.LatencyMs}ms`;
-                    } else if (result?.LatencyMs >= 4900 || result?.Status === 'timeout') {
+                    const status = result?.Status || result?.status;
+                    const latency = result?.LatencyMs || result?.latencyMs || 0;
+                    if (status === 'alive') {
+                        r.message = `[ Proxy Alive ] - ${latency}ms`;
+                    } else if (latency >= 4900 || status === 'timeout') {
                         r.message = '[ Proxy timeout ]';
                     } else {
-                        r.message = '[ Proxy Expired ]';
+                        r.message = '[ Proxy Dead ]';
                     }
                 } catch {
                     r.status = 'ready';
-                    r.message = '[ Proxy Expired ]';
+                    r.message = '[ Proxy Dead ]';
                 }
             }
             this._loadTableData(this._profilesData);
@@ -712,16 +714,18 @@
             try {
                 const result = await DuckBridge.call('profile.checkProxy', { id: row.id });
                 row.status = 'ready';
-                if (result?.Status === 'alive') {
-                    row.message = `[ Proxy Alive ] - ${result.LatencyMs}ms`;
-                } else if (result?.LatencyMs >= 4900 || result?.Status === 'timeout') {
+                const status = result?.Status || result?.status;
+                const latency = result?.LatencyMs || result?.latencyMs || 0;
+                if (status === 'alive') {
+                    row.message = `[ Proxy Alive ] - ${latency}ms`;
+                } else if (latency >= 4900 || status === 'timeout') {
                     row.message = '[ Proxy timeout ]';
                 } else {
-                    row.message = '[ Proxy Expired ]';
+                    row.message = '[ Proxy Dead ]';
                 }
             } catch (e) {
                 row.status = 'ready';
-                row.message = '[ Proxy Expired ]';
+                row.message = '[ Proxy Dead ]';
             }
             this._loadTableData(this._profilesData);
         },
@@ -747,7 +751,7 @@
                         name:       newProfile.Name ?? newProfile.name ?? 'Unknown',
                         groupName:  newProfile.GroupName ?? this._getGroupName(newProfile.GroupId ?? newProfile.groupId),
                         tags:       newProfile.TagNames ?? newProfile.tagNames ?? [],
-                        proxy:      newProfile.ProxyName ?? newProfile.proxy ?? 'Direct',
+                        proxy:      newProfile.proxyName ?? newProfile.ProxyName ?? newProfile.proxy ?? 'Direct',
                         notes:      newProfile.Notes ?? newProfile.notes ?? '',
                         status:     newProfile.Status ?? newProfile.status ?? 'ready',
                         message:    newProfile.Message ?? newProfile.message ?? '-',
@@ -823,8 +827,16 @@
             const done = async () => {
                 inputCtrl.element.style.display = 'none';
                 lbl.style.display = 'block';
-                const newName = inputCtrl.getValue();
+                const newName = inputCtrl.getValue().trim();
+                
+                if (!newName) {
+                    inputCtrl.setValue(row.name || '');
+                    window.DuckControls.Toast?.error?.('Error', 'Name cannot be empty');
+                    return;
+                }
+
                 if (newName !== row.name) {
+                    const oldName = row.name;
                     row.name = newName;
                     lbl.textContent = this._escapeHtml(row.name || '-');
                     // Persist to database using camelCase (backend uses JsonNamingPolicy.CamelCase)
@@ -873,7 +885,7 @@
 
         _renderResourceCell(row) {
             const wrap = document.createElement('div');
-            wrap.style.cssText = 'display:flex;align-items:center;';
+            wrap.style.cssText = 'display:flex;align-items:center;justify-content:center;';
             const btn = document.createElement('button');
             DuckControls.Button.create(btn, { text: 'Data', icon: 'category', variant: 'secondary', size: 'sm', onClick: (e) => { e.stopPropagation(); window.ProfileModals?.ManageData?.show(row.id); } });
             wrap.appendChild(btn);
@@ -903,11 +915,11 @@
             const ps = row.proxy || 'Direct';
             if (ps === 'Direct' || !ps || ps === '-') { wrap.textContent = '-'; return wrap; }
             const hiddenText = '********';
-            const fullText = ps.length > 30 ? ps.substring(0, 30) + '...' : ps;
+            const fullText = ps;
             const panel = document.createElement('div');
             panel.style.cssText = 'flex:1;min-width:0;display:flex;align-items:center;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:6px;padding:4px 8px;cursor:pointer;';
             const te = document.createElement('span');
-            te.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-primary);width:100%;display:block;max-width:25ch;';
+            te.style.cssText = 'font-size:12px;color:var(--text-primary);width:100%;display:block;word-break:break-all;white-space:normal !important;';
             te.textContent = hiddenText;
             panel.appendChild(te);
             panel.addEventListener('click', (e) => { e.stopPropagation(); this._copyToClipboard(ps).then(() => { const orig = te.textContent; te.textContent = 'Copied'; te.style.color = 'var(--success)'; setTimeout(() => { te.textContent = orig; te.style.color = ''; }, 1000); }); });
@@ -916,7 +928,7 @@
             const eyeBtn = document.createElement('button');
             DuckControls.Button.create(eyeBtn, { icon: 'visibility', variant: 'secondary', size: 'sm' });
             eyeBtn.style.cssText = 'flex-shrink:0;border-radius:6px;';
-            eyeBtn.onclick = (e) => { e.stopPropagation(); hidden = !hidden; te.textContent = hidden ? hiddenText : fullText; te.style.maxWidth = hidden ? '25ch' : '30ch'; eyeBtn.innerHTML = `<span class="material-symbols-outlined duck-btn-icon">${hidden ? 'visibility' : 'visibility_off'}</span>`; };
+            eyeBtn.onclick = (e) => { e.stopPropagation(); hidden = !hidden; te.textContent = hidden ? hiddenText : fullText; eyeBtn.innerHTML = `<span class="material-symbols-outlined duck-btn-icon">${hidden ? 'visibility' : 'visibility_off'}</span>`; };
             wrap.appendChild(eyeBtn);
             return wrap;
         },

@@ -1,6 +1,9 @@
 window.DuckControls = window.DuckControls || {};
 
 let _globalChPx = null;
+if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => { _globalChPx = null; });
+}
 function getGlobalChPx() {
     if (_globalChPx !== null) return _globalChPx;
     const tmp = document.createElement('span');
@@ -66,20 +69,20 @@ window.DuckControls.Table = {
         // ─────────────────────────────────────────────────────────────
 
 
-        function parseWidthToPx(w) {
+        function parseWidthToPx(w, chPx) {
             if (!w || w === 'auto' || String(w).endsWith('%')) return 0;
             const s = String(w);
-            if (s.endsWith('ch')) return Math.ceil(parseInt(s) * getGlobalChPx());
+            if (s.endsWith('ch')) return Math.ceil(parseFloat(s) * (chPx || getGlobalChPx()));
             if (s.endsWith('px')) return parseInt(s);
             return parseInt(s) || 0;
         }
 
-        function getMinPx(col) {
-            if (col.minWidth) return parseWidthToPx(col.minWidth);
+        function getMinPx(col, chPx) {
+            if (col.minWidth) return parseWidthToPx(col.minWidth, chPx);
             return 40;
         }
-        function getMaxPx(col) {
-            if (col.maxWidth) return parseWidthToPx(col.maxWidth);
+        function getMaxPx(col, chPx) {
+            if (col.maxWidth) return parseWidthToPx(col.maxWidth, chPx);
             return 9999;
         }
 
@@ -254,12 +257,17 @@ window.DuckControls.Table = {
                     colEl.style.display = 'none';
                     colEl.style.width = '0';
                 } else {
-                    colEl.style.display = '';
-                    if (idx === fillerIdx) {
-                        colEl.style.width = ''; // filler absorbs remaining space
-                    } else if (colWidths[idx] > 0) {
-                        colEl.style.width = `${colWidths[idx]}px`;
-                        totalFixed += colWidths[idx];
+                    if (idx === fillerIdx && colWidths[fillerIdx] === 0) {
+                        colEl.style.display = 'none';
+                        colEl.style.width = '0';
+                    } else {
+                        colEl.style.display = '';
+                        if (idx === fillerIdx) {
+                            colEl.style.width = ''; // filler absorbs remaining space
+                        } else if (colWidths[idx] > 0) {
+                            colEl.style.width = `${colWidths[idx]}px`;
+                            totalFixed += colWidths[idx];
+                        }
                     }
                 }
             });
@@ -310,12 +318,28 @@ window.DuckControls.Table = {
         function runAutoSize() {
             const autoSizeCols = [];
             options.columns.forEach((col, idx) => {
-                if (!col.autoSize) return;
-                autoSizeCols.push({ col, idx });
-            });
-            if (autoSizeCols.length === 0) return;
+                if (idx === fillerIdx) return;
+                
+                // Extract column font to calculate exact ch size for this specific column
+                let cellFont = null;
+                const firstRow = tbody.firstElementChild;
+                if (firstRow && firstRow.children.length > 0 && !firstRow.children[0].classList.contains('empty-cell')) {
+                    const td = firstRow.children[idx];
+                    if (td) cellFont = getCellFont(td);
+                }
+                const chPx = cellFont ? measureTextPx('0', cellFont) : getGlobalChPx();
 
-            autoSizeCols.forEach(({ col, idx }) => {
+                if (!col.autoSize) {
+                    // Recalculate fixed widths to ensure they use latest loaded fonts (e.g. latest 1ch value)
+                    colWidths[idx] = parseWidthToPx(col.width, chPx);
+                } else {
+                    autoSizeCols.push({ col, idx, chPx });
+                }
+            });
+
+            if (autoSizeCols.length > 0) {
+                autoSizeCols.forEach((item) => {
+                const { col, idx, chPx } = item;
                 const th = trHead.children[idx];
                 if (!th) return;
 
@@ -337,21 +361,24 @@ window.DuckControls.Table = {
 
                     // Measure all leaf text nodes or the first child element
                     const child = td.firstElementChild;
-                    let textContent;
+                    let w = 0;
                     if (child) {
-                        // For custom renders (span, div, etc.), measure the text inside
-                        textContent = child.textContent || '';
+                        // Temporarily force shrink-wrap to measure true content width
+                        const oldW = child.style.width;
+                        child.style.width = 'max-content';
+                        w = child.offsetWidth + cellPadding + 16; // Add extra buffer for borders/padding inside custom components
+                        child.style.width = oldW;
                     } else {
-                        textContent = td.textContent || '';
+                        w = measureTextPx(td.textContent || '', cellFont) + cellPadding + 8;
                     }
-                    const w = measureTextPx(textContent, cellFont) + cellPadding + 8; // +8 safety buffer
                     if (w > maxW) maxW = w;
                 });
 
-                const minW = col.minWidth ? parseWidthToPx(col.minWidth) : Math.max(parseWidthToPx(col.width || '0'), 40);
-                const maxConstraint = getMaxPx(col);
+                const minW = col.minWidth ? parseWidthToPx(col.minWidth, chPx) : Math.max(parseWidthToPx(col.width || '0', chPx), 40);
+                const maxConstraint = getMaxPx(col, chPx);
                 colWidths[idx] = Math.round(Math.min(Math.max(minW, maxW), maxConstraint));
-            });
+                });
+            }
 
             applyColumnWidths();
         }
@@ -408,21 +435,23 @@ window.DuckControls.Table = {
             for (let i = options.columns.length - 1; i >= 0; i--) {
                 const col = options.columns[i];
                 if (!col.locked || col.lockedPosition !== 'right') continue;
-                const cls = `data-col-${col.id || col.field || 'unknown'}`;
-                const th = trHead.children[i];
-                const isHidden = _hiddenColIds.has(col.id || col.field || 'unknown');
-                const w = isHidden ? 0 : (colWidths[i] > 0 ? colWidths[i] : (th ? th.offsetWidth : 0));
+                const colId = col.id || col.field || 'unknown';
+                if (_hiddenColIds.has(colId)) continue;
+
+                const cls = `data-col-${colId}`;
+                const w = colWidths[i] > 0 ? colWidths[i] : 80;
 
                 let shadowRule = '';
-                if (i === firstRightIdx && !isHidden) {
-                    shadowRule = `box-shadow: inset 1px 0 0 var(--border-muted), -3px 0 8px -2px rgba(0,0,0,0.14); clip-path: inset(0 0 0 -20px);`;
+                if (i === firstRightIdx) {
+                    shadowRule = `box-shadow: inset 1px 0 0 var(--border-muted), -3px 0 8px -2px rgba(0,0,0,0.14);`;
                 }
 
                 css += `
-#${tableId} .${cls} {
+#${tableId} th.${cls},
+#${tableId} td.${cls} {
     position: sticky !important;
     right: ${rightPx}px !important;
-    z-index: ${30 - (options.columns.length - i)} !important;
+    z-index: 100 !important;
     background: var(--row-bg, var(--bg-surface)) !important;
     ${shadowRule}
 }`;
@@ -433,6 +462,7 @@ window.DuckControls.Table = {
             if (fillerIdx >= 0) {
                 const fillerCol = options.columns[fillerIdx];
                 const cls = `data-col-${fillerCol.id || 'filler'}`;
+                const hideFiller = colWidths[fillerIdx] === 0;
                 css += `
 #${tableId} th.${cls},
 #${tableId} td.${cls} {
@@ -441,6 +471,7 @@ window.DuckControls.Table = {
     border-right: none !important;
     overflow: hidden !important;
     background: transparent !important;
+    ${hideFiller ? 'display: none !important;' : ''}
 }`;
             }
 
@@ -459,19 +490,35 @@ window.DuckControls.Table = {
         // ── ResizeObserver: run autoSize ONCE when container first becomes visible ─
         let roDebounce = null;
         let _autoSizeDone = false;
+
+        // Rerun autoSize when web fonts finish loading, to fix any wrong ch-unit measurements
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(() => {
+                if (_autoSizeDone && container.clientWidth > 0) {
+                    _autoSizeDone = false; // Allow it to run again
+                    runAutoSize();
+                    _autoSizeDone = true;
+                }
+            });
+        }
+
+        let _resizeRaf = null;
         const ro = new ResizeObserver(entries => {
             for (const entry of entries) {
                 if (entry.contentRect.width > 0 && !_autoSizeDone) {
-                    clearTimeout(roDebounce);
-                    roDebounce = setTimeout(() => {
-                        runAutoSize();
-                        updateDynCSS();
-                        _autoSizeDone = true;
-                    }, 50);
+                    _autoSizeDone = true;
+                    runAutoSize();
+                    applyColumnWidths();
+                    void table.offsetHeight; // Force reflow
+                    updateDynCSS();
                 } else if (entry.contentRect.width > 0) {
-                    // On resize: only update sticky positions, NOT autoSize
-                    clearTimeout(roDebounce);
-                    roDebounce = setTimeout(() => updateDynCSS(), 50);
+                    // On resize: apply column widths (to toggle scroll state) and sticky positions synchronously
+                    if (_resizeRaf) cancelAnimationFrame(_resizeRaf);
+                    _resizeRaf = requestAnimationFrame(() => {
+                        applyColumnWidths();
+                        void table.offsetHeight; // Force reflow
+                        updateDynCSS();
+                    });
                 }
             }
         });
@@ -595,14 +642,14 @@ window.DuckControls.Table = {
             });
             tbody.appendChild(frag);
 
-            // After rendering, run autoSize once then update sticky CSS
-            requestAnimationFrame(() => {
-                if (!_autoSizeDone) {
-                    runAutoSize();
-                    _autoSizeDone = true;
-                }
-                updateDynCSS();
-            });
+            // After rendering, run autoSize (if needed and visible) and update layout synchronously
+            if (!_autoSizeDone && container.clientWidth > 0) {
+                runAutoSize();
+                _autoSizeDone = true;
+            }
+            applyColumnWidths();
+            void table.offsetHeight; // Force reflow
+            updateDynCSS();
         }
 
         if (options.data) renderData(options.data);

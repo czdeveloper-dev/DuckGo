@@ -86,23 +86,24 @@
 
             items = items.map((p, idx) => ({
                 ...p,
-                id: p.Id ?? p.id ?? 0,
+                id: p.Id || p.id || 0,
                 seq: idx + 1,
-                name: p.Name ?? p.name ?? '',
-                proxy_type: p.Type ?? p.type ?? p.proxy_type ?? 'http',
-                host: p.Host ?? p.host ?? '',
-                port: p.Port ?? p.port ?? '',
-                username: p.Username ?? p.username ?? '',
-                password: p.Password ?? p.password ?? '',
-                groupName: p.GroupName ?? '',
-                tags: p.TagNames ?? p.tagNames ?? [],
-                groupId: p.GroupId ?? p.groupId,
-                tagIds: p.TagIds ?? [],
-                status: p.Status ?? p.status ?? 'not_checked',
-                message: p.Message ?? p.message ?? '',
-                note: p.Notes ?? p.Notes ?? p.note ?? '',
-                latencyMs: p.LatencyMs ?? p.latencyMs,
-                createdAt: p.CreatedAt ?? p.createdAt
+                name: p.Name || p.name || '',
+                proxy_type: p.Type || p.type || p.proxy_type || 'http',
+                host: p.Host || p.host || '',
+                port: p.Port || p.port || '',
+                username: p.Username || p.username || '',
+                password: p.Password || p.password || '',
+                groupName: p.GroupName || p.groupName || '',
+                tags: p.TagNames || p.tagNames || [],
+                groupId: p.GroupId || p.groupId,
+                tagIds: p.TagIds || p.tagIds || [],
+                status: p.Status || p.status || 'not_checked',
+                message: p.Message || p.message || '',
+                note: p.Notes || p.notes || p.note || '',
+                rotaryApi: p.RotaryApi || p.rotaryApi || '',
+                latencyMs: p.LatencyMs || p.latencyMs,
+                createdAt: p.CreatedAt || p.createdAt
             }));
 
             this._proxiesData = items;
@@ -118,7 +119,7 @@
                 { label: 'All Groups', value: '' },
                 ...this._proxyGroups.map(g => ({
                     label: g.Name || g.name || '',
-                    value: String(g.Id ?? g.id),
+                    value: String(g.Id || g.id),
                     actions: [{ icon: 'edit', onClick: () => this._editGroup(g) }]
                 }))
             ];
@@ -128,7 +129,7 @@
             return [
                 ...this._proxyTags.map(t => ({
                     label: t.Name || t.name || '',
-                    value: String(t.Id ?? t.id),
+                    value: String(t.Id || t.id),
                     actions: [{ icon: 'edit', onClick: () => this._editTag(t) }]
                 }))
             ];
@@ -141,7 +142,7 @@
 
         // 🟢 Proxy Group CRUD 🟢
         _buildGroupDeleteItems() {
-            return this._proxyGroups.map(g => ({ label: g.Name || g.name || '', value: String(g.Id ?? g.id) }));
+            return this._proxyGroups.map(g => ({ label: g.Name || g.name || '', value: String(g.Id || g.id) }));
         },
 
         async _createGroup() {
@@ -163,14 +164,14 @@
             if (!group) {
                 const selectedValue = this._groupCtrl?.getValue() || '';
                 if (!selectedValue) return;
-                group = this._proxyGroups.find(g => String(g.Id ?? g.id) === selectedValue);
+                group = this._proxyGroups.find(g => String(g.Id || g.id) === selectedValue);
             }
             if (!group) return;
             const currentName = group.Name || group.name || '';
             if (!window.ProfileModals?.CreateEntity) return;
             window.ProfileModals.CreateEntity.show('proxygroup', async (newName) => {
                 try {
-                    const updated = await DuckBridge.call('proxygroup.update', { id: group.Id ?? group.id, name: newName });
+                    const updated = await DuckBridge.call('proxygroup.update', { id: group.Id || group.id, name: newName });
                     const idx = this._proxyGroups.findIndex(g => g.Id === updated.Id || g.id === updated.id);
                     if (idx !== -1) this._proxyGroups[idx] = updated;
                     this._proxyGroups.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
@@ -194,7 +195,7 @@
                             await DuckBridge.call('proxygroup.delete', { id: parseInt(val) });
                         }
                     }
-                    this._proxyGroups = this._proxyGroups.filter(g => !selectedValues.includes(String(g.Id ?? g.id)));
+                    this._proxyGroups = this._proxyGroups.filter(g => !selectedValues.includes(String(g.Id || g.id)));
                     this._updateGroupSelect();
                     this._filters.group = '';
                     await this.loadProxies();
@@ -206,7 +207,7 @@
 
         // 🟢 Proxy Tag CRUD 🟢
         _buildTagDeleteItems() {
-            return this._proxyTags.map(t => ({ label: t.Name || t.name || '', value: String(t.Id ?? t.id) }));
+            return this._proxyTags.map(t => ({ label: t.Name || t.name || '', value: String(t.Id || t.id) }));
         },
 
         async _createTag() {
@@ -229,14 +230,14 @@
                 const selectedValues = this._tagCtrl?.getValues() || [];
                 if (selectedValues.length === 0) return;
                 const tagId = parseInt(selectedValues[0]);
-                tag = this._proxyTags.find(t => (t.Id ?? t.id) === tagId);
+                tag = this._proxyTags.find(t => (t.Id || t.id) === tagId);
             }
             if (!tag) return;
             const currentName = tag.Name || tag.name || '';
             if (!window.ProfileModals?.CreateEntity) return;
             window.ProfileModals.CreateEntity.show('proxytag', async (newName) => {
                 try {
-                    const updated = await DuckBridge.call('proxytag.update', { id: tag.Id ?? tag.id, name: newName });
+                    const updated = await DuckBridge.call('proxytag.update', { id: tag.Id || tag.id, name: newName });
                     const idx = this._proxyTags.findIndex(t => t.Id === updated.Id || t.id === updated.id);
                     if (idx !== -1) this._proxyTags[idx] = updated;
                     this._proxyTags.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
@@ -256,7 +257,7 @@
                     for (const val of selectedValues) {
                         await DuckBridge.call('proxytag.delete', { id: parseInt(val) });
                     }
-                    this._proxyTags = this._proxyTags.filter(t => !selectedValues.includes(String(t.Id ?? t.id)));
+                    this._proxyTags = this._proxyTags.filter(t => !selectedValues.includes(String(t.Id || t.id)));
                     this._updateTagSelect();
                     await this.loadProxies();
                 } catch (e) {
@@ -418,8 +419,7 @@
             DuckControls.ContextMenu.create(actionsEl, {
                 items: [
                     { label: 'Bulk Rename', icon: 'edit_note', onClick: () => this._bulkRename() },
-                    { label: 'Compare Proxies', icon: 'compare_arrows', onClick: () => window.ProxyModals?.CompareProxies?.show(this._proxiesData, this._selectedIds) },
-                    { label: 'Proxy Usage', icon: 'analytics', onClick: () => window.ProxyModals?.Usage?.show() }
+                    { label: 'Compare Proxies', icon: 'compare_arrows', onClick: () => window.ProxyModals?.CompareProxies?.show(this._proxiesData, this._selectedIds) }
                 ]
             });
 
@@ -453,6 +453,11 @@
                 bar.classList.add('visible');
             } else {
                 bar.classList.remove('visible');
+            }
+            
+            // Sync with table - clear table checkboxes when nothing selected
+            if (this._selectedIds.size === 0) {
+                this._table?.clearChecked?.();
             }
         },
 
@@ -494,15 +499,15 @@
             
             const cols = [
                 { id: 'select', type: 'checkbox', title: 'Select all', locked: true, lockedPosition: 'left', resizable: false, width: '52px', onCheckAll: (e) => this._handleCheckAll(e) },
-                { id: 'seq', label: '#', width: '1ch', minWidth: '1ch', locked: true, lockedPosition: 'left', resizable: false, autoSize: true, align: 'center', render: (r) => { const el = document.createElement('span'); el.textContent = r.seq; return el; } },
-                { id: 'name', label: 'NAME', width: '30ch', minWidth: '15ch', locked: true, lockedPosition: 'left', resizable: true, render: (r) => _this._renderNameCell(r) },
-                { id: 'group', label: 'GROUP', width: '20ch', minWidth: '20ch', maxWidth: '30ch', render: (r) => _this._renderGroupCell(r) },
-                { id: 'tags', label: 'TAGS', width: '20ch', minWidth: '20ch', maxWidth: '30ch', render: (r) => _this._renderTagsCell(r) },
-                { id: 'proxy_detail', label: 'PROXY', width: '30ch', minWidth: '30ch', maxWidth: '40ch', render: (r) => _this._renderProxyDetailCell(r) },
-                { id: 'status', label: 'STATUS', width: '15ch', minWidth: '15ch', resizable: false, autoSize: true, render: (r) => _this._renderStatusBadge(r) },
-                { id: 'message', label: 'MESSAGE', width: '30ch', minWidth: '30ch', maxWidth: '50ch', render: (r) => _this._renderMessageCell(r) },
-                { id: 'note', label: 'NOTE', width: '30ch', minWidth: '30ch', maxWidth: '40ch', resizable: true, render: (r) => _this._renderNoteCell(r) },
-                { id: 'created', label: 'CREATED TIME', width: '25ch', minWidth: '25ch', resizable: false, autoSize: true, render: (r) => _this._renderDateCell(r.createdAt) },
+                { id: 'seq', label: '#', width: '40px', minWidth: '40px', locked: true, lockedPosition: 'left', resizable: false, align: 'center', render: (r) => { const el = document.createElement('span'); el.textContent = r.seq; return el; } },
+                { id: 'name', label: 'NAME', width: '240px', minWidth: '120px', locked: true, lockedPosition: 'left', resizable: true, render: (r) => _this._renderNameCell(r) },
+                { id: 'group', label: 'GROUP', width: '160px', minWidth: '160px', maxWidth: '240px', render: (r) => _this._renderGroupCell(r) },
+                { id: 'tags', label: 'TAGS', width: '160px', minWidth: '160px', maxWidth: '240px', render: (r) => _this._renderTagsCell(r) },
+                { id: 'proxy_detail', label: 'PROXY', width: '240px', minWidth: '240px', maxWidth: '320px', render: (r) => _this._renderProxyDetailCell(r) },
+                { id: 'status', label: 'STATUS', width: '144px', minWidth: '144px', resizable: false, render: (r) => _this._renderStatusBadge(r) },
+                { id: 'message', label: 'MESSAGE', width: '240px', minWidth: '240px', maxWidth: '400px', render: (r) => _this._renderMessageCell(r) },
+                { id: 'note', label: 'NOTE', width: '240px', minWidth: '240px', maxWidth: '320px', resizable: true, render: (r) => _this._renderNoteCell(r) },
+                { id: 'created', label: 'CREATED TIME', width: '200px', minWidth: '200px', resizable: false, render: (r) => _this._renderDateCell(r.createdAt) },
                 { id: 'filler', fillSpace: true },
                 { id: 'action', label: 'CONTROL', width: '170px', locked: true, lockedPosition: 'right', resizable: false, render: (r) => _this._renderActionCell(r) }
             ];
@@ -560,6 +565,12 @@
                 inputCtrl.element.style.display = 'none';
                 
                 if (newVal !== (row.name || '').trim()) {
+                    if (!newVal) {
+                        inputCtrl.setValue(row.name || '');
+                        lbl.textContent = row.name || '-';
+                        window.DuckControls.Toast?.error?.('Error', 'Name cannot be empty');
+                        return;
+                    }
                     const oldName = row.name;
                     (async () => {
                         try {
@@ -595,6 +606,13 @@
             return wrap;
         },
 
+        _renderProxyCell(row) {
+            const el = document.createElement('span');
+            el.style.cssText = 'color:var(--text-primary);font-size:12px;display:block;width:100%;word-break:break-all;';
+            el.textContent = row.proxy || '-';
+            return el;
+        },
+
         _renderGroupCell(row) {
             const el = document.createElement('span');
             el.style.cssText = 'color:var(--text-primary);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;width:100%;';
@@ -616,12 +634,21 @@
             const wrap = document.createElement('div');
             wrap.style.cssText = 'display:flex;align-items:center;gap:8px;width:100%;';
             
-            // Format: type://host:port:user:pass
+            // Format: type://host:port OR type://host:port:username OR type://host:port:username:password
+            // If username-only (no password): type://host:port:username:
+            // If username+password: type://host:port:username:password
+            // If no auth: type://host:port
             let proxyStr = '';
             if (row.host && row.port) {
                 proxyStr = `${row.proxy_type?.toLowerCase() || 'http'}://${row.host}:${row.port}`;
-                if (row.username && row.password) {
-                    proxyStr += `:${row.username}:${row.password}`;
+                if (row.username) {
+                    proxyStr += `:${row.username}`;
+                    if (row.password) {
+                        proxyStr += `:${row.password}`;
+                    } else {
+                        // Username only, no password - add trailing colon
+                        proxyStr += `:`;
+                    }
                 }
             }
             
@@ -629,12 +656,12 @@
             
             const hiddenText = '********';
             const fullText = proxyStr;
-            const displayText = fullText.length > 40 ? fullText.substring(0, 40) + '...' : fullText;
+            const displayText = fullText;
             
             const panel = document.createElement('div');
             panel.style.cssText = 'flex:1;min-width:0;display:flex;align-items:center;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:6px;padding:4px 8px;cursor:pointer;';
             const te = document.createElement('span');
-            te.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-primary);width:100%;display:block;max-width:30ch;';
+            te.style.cssText = 'font-size:12px;color:var(--text-primary);width:100%;display:block;word-break:break-all;white-space:normal;';
             te.textContent = hiddenText;
             panel.appendChild(te);
             
@@ -654,20 +681,27 @@
             const eyeBtn = document.createElement('button');
             DuckControls.Button.create(eyeBtn, { icon: 'visibility', variant: 'secondary', size: 'sm' });
             eyeBtn.style.cssText = 'flex-shrink:0;border-radius:6px;';
-            eyeBtn.onclick = (e) => { 
-                e.stopPropagation(); 
-                hidden = !hidden; 
-                te.textContent = hidden ? hiddenText : displayText; 
-                te.style.maxWidth = hidden ? '30ch' : '50ch'; 
-                eyeBtn.innerHTML = `<span class="material-symbols-outlined duck-btn-icon">${hidden ? 'visibility' : 'visibility_off'}</span>`; 
-            };
+            eyeBtn.onclick = (e) => { e.stopPropagation(); hidden = !hidden; te.textContent = hidden ? hiddenText : displayText; eyeBtn.innerHTML = `<span class="material-symbols-outlined duck-btn-icon">${hidden ? 'visibility' : 'visibility_off'}</span>`; };
             wrap.appendChild(eyeBtn);
             return wrap;
         },
 
         _renderStatusBadge(row) {
             const wrap = document.createElement('div');
-            wrap.style.cssText = 'display:flex;align-items:center;';
+            wrap.style.cssText = 'display:flex;align-items:center;white-space:nowrap;';
+            
+            // Check if proxy is being checked
+            if (row._checking) {
+                // Short pill shape (original style)
+                const pill = document.createElement('span');
+                pill.style.cssText = 'display:inline-block;width:14px;height:6px;border-radius:3px;margin-right:6px;background:#3b82f6;flex-shrink:0;';
+                const txt = document.createElement('span');
+                txt.style.cssText = 'font-size:12px;font-weight:500;color:var(--text-primary);';
+                txt.textContent = 'Checking';
+                wrap.appendChild(pill); wrap.appendChild(txt);
+                return wrap;
+            }
+            
             const st = String(row.status || 'not_checked').toLowerCase();
             
             let color = '#94a3b8';
@@ -677,10 +711,11 @@
             else if (st === 'dead') { color = '#ef4444'; text = 'Dead'; }
             else if (st === 'timeout') { color = '#f59e0b'; text = 'Timeout'; }
             
+            // Short pill dot (original style)
             const pill = document.createElement('span');
-            pill.style.cssText = `display:inline-block;width:14px;height:6px;border-radius:3px;margin-right:6px;background:${color};`;
+            pill.style.cssText = `display:inline-block;width:14px;height:6px;border-radius:3px;margin-right:6px;background:${color};flex-shrink:0;`;
             const txt = document.createElement('span');
-            txt.style.cssText = 'font-size:12px;font-weight:500;';
+            txt.style.cssText = 'font-size:12px;font-weight:500;color:var(--text-primary);';
             txt.textContent = text;
             wrap.appendChild(pill); wrap.appendChild(txt);
             
@@ -786,24 +821,41 @@
         _renderActionCell(row) {
             const wrap = document.createElement('div');
             wrap.style.cssText = 'display:flex;align-items:center;gap:4px;justify-content:flex-end;';
-            const mk = (el, cfg) => DuckControls.Button.create(el, cfg);
 
             const checkBtn = document.createElement('button');
-            mk(checkBtn, { icon: 'wifi_tethering', text: 'Check', variant: 'success', size: 'sm' });
             checkBtn.style.cssText = 'width:80px;justify-content:center;';
-            checkBtn.onclick = (e) => { e.stopPropagation(); this._checkProxy(row); };
+            const checkBtnInstance = DuckControls.Button.create(checkBtn, { 
+                icon: 'wifi_tethering', 
+                text: 'Check', 
+                variant: 'success', 
+                size: 'sm',
+                onClick: (e, btnInst) => { 
+                    e.stopPropagation(); 
+                    this._checkProxy(row, btnInst); 
+                }
+            });
             wrap.appendChild(checkBtn);
 
+            const editBtn = document.createElement('button');
+            editBtn.classList.add('duck-btn-icon-only');
+            DuckControls.Button.create(editBtn, { icon: 'settings', variant: 'ghost', size: 'sm' });
+            editBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (window.ProxyModals?.CreateProxy) {
+                    window.ProxyModals.CreateProxy.show(null, row);
+                }
+            };
+            wrap.appendChild(editBtn);
+
             const moreBtn = document.createElement('button');
-            mk(moreBtn, { icon: 'more_vert', variant: 'ghost', size: 'sm' });
             moreBtn.classList.add('duck-btn-icon-only');
+            DuckControls.Button.create(moreBtn, { icon: 'more_vert', variant: 'ghost', size: 'sm' });
             moreBtn.onclick = (e) => {
                 e.stopPropagation();
                 if (window.DuckControls?.ContextMenu) {
                     window.DuckControls.ContextMenu.create(moreBtn, {
                         items: [
                             { type: 'label', label: 'Proxy Actions' },
-                            { label: 'Proxy Usage', icon: 'analytics', onClick: () => window.ProxyModals?.Usage?.show(row.id) },
                             { label: 'Duplicate', icon: 'content_copy', onClick: () => this._duplicateProxy(row) },
                             'divider',
                             { label: 'Delete Proxy', icon: 'delete', danger: true, onClick: () => this._deleteProxy(row) }
@@ -832,29 +884,33 @@
         },
         _updateStats(proxies) { if (this._statEl) this._statEl.textContent = `${proxies.length}`; },
 
-        async _checkProxy(row) {
+        async _checkProxy(row, checkBtnInstance) {
             try {
+                // Mark row as checking (for visual feedback)
+                row._checking = true;
+                this._table?.renderData(this._proxiesData);
+                this._table?.setChecked?.(Array.from(this._selectedIds));
+                
                 const result = await DuckBridge.call('proxy.check', { id: row.id });
                 if (result) {
-                    row.status = result.Status || 'dead';
-                    row.message = result.Message || '';
-                    row.latencyMs = result.LatencyMs;
-                    
-                    // Update just this row in the table
+                    // Update the data - handle both camelCase and PascalCase from backend
                     const rowData = this._proxiesData.find(p => p.id === row.id);
                     if (rowData) {
-                        rowData.status = row.status;
-                        rowData.message = row.message;
-                        rowData.latencyMs = row.latencyMs;
+                        rowData.status = result.Status || result.status || 'not_checked';
+                        rowData.message = result.Message || result.message || '';
+                        rowData.latencyMs = result.LatencyMs || result.latencyMs || 0;
                     }
-                    
-                    // Re-render the row
+                    // Re-render and restore checked state
                     this._table?.renderData(this._proxiesData);
-                    
-                    const msg = result.Status === 'alive' ? `Alive (${result.LatencyMs}ms)` : (result.Message || 'Dead');
+                    this._table?.setChecked?.(Array.from(this._selectedIds));
                 }
             } catch (e) {
                 window.DuckControls.Toast?.error?.('Check Failed', e?.message || 'Unknown error');
+            } finally {
+                // Clear checking flag
+                row._checking = false;
+                this._table?.renderData(this._proxiesData);
+                this._table?.setChecked?.(Array.from(this._selectedIds));
             }
         },
 
@@ -863,38 +919,85 @@
             
             const ids = [...this._selectedIds];
             
-            // Open scanner modal with real-time updates
-            if (window.ProxyModals?.ProxyScanner) {
-                window.ProxyModals.ProxyScanner.show(ids);
+            // Mark all as checking
+            ids.forEach(id => {
+                const row = this._proxiesData.find(p => p.id === id);
+                if (row) row._checking = true;
+            });
+            this._table?.renderData(this._proxiesData);
+            this._table?.setChecked?.(Array.from(this._selectedIds));
+            
+            // Check each proxy sequentially
+            for (const id of ids) {
+                try {
+                    const result = await DuckBridge.call('proxy.check', { id });
+                    const rowData = this._proxiesData.find(p => p.id === id);
+                    if (rowData && result) {
+                        rowData.status = result.Status || result.status || 'not_checked';
+                        rowData.message = result.Message || result.message || '';
+                        rowData.latencyMs = result.LatencyMs || result.latencyMs || 0;
+                    }
+                } catch (e) {
+                    console.error('Check failed for proxy', id, e);
+                }
             }
+            
+            // Clear checking flags
+            ids.forEach(id => {
+                const row = this._proxiesData.find(p => p.id === id);
+                if (row) row._checking = false;
+            });
+            this._table?.renderData(this._proxiesData);
+            this._table?.setChecked?.(Array.from(this._selectedIds));
         },
 
         async _bulkCopy() {
             if (this._selectedIds.size === 0) return;
-            
+
             const ids = [...this._selectedIds];
             try {
-                const result = await DuckBridge.call('proxy.copyFormat', { ids, format: 'default' });
-                if (result && result.success && result.data && result.data.content) {
-                    await navigator.clipboard.writeText(result.data.content);
-                    window.DuckControls.Toast?.success?.('Copied', `${ids.length} proxies copied to clipboard`);
-                } else {
-                    throw new Error(result?.error || 'Failed to copy proxies');
-                }
+                // Format: type://ip:port OR type://ip:port:username OR type://ip:port:username:password
+                // If username-only (no password): type://host:port:username:
+                // If username+password: type://host:port:username:password
+                // If no auth: type://host:port
+                const lines = this._proxiesData
+                    .filter(p => this._selectedIds.has(p.id))
+                    .map(p => {
+                        const proxyType = p.proxy_type || 'http';
+                        let proxyStr = `${proxyType}://${p.host}:${p.port}`;
+                        if (p.username) {
+                            proxyStr += `:${p.username}`;
+                            if (p.password) {
+                                proxyStr += `:${p.password}`;
+                            } else {
+                                // Username only, no password - add trailing colon
+                                proxyStr += `:`;
+                            }
+                        }
+                        return proxyStr;
+                    });
+                
+                await this._copyToClipboard(lines.join('\n'));
             } catch (err) {
                 window.DuckControls.Toast?.error?.('Copy Failed', err?.message || 'An error occurred while copying');
             }
         },
 
-        _bulkRename() {
+        _bulkRename(row) {
             try {
-                if (this._selectedIds.size > 0) {
-                    if (!window.ProxyModals) throw new Error("ProxyModals not initialized");
-                    if (!window.ProxyModals.BulkRename) throw new Error("BulkRename module not found");
-                    const proxies = [...this._selectedIds].map(id => this._proxiesData.find(p => p.id === id)).filter(Boolean);
-                    if (proxies.length === 0) throw new Error("Could not find proxy data for selected IDs");
-                    window.ProxyModals.BulkRename.show(proxies);
+                let proxies = [];
+                if (row) {
+                    // Called from right-click on a row - use that row
+                    proxies = [row];
+                } else if (this._selectedIds.size > 0) {
+                    // Called from bulk actions - use selected IDs
+                    proxies = [...this._selectedIds].map(id => this._proxiesData.find(p => p.id === id)).filter(Boolean);
                 }
+
+                if (proxies.length === 0) return;
+                if (!window.ProxyModals) throw new Error("ProxyModals not initialized");
+                if (!window.ProxyModals.BulkRename) throw new Error("BulkRename module not found");
+                window.ProxyModals.BulkRename.show(proxies);
             } catch (err) {
                 console.error(err);
             }
@@ -902,15 +1005,36 @@
 
         async _bulkDelete() {
             if (this._selectedIds.size === 0) return;
-            if (!confirm('Delete selected proxies?')) return;
-            try {
-                await DuckBridge.call('proxy.delete', { ids: [...this._selectedIds] });
-                this._selectedIds.clear();
-                this._table?.setChecked?.([]);
-                this._updateBulkActions();
-                this.loadProxies();
-            } catch(e) {
-                window.DuckControls.Toast?.error?.('Error', e?.message || 'Failed to delete proxies');
+            
+            // Use the new DeleteProxies modal
+            if (window.ProxyModals?.DeleteProxies) {
+                window.ProxyModals.DeleteProxies.show([...this._selectedIds], async (ids) => {
+                    try {
+                        await DuckBridge.call('proxy.delete', { ids });
+                        this._selectedIds.clear();
+                        this._table?.setChecked?.([]);
+                        this._updateBulkActions();
+                        await this.loadProxyGroups();
+                        await this.loadProxyTags();
+                        await this.loadProxies();
+                    } catch(e) {
+                        window.DuckControls.Toast?.error?.('Error', e?.message || 'Failed to delete proxies');
+                    }
+                });
+            } else {
+                // Fallback to confirm if modal not available
+                if (!confirm('Delete selected proxies?')) return;
+                try {
+                    await DuckBridge.call('proxy.delete', { ids: [...this._selectedIds] });
+                    this._selectedIds.clear();
+                    this._table?.setChecked?.([]);
+                    this._updateBulkActions();
+                    await this.loadProxyGroups();
+                    await this.loadProxyTags();
+                    await this.loadProxies();
+                } catch(e) {
+                    window.DuckControls.Toast?.error?.('Error', e?.message || 'Failed to delete proxies');
+                }
             }
         },
 
@@ -918,20 +1042,78 @@
             try {
                 const newProxy = await DuckBridge.call('proxy.duplicate', { id: row.id, name: `${row.name} (Copy)` });
                 if (newProxy) {
-                    this.loadProxies();
+                    const mappedProxy = {
+                        ...newProxy,
+                        id: newProxy.Id || newProxy.id || 0,
+                        seq: 0,
+                        name: newProxy.Name || newProxy.name || 'Unknown',
+                        proxy_type: newProxy.Type || newProxy.type || newProxy.proxy_type || 'http',
+                        host: newProxy.Host || newProxy.host || '',
+                        port: newProxy.Port || newProxy.port || '',
+                        username: newProxy.Username || newProxy.username || '',
+                        password: newProxy.Password || newProxy.password || '',
+                        groupName: newProxy.GroupName || '',
+                        tags: newProxy.TagNames || newProxy.tagNames || [],
+                        status: newProxy.Status || newProxy.status || 'not_checked',
+                        message: newProxy.Message || newProxy.message || '',
+                        notes: newProxy.Notes || newProxy.notes || '',
+                        createdAt: newProxy.CreatedAt || newProxy.createdAt
+                    };
+                    
+                    // Insert the new proxy right after the original (preserving order)
+                    const idx = this._proxiesData.findIndex(p => p.id === row.id);
+                    if (idx !== -1) {
+                        this._proxiesData.splice(idx + 1, 0, mappedProxy);
+                    } else {
+                        this._proxiesData.push(mappedProxy);
+                    }
+                    
+                    // Renumber sequences
+                    this._proxiesData.forEach((p, i) => p.seq = i + 1);
+                    
+                    // Reload table and stats
+                    if (this._table) {
+                        this._table.renderData(this._proxiesData);
+                    }
+                    this._updateStats?.(this._proxiesData);
+                } else {
+                    // Fallback: full reload
+                    await Promise.all([
+                        this.loadProxyGroups?.() || Promise.resolve(),
+                        this.loadProxyTags?.() || Promise.resolve(),
+                        this.loadProxies?.() || Promise.resolve()
+                    ]);
                 }
             } catch (e) {
-                window.DuckControls.Toast?.error?.('Duplicate Failed', e?.message || 'Unknown error');
+                console.error('Duplicate proxy failed:', e);
+                window.DuckControls.Toast?.error?.('Error', e?.message || 'Failed to duplicate proxy');
             }
         },
 
         async _deleteProxy(row) {
-            if (!confirm('Delete this proxy?')) return;
-            try {
-                await DuckBridge.call('proxy.delete', { ids: [row.id] });
-                this.loadProxies();
-            } catch(e) {
-                window.DuckControls.Toast?.error?.('Error', e?.message || 'Failed to delete proxy');
+            // Use the new DeleteProxies modal
+            if (window.ProxyModals?.DeleteProxies) {
+                window.ProxyModals.DeleteProxies.show([row.id], async (ids) => {
+                    try {
+                        await DuckBridge.call('proxy.delete', { ids });
+                        await this.loadProxyGroups();
+                        await this.loadProxyTags();
+                        await this.loadProxies();
+                    } catch(e) {
+                        window.DuckControls.Toast?.error?.('Error', e?.message || 'Failed to delete proxy');
+                    }
+                });
+            } else {
+                // Fallback to confirm if modal not available
+                if (!confirm('Delete this proxy?')) return;
+                try {
+                    await DuckBridge.call('proxy.delete', { ids: [row.id] });
+                    await this.loadProxyGroups();
+                    await this.loadProxyTags();
+                    await this.loadProxies();
+                } catch(e) {
+                    window.DuckControls.Toast?.error?.('Error', e?.message || 'Failed to delete proxy');
+                }
             }
         },
 
@@ -940,32 +1122,50 @@
             DuckControls.ContextMenu.create(null, {
                 items: [
                     { label: 'Copy', icon: 'content_copy', children: [
-                        { label: 'Proxy Name', icon: 'badge', onClick: () => { DuckBridge.call('clipboard.writeText', { text: row.name }); } },
-                        { label: 'Proxy ID', icon: 'fingerprint', onClick: () => { DuckBridge.call('clipboard.writeText', { text: row.id.toString() }); } },
+                        { label: 'Proxy Name', icon: 'badge', onClick: () => { this._copyToClipboard(row.name || ''); } },
+                        { label: 'Proxy ID', icon: 'fingerprint', onClick: () => { this._copyToClipboard(String(row.id)); } },
                         { label: 'Proxy Format', icon: 'public', onClick: async () => {
                             try {
-                                const result = await DuckBridge.call('proxy.copyFormat', { ids: [row.id], format: 'default' });
-                                if (result && result.success && result.data && result.data.content) {
-                                    await navigator.clipboard.writeText(result.data.content);
-                                    window.DuckControls.Toast?.success?.('Copied', 'Proxy format copied to clipboard');
+                                // Format: type://ip:port or type://ip:port:user or type://ip:port:user:pass
+                                const proxyType = row.proxy_type || 'http';
+                                let proxyStr = '';
+                                if (row.username && row.password) {
+                                    proxyStr = `${proxyType}://${row.host}:${row.port}:${row.username}:${row.password}`;
+                                } else if (row.username) {
+                                    proxyStr = `${proxyType}://${row.host}:${row.port}:${row.username}:`;
                                 } else {
-                                    throw new Error(result?.error || 'Failed to copy');
+                                    proxyStr = `${proxyType}://${row.host}:${row.port}`;
                                 }
-                            } catch { window.DuckControls.Toast?.error?.('Error', 'Failed to copy proxy'); }
+                                await this._copyToClipboard(proxyStr);
+                            } catch { 
+                                window.DuckControls.Toast?.error?.('Error', 'Failed to copy proxy');
+                            }
                         }},
                         { label: 'Used Profile IDs', icon: 'group', onClick: async () => {
                             try {
-                                const res = await DuckBridge.call('proxy.copyUsedProfileIds', { ids: [row.id] });
-                            } catch { window.DuckControls.Toast?.error?.('Error', 'Failed to copy profile IDs'); }
+                                const res = await DuckBridge.call('proxy.getUsage', { id: row.id });
+                                if (res && res.success && res.data) {
+                                    const profileIds = res.data.map(p => p.ProfileId || p.profileId || p.id).filter(Boolean);
+                                    if (profileIds.length > 0) {
+                                        await this._copyToClipboard(profileIds.join(', '));
+                                        window.DuckControls.Toast?.success?.('Copied', `${profileIds.length} profile ID(s) copied`);
+                                    } else {
+                                        window.DuckControls.Toast?.info?.('No Profiles', 'This proxy is not used by any profile');
+                                    }
+                                } else {
+                                    window.DuckControls.Toast?.info?.('No Profiles', 'This proxy is not used by any profile');
+                                }
+                            } catch { window.DuckControls.Toast?.error?.('Error', 'Failed to get profile IDs'); }
                         }}
                     ]},
                     'divider',
-                    { label: 'Check Proxy', icon: 'wifi_tethering', onClick: () => this._checkProxy(row) },
+                    { label: 'Check Proxy', icon: 'wifi_tethering', onClick: () => this._checkProxy(row, null) },
+                    { label: 'Proxy Usage', icon: 'analytics', onClick: () => window.ProxyModals?.Usage?.show(row.id, row.name) },
                     { label: 'Export Proxies', icon: 'download', onClick: () => { 
                         const ids = this._selectedIds.has(row.id) ? [...this._selectedIds] : [row.id];
                         window.ProxyModals?.ExportProxies?.show(ids); 
                     }},
-                    { label: 'Bulk Rename', icon: 'edit_note', onClick: () => this._bulkRename() },
+                    { label: 'Bulk Rename', icon: 'edit_note', onClick: () => this._bulkRename(row) },
                     'divider',
                     { label: 'Delete Select', icon: 'delete', color: 'var(--danger)', danger: true, onClick: () => { 
                         if (!this._selectedIds.has(row.id)) {

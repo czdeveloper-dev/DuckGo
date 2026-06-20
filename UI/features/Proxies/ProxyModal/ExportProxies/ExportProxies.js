@@ -56,15 +56,15 @@ window.ProxyModals.ExportProxies = {
             icon: 'download',
             content: modalBody,
             size: 'sm',
-            closeOnOverlay: true,
+            closeOnOverlay: false,
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
                 { text: 'Export', icon: 'file_download', class: 'duck-btn-primary', onClick: async (e, modal) => {
                     modal.setLoading(true, 'Preparing...');
 
+                    const idsArray = Array.isArray(selectedIds) ? selectedIds : [...selectedIds];
+                    
                     try {
-                        const idsArray = Array.isArray(selectedIds) ? selectedIds : [...selectedIds];
-                        
                         // Get content from backend
                         const result = await DuckBridge.call('proxy.export', { 
                             format: selectedFormat, 
@@ -72,49 +72,49 @@ window.ProxyModals.ExportProxies = {
                             contentOnly: true 
                         });
                         
-                        // Handle save dialog
-                        if (result && result.content) {
-                            const blob = new Blob([result.content], { type: 'text/plain;charset=utf-8' });
-                            
-                            if (window.showSaveFilePicker) {
-                                // Modern File System Access API
-                                try {
-                                    const fileHandle = await window.showSaveFilePicker({
-                                        suggestedName: result.suggestedName || `proxies_export.${selectedFormat}`,
-                                        types: [{
-                                            description: `${selectedFormat.toUpperCase()} File`,
-                                            accept: { 'text/plain': [`.${selectedFormat}`] },
-                                        }],
-                                    });
-                                    const writable = await fileHandle.createWritable();
-                                    await writable.write(blob);
-                                    await writable.close();
-                                    modal.close();
-                                    window.DuckControls.Toast?.success?.('Export Success', `Exported ${idsArray.length} proxies to ${fileHandle.name}`);
-                                } catch (err) {
-                                    if (err.name === 'AbortError') {
-                                        modal.setLoading(false);
-                                        return; // User cancelled
-                                    }
-                                    throw err;
-                                }
-                            } else {
-                                // Fallback: use download link
-                                const a = document.createElement('a');
-                                a.href = URL.createObjectURL(blob);
-                                a.download = result.suggestedName || `proxies_export.${selectedFormat}`;
-                                a.style.display = 'none';
-                                document.body.appendChild(a);
-                                a.click();
-                                setTimeout(() => {
-                                    document.body.removeChild(a);
-                                    URL.revokeObjectURL(a.href);
-                                }, 100);
+                        if (!result || !result.content) {
+                            throw new Error(result?.error || 'Failed to prepare export');
+                        }
+                        
+                        const blob = new Blob([result.content], { type: 'text/plain;charset=utf-8' });
+                        
+                        if (window.showSaveFilePicker) {
+                            // Modern File System Access API
+                            try {
+                                const fileHandle = await window.showSaveFilePicker({
+                                    suggestedName: result.suggestedName || `proxies_export.${selectedFormat}`,
+                                    types: [{
+                                        description: `${selectedFormat.toUpperCase()} File`,
+                                        accept: { 'text/plain': [`.${selectedFormat}`] },
+                                    }],
+                                });
+                                const writable = await fileHandle.createWritable();
+                                await writable.write(blob);
+                                await writable.close();
+                                modal.setLoading(false);
                                 modal.close();
-                                window.DuckControls.Toast?.success?.('Export Success', `Exported ${idsArray.length} proxies`);
+                            } catch (err) {
+                                if (err.name === 'AbortError') {
+                                    // User cancelled - don't show error
+                                    modal.setLoading(false);
+                                    return;
+                                }
+                                throw err;
                             }
                         } else {
-                            throw new Error(result?.error || 'Failed to prepare export');
+                            // Fallback: use download link
+                            const a = document.createElement('a');
+                            a.href = URL.createObjectURL(blob);
+                            a.download = result.suggestedName || `proxies_export.${selectedFormat}`;
+                            a.style.display = 'none';
+                            document.body.appendChild(a);
+                            a.click();
+                            setTimeout(() => {
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(a.href);
+                            }, 100);
+                            modal.setLoading(false);
+                            modal.close();
                         }
                     } catch (err) {
                         modal.setLoading(false);

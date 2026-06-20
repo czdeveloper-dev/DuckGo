@@ -27,10 +27,18 @@ window.DuckControls.Input = {
         inputWrap.style.maxWidth = 'none';
         
         if (options.icon) {
-            const icon = document.createElement('span');
-            icon.className = 'material-symbols-outlined search-icon';
-            icon.textContent = options.icon;
-            inputWrap.appendChild(icon);
+            if (options.icon.includes('.') || options.icon.includes('/')) {
+                const icon = document.createElement('img');
+                icon.src = options.icon;
+                icon.className = 'search-icon';
+                icon.style.cssText = 'width: 16px; height: 16px; object-fit: contain; pointer-events: none;';
+                inputWrap.appendChild(icon);
+            } else {
+                const icon = document.createElement('span');
+                icon.className = 'material-symbols-outlined search-icon';
+                icon.textContent = options.icon;
+                inputWrap.appendChild(icon);
+            }
         }
         
         const input = document.createElement('input');
@@ -38,6 +46,7 @@ window.DuckControls.Input = {
         if (options.placeholder) input.placeholder = options.placeholder;
         if (options.value) input.value = options.value;
         if (options.id) input.id = options.id;
+        if (options.autofocus) input.autofocus = true;
         if (options.onInput) input.addEventListener('input', options.onInput);
         
         inputWrap.appendChild(input);
@@ -54,8 +63,8 @@ window.DuckControls.Input = {
                 _errorLabel = document.createElement('div');
                 _errorLabel.className = 'field-error-label';
                 _errorLabel.style.cssText = 'font-size: 12px; color: var(--danger, #ef4444); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; font-weight: 500;';
-                // Insert BEFORE the inputWrap (at the top of the control)
-                wrap.insertBefore(_errorLabel, inputWrap);
+                // Insert at the top of the control
+                wrap.prepend(_errorLabel);
             }
             _errorLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:var(--danger,#ef4444)">error</span> ' + message;
             _errorLabel.style.display = 'flex';

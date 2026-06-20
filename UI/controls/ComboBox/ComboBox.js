@@ -32,6 +32,30 @@
                 left.appendChild(label);
             }
             
+            // Error label - placed ABOVE the select container (after label, before select)
+            let _errorLabel = null;
+            const errorWrap = document.createElement('div');
+            errorWrap.className = 'duck-combobox-error-wrap';
+            errorWrap.style.cssText = 'display:none; font-size: 12px; color: var(--danger, #ef4444); margin-top: 4px; font-weight: 500;';
+            
+            const setError = (message) => {
+                selectContainer.style.borderColor = 'var(--danger, #ef4444)';
+                selectContainer.style.background = 'rgba(239, 68, 68, 0.05)';
+                if (!_errorLabel) {
+                    _errorLabel = document.createElement('div');
+                    _errorLabel.style.cssText = 'display: flex; align-items: center; gap: 6px;';
+                    _errorLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:var(--danger,#ef4444)">error</span> <span></span>';
+                    errorWrap.appendChild(_errorLabel);
+                }
+                _errorLabel.querySelector('span:last-child').textContent = message;
+                errorWrap.style.display = 'block';
+            };
+            const clearError = () => {
+                selectContainer.style.borderColor = '';
+                selectContainer.style.background = '';
+                if (_errorLabel) errorWrap.style.display = 'none';
+            };
+            
             // Select container
             const selectContainer = document.createElement('div');
             selectContainer.className = 'duck-combobox-select-wrap';
@@ -77,8 +101,11 @@
             arrow.style.transition = 'transform 0.2s';
             selectContainer.appendChild(arrow);
             
+            // Build structure: label -> error -> select
+            left.appendChild(errorWrap);
             left.appendChild(selectContainer);
             wrap.appendChild(left);
+            
             // Initialize Dropdown
             let dropdown = null;
             if (window.DuckControls && window.DuckControls.Dropdown) {
@@ -120,26 +147,6 @@
                 });
                 wrap.appendChild(actions);
             }
-
-            // Error label support
-            let _errorLabel = null;
-            const setError = (message) => {
-                selectContainer.style.borderColor = 'var(--danger, #ef4444)';
-                selectContainer.style.background = 'rgba(239, 68, 68, 0.05)';
-                if (!_errorLabel) {
-                    _errorLabel = document.createElement('div');
-                    _errorLabel.className = 'field-error-label';
-                    _errorLabel.style.cssText = 'font-size: 12px; color: var(--danger, #ef4444); margin-top: 4px; display: flex; align-items: center; gap: 6px; font-weight: 500;';
-                    wrap.appendChild(_errorLabel);
-                }
-                _errorLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:var(--danger,#ef4444)">error</span> ' + message;
-                _errorLabel.style.display = 'flex';
-            };
-            const clearError = () => {
-                selectContainer.style.borderColor = '';
-                selectContainer.style.background = '';
-                if (_errorLabel) _errorLabel.style.display = 'none';
-            };
 
             return {
                 element: wrap,

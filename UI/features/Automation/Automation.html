@@ -1,0 +1,68 @@
+<div class="page-shell page-shell-profiles">
+
+    <!-- 2-TIER TOPBAR CONTAINER -->
+    <div class="prof-topbar">
+        <!-- TIER 1: Search & Filters -->
+        <div class="prof-topbar-t1 duck-panel-card" style="box-shadow: none;">
+            <div class="prof-t1-left">
+                <div class="duck-panel">
+                    <!-- Search by Name -->
+                    <div id="auto-ctrl-search"></div>
+
+                    <!-- Search by ID -->
+                    <div id="auto-ctrl-id"></div>
+
+                    <div class="prof-t1-divider"></div>
+
+                    <!-- Group Select -->
+                    <div id="auto-ctrl-group"></div>
+
+                    <!-- Tag Select -->
+                    <div id="auto-ctrl-tag"></div>
+                </div>
+            </div>
+
+            <div class="prof-t1-right">
+                <div class="duck-panel">
+                    <!-- Total Automations Stat -->
+                    <div id="auto-ctrl-stat"></div>
+
+                    <!-- Header Actions -->
+                    <button type="button" id="auto-ctrl-refresh" class="duck-btn duck-btn-surface"></button>
+
+                    <button type="button" id="auto-ctrl-create" class="duck-btn duck-btn-primary"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TIER 2: Bulk Action Chips -->
+        <div class="prof-topbar-t2">
+            <div class="prof-action-chips" id="auto-ctrl-chips"></div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div class="bulk-actions-bar" id="auto-bulk-actions">
+        <div style="display:flex; align-items:center; gap:6px;">
+            <span class="material-symbols-outlined" style="font-size:15px;color:var(--accent);">checklist</span>
+            <span class="bulk-count" id="auto-bulk-count">0 selected</span>
+        </div>
+        <div class="bulk-actions-divider"></div>
+        <div id="auto-ctrl-bulk-import"></div>
+        <div id="auto-ctrl-bulk-export"></div>
+        <div id="auto-ctrl-bulk-copy"></div>
+        <div class="bulk-actions-divider"></div>
+        <div id="auto-ctrl-bulk-delete"></div>
+        <div style="flex:1"></div>
+        <div id="auto-ctrl-bulk-close"></div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-fill">
+        <div id="automations-table-view" class="profiles-table-view">
+            <div class="card table-card table-card--profiles data-surface">
+                <!-- Table will be dynamically inserted here by DuckControls.Table -->
+            </div>
+        </div>
+    </div>
+</div>

@@ -10,5 +10,4 @@ public interface IProfileGroupRepository
     Task<int> CreateAsync(ProfileGroup group);
     Task UpdateAsync(ProfileGroup group);
     Task DeleteAsync(int id);
-    Task DeleteWithProxiesAsync(int id);
 }

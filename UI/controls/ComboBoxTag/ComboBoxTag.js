@@ -76,7 +76,7 @@
                     });
 
                     badge.appendChild(removeBtn);
-                    inputWrap.insertBefore(badge, input);
+                    inputWrap.prepend(badge);
                 });
             };
 

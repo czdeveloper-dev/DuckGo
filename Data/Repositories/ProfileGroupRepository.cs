@@ -1,5 +1,4 @@
 using DuckGo.Models.Entities;
-using Microsoft.Data.Sqlite;
 
 namespace DuckGo.Data.Repositories;
 
@@ -97,23 +96,5 @@ public class ProfileGroupRepository : IProfileGroupRepository
         cmd.CommandText = "DELETE FROM ProfileGroups WHERE Id = @id";
         cmd.Parameters.AddWithValue("@id", id);
         await cmd.ExecuteNonQueryAsync();
-    }
-
-    public async Task DeleteWithProxiesAsync(int id)
-    {
-        await using var conn = _db.GetConnection();
-        await conn.OpenAsync();
-        
-        // Xóa proxies trong group trước
-        await using var deleteProxiesCmd = conn.CreateCommand();
-        deleteProxiesCmd.CommandText = "DELETE FROM Proxies WHERE GroupId = @groupId";
-        deleteProxiesCmd.Parameters.AddWithValue("@groupId", id);
-        await deleteProxiesCmd.ExecuteNonQueryAsync();
-        
-        // Xóa group
-        await using var deleteGroupCmd = conn.CreateCommand();
-        deleteGroupCmd.CommandText = "DELETE FROM ProfileGroups WHERE Id = @id";
-        deleteGroupCmd.Parameters.AddWithValue("@id", id);
-        await deleteGroupCmd.ExecuteNonQueryAsync();
     }
 }

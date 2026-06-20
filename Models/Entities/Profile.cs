@@ -10,8 +10,8 @@ public class Profile
     public int? GroupId { get; set; }
     public string TagIdsJson { get; set; } = "[]";
     public int? ProxyId { get; set; }
-    public string BrowserType { get; set; } = "Chromium";
-    public string BrowserVersion { get; set; } = "";
+    public string? BrowserType { get; set; } // From catalog
+    public string? BrowserVersion { get; set; } // From catalog
     public string ProfileData { get; set; } = "{}";
     public string Notes { get; set; } = "";
     public string Cookies { get; set; } = "[]";

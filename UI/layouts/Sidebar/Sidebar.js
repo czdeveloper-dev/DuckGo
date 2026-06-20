@@ -4,7 +4,7 @@
     'use strict';
 
     window.DuckSidebar = {
-        _isCollapsed: false,
+        _isCollapsed: true, // Default collapsed
 
         /**
          * Initialize sidebar.
@@ -95,21 +95,30 @@
         _setupThemeToggle() {
             const btn = document.getElementById('btn-theme-toggle');
             if (btn) {
+                // Apply fill style for icon button
+                btn.style.cssText = 'background: transparent; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 8px 12px; width: 100%; border-radius: 6px; transition: background 0.15s;';
+                
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     this._toggleTheme();
+                });
+                btn.addEventListener('mouseenter', () => {
+                    btn.style.background = 'var(--surface-hover)';
+                });
+                btn.addEventListener('mouseleave', () => {
+                    btn.style.background = 'transparent';
                 });
             }
         },
 
         _toggleTheme() {
-            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
             if (isDark) {
-                document.body.removeAttribute('data-theme');
+                document.documentElement.removeAttribute('data-theme');
                 try { localStorage.setItem('theme', 'light'); } catch (e) {}
                 this._updateThemeIcon('light');
             } else {
-                document.body.setAttribute('data-theme', 'dark');
+                document.documentElement.setAttribute('data-theme', 'dark');
                 try { localStorage.setItem('theme', 'dark'); } catch (e) {}
                 this._updateThemeIcon('dark');
             }
@@ -121,9 +130,10 @@
         _restoreTheme() {
             try {
                 if (localStorage.getItem('theme') === 'dark') {
-                    document.body.setAttribute('data-theme', 'dark');
+                    document.documentElement.setAttribute('data-theme', 'dark');
                     this._updateThemeIcon('dark');
                 } else {
+                    document.documentElement.removeAttribute('data-theme');
                     this._updateThemeIcon('light');
                 }
             } catch (e) {}

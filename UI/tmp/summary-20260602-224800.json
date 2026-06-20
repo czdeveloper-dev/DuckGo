@@ -1,4 +1,0 @@
-{
-  "summary": "Fixed runtime error: TypeError Cannot read properties of null (reading 'children'). Root cause: applyColumnWidths() was called before thead was created, and it used table.querySelector('thead tr') which returned null. Fix: (1) removed the early applyColumnWidths() call before thead creation, (2) changed applyColumnWidths() and runAutoSize() to use trHead direct reference instead of table.querySelector('thead tr'). tbody.querySelectorAll is safe since tbody is always created before any calls.",
-  "current_status": "Table.js: fixed null reference on initial render. applyColumnWidths now uses trHead.children directly. No linter errors. Ready for testing."
-}

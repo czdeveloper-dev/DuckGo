@@ -8,8 +8,19 @@ using Bogus;
 using DuckGo.Data.Repositories;
 using DuckGo.Models.DTOs;
 using DuckGo.Models.Entities;
+using DuckGo.Data;
 
 namespace DuckGo.Services;
+
+// Proxy schedule settings model
+public class ProxyScheduleSettings
+{
+    public bool Enabled { get; set; } = false;
+    public int Hours { get; set; } = 0;
+    public int Minutes { get; set; } = 0;
+    public int Seconds { get; set; } = 30;
+    public int DelayMs { get; set; } = 1000;
+}
 
 // Scan manager for tracking active scans
 public class ProxyScanManager
@@ -62,17 +73,110 @@ public class ProxyService
     private readonly IProfileGroupRepository _groupRepo;
     private readonly IProfileTagRepository _tagRepo;
     private readonly IProxyTypeRepository _typeRepo;
+    private readonly IProfileRepository? _profileRepo;
+    private readonly ISettingsRepository? _settingsRepo;
+    private const string SCHEDULE_SETTINGS_KEY = "ProxyAutoCheckSchedule";
 
     public ProxyService(
         IProxyRepository repo,
         IProfileGroupRepository groupRepo,
         IProfileTagRepository tagRepo,
-        IProxyTypeRepository typeRepo)
+        IProxyTypeRepository typeRepo,
+        IProfileRepository? profileRepo = null,
+        ISettingsRepository? settingsRepo = null)
     {
         _repo = repo;
         _groupRepo = groupRepo;
         _tagRepo = tagRepo;
         _typeRepo = typeRepo;
+        _profileRepo = profileRepo;
+        _settingsRepo = settingsRepo;
+        
+        ProxySchedulerService.OnScheduledCheckRequested += () => { _ = RunScheduledCheckAsync(); };
+    }
+
+    public async Task InitScheduleAsync()
+    {
+        try
+        {
+            if (_settingsRepo != null)
+            {
+                var json = await _settingsRepo.GetAsync(SCHEDULE_SETTINGS_KEY);
+                if (!string.IsNullOrEmpty(json))
+                {
+                    var settings = System.Text.Json.JsonSerializer.Deserialize<ProxyScheduleSettings>(json);
+                    if (settings != null)
+                    {
+                        _cachedScheduleSettings = settings;
+                        ProxySchedulerService.UpdateSchedule(settings.Enabled, settings.Hours, settings.Minutes, settings.Seconds, settings.DelayMs);
+                        
+                        if (settings.Enabled)
+                        {
+                            // Run once on startup if enabled
+                            _ = RunScheduledCheckAsync();
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ProxyService] Failed to init schedule: {ex.Message}");
+        }
+    }
+
+    private async Task RunScheduledCheckAsync()
+    {
+        try
+        {
+            ProxySchedulerService.SetMessage("Fetching proxies...");
+            var proxies = await _repo.GetAllAsync();
+            if (proxies.Count == 0)
+            {
+                ProxySchedulerService.SetMessage("No proxies to check.");
+                return;
+            }
+
+            int checkedCount = 0;
+            int totalCount = proxies.Count;
+            var delayMs = _cachedScheduleSettings?.DelayMs ?? 1000;
+
+            foreach (var proxy in proxies)
+            {
+                if (!ProxySchedulerService.IsRunning) 
+                {
+                    ProxySchedulerService.SetMessage("Schedule stopped by user.");
+                    break;
+                }
+
+                checkedCount++;
+                ProxySchedulerService.SetMessage($"Checking {checkedCount}/{totalCount} proxies...");
+
+                var typeValue = proxy.TypeId.HasValue 
+                    ? (await _typeRepo.GetByIdAsync(proxy.TypeId.Value))?.Value ?? "http"
+                    : "http";
+
+                var checkReq = new ProxyCheckRequest(typeValue, proxy.Host, proxy.Port, proxy.Username, proxy.Password);
+                var result = await CheckProxyFastAsync(checkReq);
+                
+                await _repo.UpdateStatusAsync(proxy.Id, result.Status, result.LatencyMs, result.Message);
+                ProxyStatusService.SetStatus(proxy.Id, result.Status, result.LatencyMs, result.Message);
+
+                if (delayMs > 0)
+                {
+                    await Task.Delay(delayMs);
+                }
+            }
+            
+            if (ProxySchedulerService.IsRunning)
+            {
+                ProxySchedulerService.SetMessage($"Completed checking {checkedCount} proxies. Next check scheduled.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ProxySchedulerService.SetMessage($"Error: {ex.Message}");
+        }
     }
 
     private static string GenerateRandomName()
@@ -156,6 +260,30 @@ public class ProxyService
 
     public async Task<Proxy?> GetProxyAsync(int id)
         => await _repo.GetByIdAsync(id);
+
+    public async Task<List<ProfileListItem>> GetProfilesUsingProxyAsync(int proxyId)
+    {
+        if (_profileRepo == null)
+            return new List<ProfileListItem>();
+
+        var allProfiles = await _profileRepo.GetAllAsync();
+        return allProfiles
+            .Where(p => p.ProxyId == proxyId)
+            .Select(p => new ProfileListItem
+            {
+                Id = p.Id,
+                Name = p.Name ?? "Unnamed",
+                GroupId = p.GroupId,
+                GroupName = p.GroupName ?? "-",
+                TagIds = p.TagIds ?? new List<int>(),
+                ProxyId = p.ProxyId,
+                ProxyName = p.ProxyName ?? "Direct",
+                BrowserType = p.BrowserType,
+                BrowserVersion = p.BrowserVersion ?? "",
+                Notes = p.Notes ?? ""
+            })
+            .ToList();
+    }
 
     public async Task<int> CreateProxyAsync(ProxyCreateRequest req)
     {
@@ -335,13 +463,13 @@ public class ProxyService
         return (typeId, host, port, username, password, rotaryApi, type);
     }
 
-    public async Task<ProxyBulkCreateResult> CreateBulkProxiesAsync(List<string> proxyStrings)
+    public async Task<ProxyBulkCreateResult> CreateBulkProxiesAsync(List<string> proxyStrings, int? groupId = null, List<int>? tagIds = null)
     {
         int successCount = 0;
         int failCount = 0;
         var errors = new List<string>();
 
-        Console.WriteLine($"[CreateBulkProxiesAsync] Starting with {proxyStrings.Count} proxies");
+        Console.WriteLine($"[CreateBulkProxiesAsync] Starting with {proxyStrings.Count} proxies, GroupId={groupId}, TagIds={(tagIds != null ? string.Join(",", tagIds) : "null")}");
 
         foreach (var proxyStr in proxyStrings)
         {
@@ -366,23 +494,29 @@ public class ProxyService
 
                             if (!string.IsNullOrEmpty(host) && port > 0)
                             {
-                                int? typeId = null;
+                                int? parsedTypeId = null;
                                 if (!string.IsNullOrEmpty(type))
                                 {
                                     var proxyType = await _typeRepo.GetByValueAsync(type);
-                                    if (proxyType != null) typeId = proxyType.Id;
+                                    if (proxyType != null) parsedTypeId = proxyType.Id;
                                 }
+
+                                // Serialize tags
+                                var tagsJsonForObj = tagIds != null && tagIds.Count > 0 
+                                    ? System.Text.Json.JsonSerializer.Serialize(tagIds) 
+                                    : "[]";
 
                                 var proxyObj = new Proxy
                                 {
                                     Name = GenerateRandomName(),
-                                    TypeId = typeId,
+                                    TypeId = parsedTypeId,
                                     Host = host,
                                     Port = port,
                                     Username = username ?? "",
                                     Password = password ?? "",
                                     RotaryApi = "",
-                                    Tags = "[]",
+                                    GroupId = groupId,
+                                    Tags = tagsJsonForObj,
                                     CreatedAt = DateTime.Now
                                 };
                                 await _repo.CreateAsync(proxyObj);
@@ -410,16 +544,42 @@ public class ProxyService
                     continue;
                 }
 
+                // Serialize tags
+                var tagsJson = tagIds != null && tagIds.Count > 0 
+                    ? System.Text.Json.JsonSerializer.Serialize(tagIds) 
+                    : "[]";
+
+                // If no type was specified, try to detect it
+                int? typeId = parsed.Value.TypeId;
+                if (!typeId.HasValue)
+                {
+                    Console.WriteLine($"[CreateBulkProxiesAsync] No type specified for {parsed.Value.Host}:{parsed.Value.Port}, attempting to detect...");
+                    try
+                    {
+                        var detectedType = await DetectProxyTypeAsync(parsed.Value.Host, parsed.Value.Port, parsed.Value.Username, parsed.Value.Password);
+                        Console.WriteLine($"[CreateBulkProxiesAsync] Detected type: {detectedType}");
+                        
+                        var proxyType = await _typeRepo.GetByValueAsync(detectedType);
+                        if (proxyType != null) typeId = proxyType.Id;
+                        else Console.WriteLine($"[CreateBulkProxiesAsync] Warning: Could not find proxy type '{detectedType}' in database");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[CreateBulkProxiesAsync] Type detection failed: {ex.Message}");
+                    }
+                }
+
                 var newProxy = new Proxy
                 {
                     Name = GenerateRandomName(),
-                    TypeId = parsed.Value.TypeId,
+                    TypeId = typeId, // Will be null if no type specified and detection failed
                     Host = parsed.Value.Host,
                     Port = parsed.Value.Port,
                     Username = parsed.Value.Username ?? "",
                     Password = parsed.Value.Password ?? "",
                     RotaryApi = parsed.Value.RotaryApi ?? "",
-                    Tags = "[]",
+                    GroupId = groupId,
+                    Tags = tagsJson,
                     CreatedAt = DateTime.Now
                 };
 
@@ -618,12 +778,32 @@ public class ProxyService
                 ? (await _typeRepo.GetByIdAsync(proxy.TypeId.Value))?.Value ?? "http"
                 : "http";
 
-            var line = formatLower switch
+            string line;
+            var hasUsername = !string.IsNullOrEmpty(proxy.Username);
+            var hasPassword = !string.IsNullOrEmpty(proxy.Password);
+
+            if (formatLower == "host")
             {
-                "host" => $"{proxy.Host}:{proxy.Port}",
-                "userpass" => $"{proxy.Host}:{proxy.Port}:{proxy.Username}:{proxy.Password}",
-                _ => $"{type}://{proxy.Host}:{proxy.Port}:{proxy.Username}:{proxy.Password}"
-            };
+                line = $"{proxy.Host}:{proxy.Port}";
+            }
+            else if (hasUsername)
+            {
+                // Format: type://host:port:username:password OR type://host:port:username:
+                if (hasPassword)
+                {
+                    line = $"{type}://{proxy.Host}:{proxy.Port}:{proxy.Username}:{proxy.Password}";
+                }
+                else
+                {
+                    // Username only, no password - add trailing colon
+                    line = $"{type}://{proxy.Host}:{proxy.Port}:{proxy.Username}:";
+                }
+            }
+            else
+            {
+                // No auth
+                line = $"{type}://{proxy.Host}:{proxy.Port}";
+            }
             lines.Add(line);
         }
 
@@ -676,7 +856,8 @@ public class ProxyService
             { 
                 Status = "alive", 
                 LatencyMs = tcpLatency,
-                Message = "TCP OK"
+                Message = "TCP OK",
+                DetectedType = type // Return the type that was used
             };
         }
         catch (OperationCanceledException)
@@ -701,6 +882,106 @@ public class ProxyService
         {
             sw.Stop();
             return new ProxyCheckResult { Status = "dead", LatencyMs = (int)sw.ElapsedMilliseconds, Message = ex.Message };
+        }
+    }
+    
+    // Detect proxy type (HTTP, SOCKS4, SOCKS5) by trying to handshake
+    public async Task<string> DetectProxyTypeAsync(string host, int port, string? username = null, string? password = null)
+    {
+        var timeout = TimeSpan.FromSeconds(3);
+        
+        try
+        {
+            using var tcp = new TcpClient();
+            var cancel = new CancellationTokenSource(timeout);
+            await tcp.ConnectAsync(host, port, cancel.Token);
+            var stream = tcp.GetStream();
+            stream.ReadTimeout = 3000;
+            
+            // Try SOCKS5 first
+            try
+            {
+                // SOCKS5 greeting: VER=5, NMETHODS=1, METHODS=0 (NO AUTH)
+                var socks5Greet = new byte[] { 0x05, 0x01, 0x00 };
+                await stream.WriteAsync(socks5Greet, cancel.Token);
+                
+                var response = new byte[2];
+                var bytesRead = await stream.ReadAsync(response, cancel.Token);
+                if (bytesRead >= 2 && response[0] == 0x05 && response[1] == 0x00)
+                {
+                    Console.WriteLine($"[DetectProxyType] {host}:{port} is SOCKS5");
+                    return "socks5";
+                }
+            }
+            catch { /* Not SOCKS5, try next */ }
+            
+            // Reset stream
+            stream.Close();
+            tcp.Close();
+            tcp.Client.Close();
+            
+            using var tcp2 = new TcpClient();
+            await tcp2.ConnectAsync(host, port, cancel.Token);
+            var stream2 = tcp2.GetStream();
+            stream2.ReadTimeout = 3000;
+            
+            // Try SOCKS4
+            try
+            {
+                // SOCKS4: VER=4, CMD=1 (CONNECT), DSTPORT (2 bytes), DSTIP (4 bytes), USERID (null-terminated)
+                // For SOCKS4a, use 0.0.0.1 at DSTIP and append domain with null
+                byte[] socks4Request;
+                if (!System.Net.IPAddress.TryParse(host, out _))
+                {
+                    // SOCKS4a - domain name
+                    var domainBytes = System.Text.Encoding.ASCII.GetBytes(host + "\0");
+                    var userBytes = System.Text.Encoding.ASCII.GetBytes("user\0");
+                    socks4Request = new byte[9 + domainBytes.Length + userBytes.Length];
+                    socks4Request[0] = 0x04; // VER
+                    socks4Request[1] = 0x01; // CMD CONNECT
+                    socks4Request[2] = (byte)(port >> 8);
+                    socks4Request[3] = (byte)(port & 0xFF);
+                    socks4Request[4] = 0x00; // DSTIP - invalid IP for SOCKS4a
+                    socks4Request[5] = 0x00;
+                    socks4Request[6] = 0x00; // DSTIP - must be 0.0.0.1 for SOCKS4a
+                    socks4Request[7] = 0x01;
+                    int offset = 8;
+                    Array.Copy(domainBytes, 0, socks4Request, offset, domainBytes.Length);
+                    offset += domainBytes.Length;
+                    Array.Copy(userBytes, 0, socks4Request, offset, userBytes.Length);
+                }
+                else
+                {
+                    var ip = System.Net.IPAddress.Parse(host);
+                    socks4Request = new byte[9];
+                    socks4Request[0] = 0x04; // VER
+                    socks4Request[1] = 0x01; // CMD CONNECT
+                    socks4Request[2] = (byte)(port >> 8);
+                    socks4Request[3] = (byte)(port & 0xFF);
+                    var ipBytes = ip.GetAddressBytes();
+                    Array.Copy(ipBytes, 0, socks4Request, 4, 4);
+                }
+                
+                await stream2.WriteAsync(socks4Request, cancel.Token);
+                
+                var response4 = new byte[8];
+                var socks4BytesRead = await stream2.ReadAsync(response4, cancel.Token);
+                if (socks4BytesRead >= 2 && response4[0] == 0x00 && response4[1] == 0x5A)
+                {
+                    Console.WriteLine($"[DetectProxyType] {host}:{port} is SOCKS4");
+                    return "socks4";
+                }
+            }
+            catch { /* Not SOCKS4, try HTTP */ }
+            
+            // Default to HTTP
+            Console.WriteLine($"[DetectProxyType] {host}:{port} defaulting to HTTP");
+            return "http";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DetectProxyType] Error detecting {host}:{port}: {ex.Message}");
+            return "http"; // Default to HTTP on error
         }
     }
     
@@ -1010,6 +1291,100 @@ public class ProxyService
     public async Task DeleteTagAsync(int id)
     {
         await _tagRepo.DeleteAsync(id);
+    }
+
+    // Duplicate a proxy
+    public async Task<int> DuplicateProxyAsync(int proxyId, string? newName = null)
+    {
+        var original = await _repo.GetByIdAsync(proxyId);
+        if (original == null) throw new InvalidOperationException($"Proxy {proxyId} not found");
+
+        var duplicate = new Proxy
+        {
+            Name = newName ?? $"{original.Name} (Copy)",
+            TypeId = original.TypeId,
+            GroupId = original.GroupId,
+            Tags = original.Tags,
+            Host = original.Host,
+            Port = original.Port,
+            Username = original.Username ?? "",
+            Password = original.Password ?? "",
+            RotaryApi = original.RotaryApi ?? "",
+            Notes = original.Notes ?? "",
+            CreatedAt = DateTime.Now
+        };
+
+        return await _repo.CreateAsync(duplicate);
+    }
+
+    // Schedule settings persistence
+    private static ProxyScheduleSettings? _cachedScheduleSettings;
+    private static readonly object _scheduleLock = new();
+
+    public async Task<ProxyScheduleSettings?> GetScheduleSettingsAsync()
+    {
+        lock (_scheduleLock)
+        {
+            if (_cachedScheduleSettings != null)
+                return _cachedScheduleSettings;
+        }
+
+        // Try to load from Settings table via repository
+        try
+        {
+            if (_settingsRepo != null)
+            {
+                var json = await _settingsRepo.GetAsync(SCHEDULE_SETTINGS_KEY);
+                if (!string.IsNullOrEmpty(json))
+                {
+                    var settings = System.Text.Json.JsonSerializer.Deserialize<ProxyScheduleSettings>(json);
+                    if (settings != null)
+                    {
+                        _cachedScheduleSettings = settings;
+                        return settings;
+                    }
+                }
+            }
+            return _cachedScheduleSettings ?? new ProxyScheduleSettings();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ProxyService] Error loading schedule settings: {ex.Message}");
+            return new ProxyScheduleSettings();
+        }
+    }
+
+    public async Task SaveScheduleSettingsAsync(ProxyScheduleSettings settings)
+    {
+        lock (_scheduleLock)
+        {
+            _cachedScheduleSettings = settings;
+        }
+        
+        try
+        {
+            if (_settingsRepo != null)
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(settings);
+                await _settingsRepo.SetAsync(SCHEDULE_SETTINGS_KEY, json);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ProxyService] Error saving schedule settings: {ex.Message}");
+        }
+        
+        ProxySchedulerService.UpdateSchedule(settings.Enabled, settings.Hours, settings.Minutes, settings.Seconds, settings.DelayMs);
+        if (settings.Enabled)
+        {
+            _ = RunScheduledCheckAsync();
+        }
+        else
+        {
+            ProxySchedulerService.SetMessage(null);
+        }
+
+        Console.WriteLine($"[ProxyService] Schedule saved: Enabled={settings.Enabled}, Hours={settings.Hours}, Minutes={settings.Minutes}, Seconds={settings.Seconds}");
     }
 
     // Import helpers - parse proxies from file content (txt, csv, json)
@@ -1364,6 +1739,9 @@ public class ProxyCheckResult
     
     [JsonPropertyName("message")]
     public string? Message { get; set; }
+    
+    [JsonPropertyName("detectedType")]
+    public string? DetectedType { get; set; }
 }
 
 // Runtime status service for proxy checking
@@ -1518,4 +1896,95 @@ public class ProxyScanProgress
     
     [JsonPropertyName("progressPercent")]
     public int ProgressPercent { get; set; }
+}
+
+// Scheduler service for automatic proxy checking
+public class ProxySchedulerService
+{
+    private static Timer? _timer;
+    private static bool _isRunning;
+    private static DateTime? _nextRun;
+    private static DateTime? _lastRun;
+    private static string? _message;
+    private static readonly object _lock = new();
+
+    public static bool IsRunning
+    {
+        get { lock (_lock) return _isRunning; }
+    }
+
+    public static DateTime? GetNextRunTime() { lock (_lock) return _nextRun; }
+    public static DateTime? GetLastRunTime() { lock (_lock) return _lastRun; }
+    public static string? GetMessage() { lock (_lock) return _message; }
+
+    public static void SetMessage(string? message)
+    {
+        lock (_lock)
+        {
+            _message = message;
+        }
+    }
+
+    public static void UpdateSchedule(bool enabled, int hours, int minutes, int seconds, int delayMs)
+    {
+        lock (_lock)
+        {
+            StopTimer();
+            
+            if (!enabled) 
+            {
+                _isRunning = false;
+                _nextRun = null;
+                Console.WriteLine("[ProxySchedulerService] Schedule stopped");
+                return;
+            }
+
+            var intervalMs = (hours * 3600 + minutes * 60 + seconds) * 1000;
+            if (intervalMs <= 0) intervalMs = 30000; // Default 30 seconds minimum
+
+            _isRunning = true;
+            _nextRun = DateTime.Now.AddMilliseconds(intervalMs);
+            
+            _timer = new Timer(async _ =>
+            {
+                try
+                {
+                    _lastRun = DateTime.Now;
+                    Console.WriteLine("[ProxySchedulerService] Running scheduled proxy check...");
+                    
+                    // Get all proxies and check them
+                    // Note: This requires access to ProxyService - we use a static event approach
+                    OnScheduledCheckRequested?.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ProxySchedulerService] Error: {ex.Message}");
+                }
+                finally
+                {
+                    lock (_lock)
+                    {
+                        if (_isRunning)
+                        {
+                            _nextRun = DateTime.Now.AddMilliseconds(intervalMs);
+                        }
+                    }
+                }
+            }, null, intervalMs, intervalMs);
+
+            Console.WriteLine($"[ProxySchedulerService] Schedule updated: interval={intervalMs}ms, nextRun={_nextRun}");
+        }
+    }
+
+    public static event Action? OnScheduledCheckRequested;
+
+    private static void StopTimer()
+    {
+        if (_timer != null)
+        {
+            _timer.Change(Timeout.Infinite, Timeout.Infinite);
+            _timer.Dispose();
+            _timer = null;
+        }
+    }
 }

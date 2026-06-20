@@ -6,8 +6,8 @@ public class ValidatorFactory
     {
         new ProfileValidator(),
         new ProxyValidator(),
-        new GroupValidator(),
-        new TagValidator(),
+        new ProfileGroupValidator(),
+        new ProfileTagValidator(),
     };
 
     public ValidationResult Validate(string action, System.Text.Json.JsonElement? payload)

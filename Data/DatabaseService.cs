@@ -20,21 +20,7 @@ public class DatabaseService : IDisposable
         await using var conn = GetConnection();
         await conn.OpenAsync();
 
-        // Old tables - kept for migration reference, not used
-        await RunNonQueryAsync(conn, @"
-            CREATE TABLE IF NOT EXISTS Groups (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                Name TEXT NOT NULL,
-                CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
-            )");
-
-        await RunNonQueryAsync(conn, @"
-            CREATE TABLE IF NOT EXISTS Tags (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                Name TEXT NOT NULL,
-                CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
-            )");
-
+        // ProfileGroups table
         await RunNonQueryAsync(conn, @"
             CREATE TABLE IF NOT EXISTS ProfileGroups (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,6 +28,7 @@ public class DatabaseService : IDisposable
                 CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
             )");
 
+        // ProfileTags table
         await RunNonQueryAsync(conn, @"
             CREATE TABLE IF NOT EXISTS ProfileTags (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,6 +92,14 @@ public class DatabaseService : IDisposable
                 ExecutablePath TEXT NOT NULL,
                 InstalledAt TEXT DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(BrowserType, BrowserVersion)
+            )");
+
+        // Settings table for application settings (AutoCheckSchedule, etc.)
+        await RunNonQueryAsync(conn, @"
+            CREATE TABLE IF NOT EXISTS Settings (
+                Key TEXT PRIMARY KEY,
+                Value TEXT NOT NULL,
+                UpdatedAt TEXT DEFAULT CURRENT_TIMESTAMP
             )");
 
         await SeedProxyTypesAsync(conn);

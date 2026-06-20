@@ -2,6 +2,7 @@ window.ProfileModals = window.ProfileModals || {};
 
 window.ProfileModals.ImportProfiles = {
     _modal: null,
+    _isImporting: false,
     
     show(selectedIds) {
         if (!selectedIds) selectedIds = new Set();
@@ -63,12 +64,14 @@ window.ProfileModals.ImportProfiles = {
             icon: 'publish',
             content: modalBody,
             size: 'md',
-            closeOnOverlay: true,
+            closeOnOverlay: false, // Prevent closing during import
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
-                { text: 'Import', icon: 'file_upload', class: 'duck-btn-primary', onClick: async (e, modal) => {
+                { text: 'Import', icon: 'file_upload', class: 'duck-btn-primary', id: 'import-btn', onClick: async (e, modal) => {
                     if (!selectedFile) return;
+                    if (this._isImporting) return;
 
+                    this._isImporting = true;
                     modal.setLoading(true, 'Importing...');
 
                     const ext = selectedFile.name.split('.').pop().toLowerCase();
@@ -91,16 +94,23 @@ window.ProfileModals.ImportProfiles = {
                             }
 
                             if (window.ProfilesView?.loadProfiles) window.ProfilesView.loadProfiles();
+                            if (window.ProfilesView?.loadGroups) window.ProfilesView.loadGroups();
+                            if (window.ProfilesView?.loadTags) window.ProfilesView.loadTags();
                             
+                            modal.setLoading(false);
                             modal.close();
                         } catch (err) {
                             modal.setLoading(false);
+                            this._isImporting = false;
+                            valMsg.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">error</span> ' + (err?.message || 'Import failed');
+                            valMsg.style.display = 'flex';
                             window.DuckControls.Toast?.error?.('Import Failed', err?.message || 'Failed to import file');
                         }
                     };
 
                     reader.onerror = () => {
                         modal.setLoading(false);
+                        this._isImporting = false;
                         window.DuckControls.Toast?.error?.('Read Error', 'Failed to read the file');
                     };
 
@@ -108,6 +118,7 @@ window.ProfileModals.ImportProfiles = {
                 }}
             ],
             onClose: () => {
+                this._isImporting = false;
                 this._modal = null;
             }
         });
@@ -115,8 +126,10 @@ window.ProfileModals.ImportProfiles = {
         this._modal.open();
 
         // Initially disable the submit button
-        const submitBtn = this._modal.element.querySelector('.duck-btn-primary');
-        if (submitBtn) submitBtn.disabled = true;
+        if (this._modal && this._modal.container) {
+            const submitBtn = this._modal.container.querySelector('#import-btn');
+            if (submitBtn) submitBtn.disabled = true;
+        }
     }
 };
 

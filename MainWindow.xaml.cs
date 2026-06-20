@@ -20,8 +20,8 @@ public partial class MainWindow : Window
 {
     private DatabaseService? _db;
     private ProfileService? _profileService;
-    private GroupService? _groupService;
-    private TagService? _tagService;
+    private ProfileGroupService? _groupService;
+    private ProfileTagService? _tagService;
     private ProxyService? _proxyService;
     private MessageDispatcher? _dispatcher;
 
@@ -65,23 +65,40 @@ public partial class MainWindow : Window
     {
         try
         {
+            // Load icon from embedded resource file
+            var resourceName = Assembly.GetExecutingAssembly().GetManifestResourceNames()
+                .FirstOrDefault(n => n.EndsWith("DuckGo.ico"));
+            if (resourceName != null)
+            {
+                using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName);
+                if (stream != null)
+                {
+                    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.StreamSource = stream;
+                    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    bitmap.EndInit();
+                    bitmap.Freeze();
+                    this.Icon = bitmap;
+                }
+            }
+
             _db = new DatabaseService();
             await _db.InitializeAsync();
 
-            var groupRepo = new GroupRepository(_db);
-            var tagRepo = new TagRepository(_db);
             var proxyRepo = new ProxyRepository(_db);
             var profileGroupRepo = new ProfileGroupRepository(_db);
             var profileTagRepo = new ProfileTagRepository(_db);
             _profileRepo = new ProfileRepository(_db);
             var proxyTypeRepo = new ProxyTypeRepository(_db);
             var installedBrowserRepo = new InstalledBrowserRepository(_db);
+            var settingsRepo = new SettingsRepository(_db);
 
-            _groupService = new GroupService(groupRepo);
-            _tagService = new TagService(tagRepo);
-            _proxyService = new ProxyService(proxyRepo, profileGroupRepo, profileTagRepo, proxyTypeRepo);
+            _groupService = new ProfileGroupService(profileGroupRepo);
+            _tagService = new ProfileTagService(profileTagRepo);
+            _proxyService = new ProxyService(proxyRepo, profileGroupRepo, profileTagRepo, proxyTypeRepo, _profileRepo, settingsRepo);
             var fingerprintSvc = new FingerprintService();
-            _profileService = new ProfileService(_profileRepo, groupRepo, tagRepo, proxyRepo, fingerprintSvc);
+            _profileService = new ProfileService(_profileRepo, profileGroupRepo, profileTagRepo, proxyRepo, fingerprintSvc);
 
             _pipeClient = new DuckPipeClient(AppConfig.PipeName, AppConfig.PipeConnectTimeoutMs);
             _browserCatalogService = new BrowserCatalogService();
@@ -140,8 +157,8 @@ public partial class MainWindow : Window
                 new BrowserDispatcher(_browserLifecycleService!, _browserVersionService!),
                 new FingerprintDispatcher(fingerprintSvc),
                 new ProfileDispatcher(_profileService!, fingerprintSvc, _profileStatusService!, _proxyService!),
-                new GroupDispatcher(_groupService!),
-                new TagDispatcher(_tagService!),
+                new ProfileGroupDispatcher(_groupService!),
+                new ProfileTagDispatcher(_tagService!),
                 new ProxyDispatcher(_proxyService!),
                 new ProxyTypeDispatcher(proxyTypeRepo),
                 new ClipboardDispatcher(),

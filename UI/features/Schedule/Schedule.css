@@ -1,0 +1,153 @@
+/* ============================================================
+   Schedule.css – Task Scheduler Styles
+   Reuses: page-shell-profiles, prof-topbar, bulk-actions-bar,
+           content-fill, profiles-table-view, table-card--profiles
+   Only schedule-specific styles defined here.
+   ============================================================ */
+
+/* ── Bulk Actions Bar (Schedule) ────────────────────────── */
+#sched-bulk-actions {
+    display: none;
+}
+#sched-bulk-actions.visible {
+    display: flex;
+}
+
+/* ── Schedule Type Badges ────────────────────────────────── */
+.sched-badge-immediate {
+    background: rgba(251,191,36,.12);
+    color: var(--warning, #fbbf24);
+    border: 1px solid rgba(251,191,36,.28);
+}
+.sched-badge-once {
+    background: var(--accent-glow);
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.sched-badge-interval {
+    background: rgba(168,85,247,.1);
+    color: #c084fc;
+    border: 1px solid rgba(168,85,247,.28);
+}
+.sched-badge-daily {
+    background: rgba(52,211,153,.1);
+    color: #34d399;
+    border: 1px solid rgba(52,211,153,.28);
+}
+
+/* ── Schedule Status colours ─────────────────────────────── */
+.sched-status-running  { color: var(--success); }
+.sched-status-idle     { color: var(--text-tertiary); }
+.sched-status-paused   { color: var(--warning, #fbbf24); }
+.sched-status-error    { color: var(--danger); }
+.sched-status-completed{ color: var(--text-secondary); }
+
+/* ── Next-run cell ────────────────────────────────────────── */
+.sched-nextrun {
+    font-size: 12px;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+}
+.sched-nextrun.on-demand {
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
+/* ── CreateTask modal overrides ──────────────────────────── */
+.sched-preview-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r);
+    padding: 10px 14px;
+}
+.sched-preview-box .material-symbols-outlined {
+    font-size: 20px;
+    color: var(--accent);
+    flex-shrink: 0;
+}
+.sched-preview-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+.sched-preview-text strong { color: var(--text-primary); }
+
+/* Day-of-week toggles */
+.sched-day-toggles {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.sched-day-toggle {
+    width: auto;
+    padding: 0 12px;
+    height: 36px;
+    border-radius: var(--r-sm);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    font-weight: 700;
+    font-size: 11px;
+    font-family: var(--font-sans, 'Inter', sans-serif);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--t);
+    user-select: none;
+}
+.sched-day-toggle.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+.sched-day-toggle:hover:not(.active) {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Arrange layout options */
+.sched-arrange-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.sched-arrange-opt {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1.5px solid var(--border-default);
+    border-radius: var(--r);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--t);
+    background: transparent;
+    font-family: inherit;
+}
+.sched-arrange-opt .material-symbols-outlined { font-size: 16px; }
+.sched-arrange-opt:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.sched-arrange-opt.selected {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+    color: var(--accent);
+}
+
+/* Profile tab table inside modal */
+.sched-profile-table-wrap {
+    border: 1px solid var(--border-default);
+    border-radius: var(--r);
+    overflow: hidden;
+    max-height: 280px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 120px;
+}

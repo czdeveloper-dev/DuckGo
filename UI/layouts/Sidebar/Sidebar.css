@@ -9,6 +9,13 @@
     line-height: 1;
 }
 
+/* Brand icon image */
+.sidebar-brand-mark .brand-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
 /* Nav item hover ripple effect */
 .nav-item {
     position: relative;
@@ -135,6 +142,15 @@
 #sidebar.collapsed .sidebar-footer-card {
     justify-content: center;
     padding: 8px;
+}
+
+/* Sidebar brand text hidden when collapsed */
+#sidebar.collapsed .brand-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
 }
 
 

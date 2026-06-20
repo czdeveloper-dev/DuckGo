@@ -169,19 +169,6 @@
                     }
                 });
             });
-
-            // Basic theme toggle
-            const themeBtn = document.getElementById('btn-theme-toggle');
-            if (themeBtn) {
-                themeBtn.addEventListener('click', () => {
-                    const isDark = document.body.hasAttribute('data-theme-dark');
-                    if (isDark) {
-                        document.body.removeAttribute('data-theme-dark');
-                    } else {
-                        document.body.setAttribute('data-theme-dark', '');
-                    }
-                });
-            }
         },
 
         /**
@@ -191,7 +178,9 @@
             try {
                 const saved = localStorage.getItem('theme');
                 if (saved === 'dark') {
-                    document.body.setAttribute('data-theme-dark', '');
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
                 }
             } catch (e) {}
         }
@@ -200,7 +189,9 @@
     // Restore theme immediately (before DOMContentLoaded)
     try {
         if (localStorage.getItem('theme') === 'dark') {
-            document.body.setAttribute('data-theme-dark', '');
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
         }
     } catch (e) {}
 })();

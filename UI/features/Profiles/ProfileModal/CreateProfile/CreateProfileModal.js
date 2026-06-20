@@ -19,7 +19,6 @@
         _tags: [],
         _fpTemplate: null,
         _syncTimer: null,
-        _browserCatalog: null,
         _isSubmitting: false,
         // Edit mode properties
         _mode: 'create',
@@ -83,27 +82,17 @@
             return this._fpTemplate;
         },
 
-        async _loadBrowserCatalog() {
-            if (this._browserCatalog) return this._browserCatalog;
-            try {
-                this._browserCatalog = await DuckBridge.call('browser.listVersions');
-            } catch (e) {
-                this._browserCatalog = null;
-            }
-            return this._browserCatalog;
-        },
-
         _buildGroupOptions() {
             return this._groups.map(g => ({
                 label: g.Name || g.name || '',
-                value: String(g.Id ?? g.id)
+                value: String(g.Id || g.id)
             }));
         },
 
         _buildTagOptions() {
             return this._tags.map(t => ({
                 label: t.Name || t.name || '',
-                value: String(t.Id ?? t.id)
+                value: String(t.Id || t.id)
             }));
         },
 
@@ -176,13 +165,9 @@
             set('Start URL', v.startUrl || 'chrome://newtab');
             set('Group', groupText);
             set('Tags', tagText);
-            set('Operating System', v.os || 'Windows');
+            set('Operating System', v.os || null);
             set('OS Model', v.osModel || 'Auto');
-            // Resolve browser type from catalog (v.browser = lowercase key)
-            const browserLabel = v.browser
-                ? (this._browserCatalog?.Browsers?.find(b => String(b.BrowserType || '').toLowerCase() === String(v.browser).toLowerCase())?.BrowserType || v.browser)
-                : 'Chromium';
-            set('Browser', `${browserLabel} ${v.browserVersion || ''}`.trim());
+            set('Browser', `${v.browser || 'Chromium'} ${v.browserVersion || ''}`.trim());
             // User-Agent: show based on mode
             // Use DB-loaded values when available (bypasses timing issue: controls may not be set yet)
             // Controls are populated asynchronously via RAF, but _syncSummary runs in a setTimeout
@@ -200,9 +185,9 @@
             }
             set('Screen Resolution', this._fmtResolution({
                 screenMode: v.screenMode || db.screenMode,
-                screenWidth: v.screenWidth ?? db.screenWidth,
-                screenHeight: v.screenHeight ?? db.screenHeight,
-                screenPixelRatio: v.screenPixelRatio ?? db.screenPixelRatio,
+                screenWidth: v.screenWidth || db.screenWidth,
+                screenHeight: v.screenHeight || db.screenHeight,
+                screenPixelRatio: v.screenPixelRatio || db.screenPixelRatio,
                 screenPreset: v.screenPreset
             }));
             set('Timezone', v.timezone || 'Auto (Match IP)');
@@ -266,10 +251,10 @@
 
             // Hardware: CPU
             if (hwTab) {
-                if (fp?.cpuMode === 'custom' && (fp?.hardwareConcurrency ?? fp?.HardwareConcurrency)) {
+                if (fp?.cpuMode === 'custom' && (fp?.hardwareConcurrency || fp?.HardwareConcurrency)) {
                     hwTab.cpuToggle?.setValue?.('custom');
-                    const concurrency = fp?.hardwareConcurrency ?? fp?.HardwareConcurrency ?? 8;
-                    const memory = fp?.deviceMemory ?? fp?.DeviceMemory ?? 8;
+                    const concurrency = fp?.hardwareConcurrency || fp?.HardwareConcurrency || 8;
+                    const memory = fp?.deviceMemory || fp?.DeviceMemory || 8;
                     hwTab.cpuChipSelect?.setValue?.(`${concurrency}-${memory}`);
                 } else if (fp?.cpuMode) {
                     hwTab.cpuToggle?.setValue?.(fp.cpuMode);
@@ -291,35 +276,38 @@
                 // Hardware: Screen
                 if (fp?.screenMode === 'custom' && fp?.screenWidth && fp?.screenHeight) {
                     hwTab.resToggle?.setValue?.('custom');
-                    const pr = fp.screenPixelRatio ?? 1.0;
+                    const pr = fp.screenPixelRatio || 1.0;
                     hwTab.resChipSelect?.setValue?.(`${fp.screenWidth}x${fp.screenHeight}x${pr}`);
                 } else if (fp?.screenMode) {
                     hwTab.resToggle?.setValue?.(fp.screenMode);
                 }
 
-                // Hardware: WebGL
-                if (fp?.webglVendor || fp?.WebGLVendor) {
-                    hwTab.webglMetaToggle?.setValue?.('custom');
-                    const vendor = fp.webglVendor || fp.WebGLVendor;
-                    const renderer = fp.webglRenderer || fp.WebGLRenderer;
-                    if (hwTab._webglVendorSelect) {
-                        const osBlock = hwTab._currentOsBlock;
-                        const vendors = osBlock?.WebGL?.VendorGPUs ? Object.keys(osBlock.WebGL.VendorGPUs) : [];
-                        const match = vendors.find(v => v.toLowerCase() === String(vendor).toLowerCase());
-                        if (match) hwTab._webglVendorSelect.setValue(match);
-                    }
-                    if (hwTab._rendererSelect && renderer) {
-                        const osBlock = hwTab._currentOsBlock;
-                        const currentVendor = hwTab._webglVendorSelect?.getValue?.() || '';
-                        const renderers = osBlock?.WebGL?.VendorGPUs?.[currentVendor] || [];
-                        const match = renderers.find(r => String(r).toLowerCase().includes(String(renderer).toLowerCase()));
-                        if (match) hwTab._rendererSelect.setValue(match);
+                // Hardware: WebGL - Only set when editing existing profile (not for new create)
+                if (this._editProfileId) {
+                    if (fp?.webglVendor || fp?.WebGLVendor) {
+                        hwTab.webglMetaToggle?.setValue?.('custom');
+                        const vendor = fp.webglVendor || fp.WebGLVendor;
+                        const renderer = fp.webglRenderer || fp.WebGLRenderer;
+                        if (hwTab._webglVendorSelect) {
+                            const osBlock = hwTab._currentOsBlock;
+                            const vendors = osBlock?.WebGL?.VendorGPUs ? Object.keys(osBlock.WebGL.VendorGPUs) : [];
+                            const match = vendors.find(v => v.toLowerCase() === String(vendor).toLowerCase());
+                            if (match) hwTab._webglVendorSelect.setValue(match);
+                        }
+                        if (hwTab._rendererSelect && renderer) {
+                            const osBlock = hwTab._currentOsBlock;
+                            const currentVendor = hwTab._webglVendorSelect?.getValue?.() || '';
+                            const renderers = osBlock?.WebGL?.VendorGPUs?.[currentVendor] || [];
+                            const match = renderers.find(r => String(r).toLowerCase().includes(String(renderer).toLowerCase()));
+                            if (match) hwTab._rendererSelect.setValue(match);
+                        }
                     }
                 }
             }
 
             // General: Browser version
-            if (genTab) {
+            // Only set browser version when editing existing profile (not for new create)
+            if (genTab && this._editProfileId) {
                 const version = fp?.browserVersion || fp?.BrowserVersion || null;
                 genTab.browserVersion?.setValue?.(version);
                 const ua = fp?.userAgent || fp?.UserAgent || '';
@@ -329,7 +317,8 @@
             }
 
             // Network: languages + timezone
-            if (netTab) {
+            // Only set timezone when editing existing profile (not for new create)
+            if (netTab && this._editProfileId) {
                 const langs = fp?.languages || fp?.Languages || [];
                 if (langs.length > 0) {
                     netTab.langTagInput?.setValues?.(Array.isArray(langs) ? langs : String(langs).split(',').map(l => l.trim()));
@@ -386,7 +375,7 @@
                 startUrl: v.startUrl || '',
                 notes: v.notes || '',
                 fingerprint: {
-                    platform: v.os || 'Windows',
+                    platform: v.os || null,
                     osModel: v.osModel || null,
                     // Real mode: no spoof, no UserAgent in DB; Custom mode: save UserAgent
                     uaMode,
@@ -457,7 +446,7 @@
                 browserType: (v.browser || 'chromium').charAt(0).toUpperCase() + (v.browser || 'chromium').slice(1),
                 notes: v.notes || '',
                 fingerprint: {
-                    platform: v.os || 'Windows',
+                    platform: v.os || null,
                     osModel: v.osModel || null,
                     // Real mode: no spoof, no UserAgent in DB; Custom mode: save UserAgent
                     uaMode,
@@ -695,15 +684,19 @@
         },
 
         _fmtProxy(v) {
+            const netTab = window.ProfileModals?.CreateProfile?.NetworkTab;
+            const proxyTypeLabel = (type) => netTab ? netTab._proxyTypeLabel(type) : String(type || 'HTTP').toUpperCase();
+            
             if (v.proxyMode === 'none') return 'Without Proxy';
             if (v.proxyMode === 'saved') {
                 const label = v.proxyDisplayName || `Saved Proxy #${v.savedProxyId || '-'}`;
-                return `${label} (${this._proxyLabel(v.proxyProtocol)})`;
+                return `${label} (${proxyTypeLabel(v.proxyProtocol)})`;
             }
             if (v.proxyMode === 'custom') {
-                const netTab = window.ProfileModals?.CreateProfile?.NetworkTab;
-                const pLabel = netTab ? netTab._proxyTypeLabel(v.proxyProtocol) : String(v.proxyProtocol || 'HTTP').toUpperCase();
-                return `${pLabel}://${v.customProxy?.host || ''}:${v.customProxy?.port || ''}`;
+                const cfg = v.proxyConfig || v.customProxy || {};
+                const host = cfg.Host || cfg.host || '';
+                const port = cfg.Port || cfg.port || '';
+                return `${proxyTypeLabel(v.proxyProtocol)}://${host}:${port}`;
             }
             return 'None';
         },
@@ -730,11 +723,10 @@
         /**
          * Cascade all OS-dependent controls from template.
          * Called by GeneralTab OS select onChange.
+         * @param {string} osValue - The OS value to cascade to
+         * @param {boolean} skipRandomize - If true, skip setting random values (used during profile load)
          */
-        _cascadeOsChange(osValue) {
-            // Skip cascade during profile loading to preserve loaded values
-            if (this._isLoadingProfile) return;
-
+        _cascadeOsChange(osValue, skipRandomize = false) {
             const tmpl = this._fpTemplate;
 
             const genTab = window.ProfileModals.CreateProfile.GeneralTab;
@@ -783,7 +775,7 @@
                 if (hwTab.cpuChipSelect) {
                     hwTab.cpuChipSelect.setOptions(cpuTierOpts);
                     // Only randomize in create mode (not during profile loading)
-                    if (!this._isLoadingProfile && cpuTierOpts.length > 0) {
+                    if (!skipRandomize && !this._isLoadingProfile && cpuTierOpts.length > 0) {
                         hwTab.cpuChipSelect.setValue(cpuTierOpts[0].value);
                     }
                 }
@@ -796,7 +788,7 @@
                 }));
                 if (hwTab.resChipSelect) {
                     hwTab.resChipSelect.setOptions(resOpts);
-                    if (!this._isLoadingProfile && resOpts.length > 0) {
+                    if (!skipRandomize && !this._isLoadingProfile && resOpts.length > 0) {
                         hwTab.resChipSelect.setValue(resOpts[0].value);
                     }
                 }
@@ -810,7 +802,7 @@
                 if (hwTab._webglVendorSelect) {
                     hwTab._webglVendorSelect.setOptions(vendorOpts);
                     // Only randomize in create mode
-                    if (!this._isLoadingProfile && vendorOpts.length > 0) {
+                    if (!skipRandomize && !this._isLoadingProfile && vendorOpts.length > 0) {
                         const randomVendor = vendorOpts[Math.floor(Math.random() * vendorOpts.length)].value;
                         hwTab._webglVendorSelect.setValue(randomVendor);
                     }
@@ -822,7 +814,7 @@
                     const renderers = osBlock.WebGL.VendorGPUs[selectedVendor];
                     const rendererOpts = renderers.map(r => ({ label: r, value: r }));
                     hwTab._rendererSelect.setOptions(rendererOpts);
-                    if (!this._isLoadingProfile && rendererOpts.length > 0) {
+                    if (!skipRandomize && !this._isLoadingProfile && rendererOpts.length > 0) {
                         const randomRenderer = rendererOpts[Math.floor(Math.random() * rendererOpts.length)].value;
                         hwTab._rendererSelect.setValue(randomRenderer);
                     }
@@ -834,35 +826,38 @@
             }
 
             // â”€â”€ NetworkTab: language options + timezone â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            if (netTab && !this._isLoadingProfile) {
+            if (netTab) {
                 if (netTab._langTagInput) {
                     const langOpts = (tmpl.Languages || []).map(l => ({
                         label: _LANG_LABELS[l] || l,
                         value: l
                     }));
                     netTab._langTagInput.setOptions(langOpts);
-                    // Seed default: en-US + en
-                    const enOpts = langOpts.filter(o => ['en-US', 'en'].includes(o.value));
-                    netTab._langTagInput.setValues(enOpts.map(o => o.value));
+                    // Only seed defaults in create mode
+                    if (!skipRandomize && !this._isLoadingProfile) {
+                        const enOpts = langOpts.filter(o => ['en-US', 'en'].includes(o.value));
+                        netTab._langTagInput.setValues(enOpts.map(o => o.value));
+                    }
                 }
-                if (netTab._tzSelect) {
-                    const tzOpts = (tmpl.Timezones || []).map(tz => ({ label: tz, value: tz }));
-                    netTab._tzSelect.setOptions([{ label: 'Auto (Match IP)', value: 'auto' }, ...tzOpts]);
-                    netTab._tzSelect.setValue('auto');
-                } else if (netTab.tzSelect) {
+                if (netTab.tzSelect) {
                     const tzOpts = (tmpl.Timezones || []).map(tz => ({ label: tz, value: tz }));
                     netTab.tzSelect.setOptions([{ label: 'Auto (Match IP)', value: 'auto' }, ...tzOpts]);
-                    netTab.tzSelect.setValue('auto');
+                    // Only set default in create mode
+                    if (!skipRandomize && !this._isLoadingProfile) {
+                        netTab.tzSelect.setValue('auto');
+                    }
                 }
             }
 
             // â”€â”€ SecurityTab: font options â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            if (secTab && !this._isLoadingProfile) {
+            if (secTab) {
                 if (secTab._fontTagInput) {
                     const fontOpts = (osBlock?.Fonts || []).map(f => ({ label: f, value: f }));
                     secTab._fontTagInput.setOptions(fontOpts);
-                    // Seed default: first 3 fonts
-                    secTab._fontTagInput.setValues(fontOpts.slice(0, 3).map(o => o.value));
+                    // Only seed defaults in create mode (not during profile loading)
+                    if (!skipRandomize && !this._isLoadingProfile) {
+                        secTab._fontTagInput.setValues(fontOpts.slice(0, 3).map(o => o.value));
+                    }
                 }
             }
 
@@ -877,7 +872,7 @@
             const tmpl = this._fpTemplate;
             const genTab = window.ProfileModals.CreateProfile.GeneralTab;
             const hwTab  = window.ProfileModals.CreateProfile.HardwareTab;
-            const osVal = genTab?._osSelectCtrl?.getValue() || 'Windows';
+            const osVal = genTab?._osSelectCtrl?.getValue?.() || null;
             const osBlock = tmpl?.OS?.[osVal];
 
             if (hwTab) hwTab._currentOsBlock = osBlock;
@@ -952,6 +947,7 @@
             // Modal â€” submit button disabled until data loads
             this._modal = window.DuckControls.Modal.create({
                 defaultEnter: true,
+                preventAutoFocus: true,
                 title: modalTitle,
                 subtitle: modalSubtitle,
                 icon: modalIcon,
@@ -1002,6 +998,7 @@
                             try {
                                 this._modal.setLoading(true, this._mode === 'edit' ? 'Saving profile...' : (qty > 1 ? `Creating ${qty} profiles...` : 'Creating profile...'));
 
+                                console.log('[DEBUG:submit] mode:', this._mode, 'editProfileId:', this._editProfileId);
                                 if (this._mode === 'edit') {
                                     await this._saveProfile();
                                 } else {
@@ -1114,7 +1111,7 @@
 
                         // Generate fingerprint defaults for this platform/browser
                         const platform = profile.BrowserType === 'Firefox' ? 'Linux' : 'Win32';
-                        const browserType = profile.BrowserType || 'Chromium';
+                        const browserType = profile.BrowserType || null;
                         try {
                             profileDefaults = await DuckBridge.call('profile.generateFingerprint', {
                                 platform: platform,
@@ -1151,21 +1148,16 @@
                 }
             }
 
-            const [template, browserCatalog] = await Promise.all([
-                this._loadFingerprintTemplate(),
-                this._loadBrowserCatalog()
-            ]);
+            const template = await this._loadFingerprintTemplate();
 
-            if (!template || !browserCatalog) {
+            if (!template) {
                 showError('Failed to load profile data. Please check your connection and try again.');
                 return;
             }
 
             this._fpTemplate = template;
-            this._browserCatalog = browserCatalog;
-
             // â”€â”€ Build form and replace skeleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            const container = this._buildFormContainer(template, browserCatalog);
+            const container = this._buildFormContainer(template);
 
             const modalBody = this._modal?.container?.querySelector('.duck-modal-body');
             if (modalBody) {
@@ -1178,7 +1170,6 @@
             ['GeneralTab', 'NetworkTab', 'HardwareTab', 'SecurityTab', 'CookiesTab', 'NotesTab'].forEach(tabName => {
                 const tab = window.ProfileModals.CreateProfile[tabName];
                 if (tab?._setTemplate) tab._setTemplate(template);
-                if (tab?._setBrowserCatalog) tab._setBrowserCatalog(browserCatalog);
             });
 
             // Set up callback for GeneralTab OS change cascade (used by setValues in edit mode)
@@ -1197,7 +1188,15 @@
                 // Prevent _scheduleSync from running during profile load
                 this._isLoadingProfile = true;
                 console.log('[CreateProfile] About to call _applyProfileData, _isLoadingProfile=true');
+                
+                // FIRST: Populate options by calling cascade (skip randomization via flag)
+                const genTab = window.ProfileModals?.CreateProfile?.GeneralTab;
+                const osValue = genTab?.osSelect?.getValue?.() || 'Windows';
+                this._cascadeOsChange(osValue, true);
+                
+                // THEN: Apply profile values to controls
                 this._applyProfileData(this._originalProfileData, profileDefaults);
+                
                 // Wait for async option hydration in tabs before enabling sync
                 setTimeout(() => {
                     this._isLoadingProfile = false;
@@ -1321,7 +1320,7 @@
 
             // Set Group value
             if (this._groupCtrl) {
-                const groupId = profile.GroupId ?? profile.groupId;
+                const groupId = profile.GroupId || profile.groupId;
                 if (groupId) {
                     this._groupCtrl.setValue(String(groupId));
                 }
@@ -1329,7 +1328,7 @@
 
             // Set Tags values
             if (this._tagCtrl) {
-                const tagIds = profile.TagIds ?? profile.tagIds ?? [];
+                const tagIds = profile.TagIds || profile.tagIds || [];
                 if (tagIds.length > 0) {
                     this._tagCtrl.setValues(tagIds.map(String));
                 }
@@ -1345,9 +1344,9 @@
             // Extract screen values from Screen object
             // Extract screen values - ALWAYS extract from DB (even when Mode=random, backend generated specific values)
             const screenConfig = systemConfig.Screen || {};
-            const dbScreenWidth = screenConfig.Width ?? null;
-            const dbScreenHeight = screenConfig.Height ?? null;
-            const dbScreenPixelRatio = screenConfig.PixelRatio ?? null;
+            const dbScreenWidth = screenConfig.Width || null;
+            const dbScreenHeight = screenConfig.Height || null;
+            const dbScreenPixelRatio = screenConfig.PixelRatio || null;
             const hasSpecificScreen = dbScreenWidth != null && dbScreenHeight != null;
             const rawScreenMode = screenConfig.Mode != null ? String(screenConfig.Mode).toLowerCase() : null;
             
@@ -1372,17 +1371,15 @@
                 }
             }
 
-            // GeneralTab - Platform mapping: "Win32" -> "Windows", "Darwin" -> "macOS", etc.
+            // Hardcoded platform mapping (Win32 -> Windows, etc.)
             const platformMap = {
-                'Win32': 'Windows',
-                'Win64': 'Windows',
-                'Darwin': 'macOS',
-                'Linux': 'Linux'
+                'Win32': 'Windows', 'Win64': 'Windows',
+                'Darwin': 'macOS', 'Linux': 'Linux'
             };
 
             // Platform: TypedConfig -> extract Value; old schema: raw string
-            const platformVal = tcValue(systemConfig.Platform) ?? 'Win32';
-            const mappedOs = platformMap[platformVal] || platformVal || 'Windows';
+            const platformVal = tcValue(systemConfig.Platform) || 'Win32';
+            const mappedOs = platformMap[platformVal] || platformVal || null;
 
             // OS Model: derive from profile data or template
             const osBlock = this._fpTemplate?.OS?.[mappedOs] || {};
@@ -1391,7 +1388,7 @@
 
             // Language/AcceptLanguage: TypedConfig or raw string
             const systemLanguage = getValue(
-                tcValue(systemConfig.Language) ?? tcValue(systemConfig.AcceptLanguage),
+                tcValue(systemConfig.Language) || tcValue(systemConfig.AcceptLanguage),
                 defaultLanguage
             );
 
@@ -1406,8 +1403,8 @@
                           : rawCpuMode === 'custom' ? 'custom'
                           : (hasSpecificHardwareEarly ? 'custom' : getValue(toLowerOrNull(fingerprintConfig.CpuMode), 'random'));
 
-            const rawTimezoneEarly = tcValue(systemConfig.Timezone) ?? tcValue(fingerprintConfig.Timezone) ?? null;
-            const rawTimezoneMode = tcMode(systemConfig.Timezone) ?? tcMode(fingerprintConfig.Timezone);
+            const rawTimezoneEarly = tcValue(systemConfig.Timezone) || tcValue(fingerprintConfig.Timezone) || null;
+            const rawTimezoneMode = tcMode(systemConfig.Timezone) || tcMode(fingerprintConfig.Timezone);
             
             let resolvedTimezone = 'auto';
             if (rawTimezoneMode === 'real') {
@@ -1441,7 +1438,7 @@
                     return 'real';
                 })();
                 // Check if DB has a concrete UserAgent (stored in systemConfig.UserAgent)
-                const dbUA = tcValue(systemConfig.UserAgent) ?? tcValue(fingerprintConfig.UserAgent) ?? '';
+                const dbUA = tcValue(systemConfig.UserAgent) || tcValue(fingerprintConfig.UserAgent) || '';
                 const hasSpecificUA = dbUA !== '';
                 // If DB has concrete UA -> mode is 'custom' (editable); otherwise use raw mode
                 const uaMode = hasSpecificUA ? 'custom' : (rawUaMode || 'real');
@@ -1452,7 +1449,7 @@
                 const genValues = {
                     os: mappedOs,
                     osModel: osModel,
-                    browser: getValue(profile.BrowserType || profile.browserType, profileDefaults?.browserType || 'Chromium'),
+                    browser: getValue(profile.BrowserType || profile.browserType, profileDefaults?.browserType || null),
                     browserVersion: getValue(profile.BrowserVersion || profile.browserVersion || systemConfig.BrowserVersion, profileDefaults?.browserVersion || null),
                     userAgent: uaRaw,
                     startUrl: getValue(profileData.Profile?.StartURL, ''),
@@ -1469,8 +1466,8 @@
                     screenHeight: screenHeight,
                     screenPixelRatio: screenPixelRatio,
                     cpuMode: cpuMode,
-                    concurrency: hwConcurrencyEarly ?? null,
-                    deviceMemory: tcValue(systemConfig.DeviceMemory) ?? null,
+                    concurrency: hwConcurrencyEarly || null,
+                    deviceMemory: tcValue(systemConfig.DeviceMemory) || null,
                     timezone: resolvedTimezone,
                     webglMode: resolvedWebGLMode,
                     webglVendor: getValue(fingerprintConfig.WebGL?.Vendor, profileDefaults?.webglVendor || null),
@@ -1498,7 +1495,7 @@
                     }
                 }
                 let languages = defaultLanguages;
-                const langMode = tcMode(systemConfig.Language) ?? tcMode(fingerprintConfig.Language);
+                const langMode = tcMode(systemConfig.Language) || tcMode(fingerprintConfig.Language);
                 if (langMode === 'real') {
                     languages = [];
                 } else if (fingerprintConfig.Languages && Array.isArray(fingerprintConfig.Languages) && fingerprintConfig.Languages.length > 0) {
@@ -1514,15 +1511,15 @@
                 const netValues = {
                     proxyMode,
                     proxyConfig,
-                    savedProxyId: proxyConfig.SavedProxyId ?? profile.ProxyId ?? null,
+                    savedProxyId: proxyConfig.SavedProxyId || profile.ProxyId || null,
                     timezone,
                     languages,
                     locationMode,
                     customCoordinates: locationMode === 'custom'
                         ? {
-                            lat: getValue(locationConfig.Latitude, profileDefaults?.latitude ?? null),
-                            lng: getValue(locationConfig.Longitude, profileDefaults?.longitude ?? null),
-                            accuracy: getValue(locationConfig.Accuracy, profileDefaults?.accuracy ?? 100)
+                            lat: getValue(locationConfig.Latitude, profileDefaults?.latitude || null),
+                            lng: getValue(locationConfig.Longitude, profileDefaults?.longitude || null),
+                            accuracy: getValue(locationConfig.Accuracy, profileDefaults?.accuracy || 100)
                         }
                         : null
                 };
@@ -1543,8 +1540,8 @@
             const hwTab = window.ProfileModals.CreateProfile.HardwareTab;
             if (hwTab) {
                 // CPU Hardware: reuse early-computed cpuMode and resolvedScreenMode
-                const hwConcurrency = tcValue(systemConfig.HardwareConcurrency) ?? null;
-                const hwMemory = tcValue(systemConfig.DeviceMemory) ?? null;
+                const hwConcurrency = tcValue(systemConfig.HardwareConcurrency) || null;
+                const hwMemory = tcValue(systemConfig.DeviceMemory) || null;
 
                 const hwValues = {
                     os: mappedOs,
@@ -1566,7 +1563,7 @@
                         ? 'real' 
                         : nullMode(fingerprintConfig.WebGL?.ImageSpoofing?.Pattern, 'default'),
                     // Plugins null = 'noise'
-                    pluginsMode: nullMode(tcMode(fingerprintConfig.Plugins) ?? fingerprintConfig.PluginsMode, 'noise')
+                    pluginsMode: nullMode(tcMode(fingerprintConfig.Plugins) || fingerprintConfig.PluginsMode, 'noise')
                 };
                 console.log('[CreateProfile] Applying HardwareTab values:', JSON.stringify(hwValues, null, 2));
                 console.log('[CreateProfile] hwTab exists:', !!hwTab, 'hwTab.setValues exists:', !!hwTab?.setValues);
@@ -1578,7 +1575,7 @@
             if (secTab) {
                 // Map DoNotTrack from DB: new schema has { Mode, Value }, old schema has raw string
                 const dntConfig = fingerprintConfig.DoNotTrack;
-                const dntValue = tcValue(dntConfig) ?? null; // .Value or raw string
+                const dntValue = tcValue(dntConfig) || null; // .Value or raw string
                 let doNotTrackValue = 'default';
                 if (dntValue === '1' || dntValue === 1) {
                     doNotTrackValue = 'enabled';
@@ -1592,7 +1589,7 @@
                 // Fonts: new schema â†’ .FontList array; old schema â†’ raw string[]
                 const fontsList = fingerprintConfig.Fonts?.FontList || fingerprintConfig.Fonts || [];
                 // FontsMode: new schema â†’ .Mode; old schema â†’ .FontsMode string
-                const fontsMode = tcMode(fingerprintConfig.Fonts) ?? fingerprintConfig.FontsMode ?? fingerprintConfig.Fonts?.Mode;
+                const fontsMode = tcMode(fingerprintConfig.Fonts) || fingerprintConfig.FontsMode || fingerprintConfig.Fonts?.Mode;
 
                 const secValues = {
                     webrtcMode: toLowerOrNull(fingerprintConfig.WebRTcMode || fingerprintConfig.WebRtcMode) || toLowerOrNull(profileDefaults?.WebRTcMode || profileDefaults?.webRtcMode) || 'disable',
@@ -1635,9 +1632,13 @@
 
         /** Save profile in edit mode */
         async _saveProfile() {
-            if (!this._editProfileId) return;
+            console.log('[DEBUG:_saveProfile] mode:', this._mode, 'editProfileId:', this._editProfileId);
+            if (!this._editProfileId) {
+                console.error('[DEBUG:_saveProfile] NO editProfileId - returning early');
+                return;
+            }
 
-            const payload = this._buildUpdatePayload();
+            const payload = await this._buildUpdatePayload();
             console.log('[DEBUG:FE_TO_BACKEND_UPDATE]', JSON.stringify(payload, null, 2));
             console.log('[CreateProfile] _saveProfile - full payload:', JSON.stringify(payload, null, 2));
             console.log('[CreateProfile] _saveProfile - profileData parsed:', JSON.parse(payload.profileData || '{}'));
@@ -1651,7 +1652,7 @@
         },
 
         /** Build payload for profile update - from UI controls only */
-        _buildUpdatePayload() {
+        async _buildUpdatePayload() {
             const v = this._collectTabValues();
             console.log('[CreateProfile] _buildUpdatePayload - collected values:', JSON.stringify({
                 screenMode: v.screenMode,
@@ -1675,13 +1676,11 @@
             const tagValues = this._tagCtrl?.getValues?.() || [];
             const tagIds = tagValues.map(t => parseInt(t, 10)).filter(n => !isNaN(n));
 
-            // Map OS name to platform string: "Windows" -> "Win32", "macOS" -> "Darwin"
+            // Map OS name to platform string (Windows -> Win32, macOS -> Darwin)
             const osToPlatform = {
-                'Windows': 'Win32',
-                'macOS': 'Darwin',
-                'Linux': 'Linux'
+                'Windows': 'Win32', 'macOS': 'Darwin', 'Linux': 'Linux'
             };
-            const platform = osToPlatform[v.os] || v.os || 'Win32';
+            const platform = osToPlatform[v.os] || v.os || null;
 
             // Build ProfileData JSON - merge original with UI values
             // Preserve original values for fields not exposed/changed in UI by reading from _originalProfileData.ProfileDataParsed
@@ -1724,10 +1723,10 @@
                     // Random mode â†’ Mode='noise', Value=null (browser generates random internally)
                     HardwareConcurrency: v.cpuMode === 'real'
                         ? { Mode: 'real', Value: null }
-                        : { Mode: 'noise', Value: v.concurrency ?? null },
+                        : { Mode: 'noise', Value: v.concurrency || null },
                     DeviceMemory: v.cpuMode === 'real'
                         ? { Mode: 'real', Value: null }
-                        : { Mode: 'noise', Value: v.deviceMemory ?? null },
+                        : { Mode: 'noise', Value: v.deviceMemory || null },
                     Architecture: origSys.Architecture?.Value ? { Mode: 'noise', Value: origSys.Architecture.Value } : { Mode: 'real', Value: null },
                     Bitness: origSys.Bitness?.Value ? { Mode: 'noise', Value: origSys.Bitness.Value } : { Mode: 'real', Value: null },
                     CpuBrand: origSys.CpuBrand?.Value ? { Mode: 'noise', Value: origSys.CpuBrand.Value } : { Mode: 'real', Value: null },
@@ -1740,47 +1739,47 @@
                     Screen: {
                         // Real mode â†’ no Width/Height/PixelRatio spoofing
                         Mode: v.screenMode === 'real' ? 'real' : (v.screenMode || 'real'),
-                        Width: v.screenMode === 'real' ? null : (v.screenWidth ?? null),
-                        Height: v.screenMode === 'real' ? null : (v.screenHeight ?? null),
-                        ColorDepth: origSys.Screen?.ColorDepth ?? 24,
-                        PixelRatio: v.screenMode === 'real' ? null : (v.screenPixelRatio ?? null),
-                        AvailWidth: v.screenMode === 'real' ? null : (v.screenWidth ?? null),
-                        AvailHeight: v.screenMode === 'real' ? null : ((v.screenHeight ?? null) ? v.screenHeight - 40 : null)
+                        Width: v.screenMode === 'real' ? null : (v.screenWidth || null),
+                        Height: v.screenMode === 'real' ? null : (v.screenHeight || null),
+                        ColorDepth: origSys.Screen?.ColorDepth || 24,
+                        PixelRatio: v.screenMode === 'real' ? null : (v.screenPixelRatio || null),
+                        AvailWidth: v.screenMode === 'real' ? null : (v.screenWidth || null),
+                        AvailHeight: v.screenMode === 'real' ? null : ((v.screenHeight || null) ? v.screenHeight - 40 : null)
                     }
                 },
                 Fingerprint: {
                     WebGL: {
                         Mode: v.webglMode === 'real' ? 'real' : (v.webglMode || 'noise'),
-                        Vendor: v.webglMode === 'real' ? null : (v.webglVendor ?? null),
-                        Renderer: v.webglMode === 'real' ? null : (v.webglRenderer ?? null),
+                        Vendor: v.webglMode === 'real' ? null : (v.webglVendor || null),
+                        Renderer: v.webglMode === 'real' ? null : (v.webglRenderer || null),
                         // NoiseSeed/NoiseLevel: only set when NOT Real mode (Real = null, no noise)
-                        NoiseSeed: v.webglMode !== 'real' ? (origFp.WebGL?.NoiseSeed ?? null) : null,
-                        NoiseLevel: v.webglMode !== 'real' ? (origFp.WebGL?.NoiseLevel ?? null) : null,
+                        NoiseSeed: v.webglMode !== 'real' ? (origFp.WebGL?.NoiseSeed || null) : null,
+                        NoiseLevel: v.webglMode !== 'real' ? (origFp.WebGL?.NoiseLevel || null) : null,
                         Extensions: origFp.WebGL?.Extensions?.length > 0 ? origFp.WebGL.Extensions : [],
-                        MaxTextureSize: origFp.WebGL?.MaxTextureSize ?? 16384,
+                        MaxTextureSize: origFp.WebGL?.MaxTextureSize || 16384,
                         ImageSpoofing: {
                             // 'default' → no spoof (Mode=null), 'real' → 'real', 'noise'/'solid' → 'noise'
                             Mode: v.webglImageMode === 'default' ? null : (v.webglImageMode === 'real' ? 'real' : 'noise'),
-                            TextureSeed: v.webglImageMode === 'default' || v.webglImageMode === 'real' ? null : (origFp.WebGL?.ImageSpoofing?.TextureSeed ?? null),
+                            TextureSeed: v.webglImageMode === 'default' || v.webglImageMode === 'real' ? null : (origFp.WebGL?.ImageSpoofing?.TextureSeed || null),
                             Pattern: v.webglImageMode === 'default' || v.webglImageMode === 'real' ? 'default' : (v.webglImageMode || 'default')
                         }
                     },
                     Canvas: {
                         Mode: v.canvasMode === 'real' ? 'real' : (v.canvasMode || 'noise'),
                         // NoiseSeed/NoiseLevel: null when Real (browser uses real canvas)
-                        NoiseSeed: v.canvasMode !== 'real' ? (origFp.Canvas?.NoiseSeed ?? null) : null,
-                        NoiseLevel: v.canvasMode !== 'real' ? (origFp.Canvas?.NoiseLevel ?? null) : null
+                        NoiseSeed: v.canvasMode !== 'real' ? (origFp.Canvas?.NoiseSeed || null) : null,
+                        NoiseLevel: v.canvasMode !== 'real' ? (origFp.Canvas?.NoiseLevel || null) : null
                     },
                     Audio: {
                         Mode: v.audioMode === 'real' ? 'real' : (v.audioMode || 'real'),
-                        NoiseSeed: v.audioMode !== 'real' ? (origFp.Audio?.NoiseSeed ?? null) : null,
-                        NoiseLevel: v.audioMode !== 'real' ? (origFp.Audio?.NoiseLevel ?? null) : null,
-                        SampleRate: origFp.Audio?.SampleRate ?? 48000
+                        NoiseSeed: v.audioMode !== 'real' ? (origFp.Audio?.NoiseSeed || null) : null,
+                        NoiseLevel: v.audioMode !== 'real' ? (origFp.Audio?.NoiseLevel || null) : null,
+                        SampleRate: origFp.Audio?.SampleRate || 48000
                     },
                     ClientRects: {
                         Mode: v.clientRects === 'real' ? 'real' : (v.clientRects || 'noise'),
-                        NoiseSeed: v.clientRects !== 'real' ? (origFp.ClientRects?.NoiseSeed ?? null) : null,
-                        NoiseLevel: v.clientRects !== 'real' ? (origFp.ClientRects?.NoiseLevel ?? null) : null
+                        NoiseSeed: v.clientRects !== 'real' ? (origFp.ClientRects?.NoiseSeed || null) : null,
+                        NoiseLevel: v.clientRects !== 'real' ? (origFp.ClientRects?.NoiseLevel || null) : null
                     },
                     Fonts: {
                         // Real/Default mode: FontList should be empty or null (browser uses real fonts)
@@ -1796,9 +1795,9 @@
                     },
                     MediaDevices: {
                         Mode: v.mediaDevices === 'real' ? 'real' : (v.mediaDevices || 'real'),
-                        VideoInputs: v.mediaDevices !== 'real' ? (origFp.MediaDevices?.VideoInputs ?? null) : null,
-                        AudioInputs: v.mediaDevices !== 'real' ? (origFp.MediaDevices?.AudioInputs ?? null) : null,
-                        AudioOutputs: v.mediaDevices !== 'real' ? (origFp.MediaDevices?.AudioOutputs ?? null) : null
+                        VideoInputs: v.mediaDevices !== 'real' ? (origFp.MediaDevices?.VideoInputs || null) : null,
+                        AudioInputs: v.mediaDevices !== 'real' ? (origFp.MediaDevices?.AudioInputs || null) : null,
+                        AudioOutputs: v.mediaDevices !== 'real' ? (origFp.MediaDevices?.AudioOutputs || null) : null
                     },
                     Connection: origFp.Connection || { Mode: 'default', EffectiveType: '4g', Downlink: 10, Rtt: 50, SaveData: false },
                     StorageQuota: origFp.StorageQuota?.Value ? { Mode: 'noise', Value: origFp.StorageQuota.Value } : { Mode: 'real', Value: null },
@@ -1813,8 +1812,8 @@
                     FontMetrics: {
                         Mode: v.fontMetricsMode === 'real' ? 'real' : (v.fontMetricsMode || 'real'),
                         // NoiseSeed/NoiseLevel: null when Real or Default (browser uses real/default)
-                        NoiseSeed: (v.fontMetricsMode !== 'real' && v.fontMetricsMode !== 'default') ? (origFp.FontMetrics?.NoiseSeed ?? null) : null,
-                        NoiseLevel: (v.fontMetricsMode !== 'real' && v.fontMetricsMode !== 'default') ? (origFp.FontMetrics?.NoiseLevel ?? null) : null
+                        NoiseSeed: (v.fontMetricsMode !== 'real' && v.fontMetricsMode !== 'default') ? (origFp.FontMetrics?.NoiseSeed || null) : null,
+                        NoiseLevel: (v.fontMetricsMode !== 'real' && v.fontMetricsMode !== 'default') ? (origFp.FontMetrics?.NoiseLevel || null) : null
                     }
                 },
                 Network: {
@@ -1829,8 +1828,8 @@
                 UI: {
                     Mode: 'GUI',
                     WindowSize: {
-                        Width: v.screenWidth ?? 1920,
-                        Height: v.screenHeight ?? 1080
+                        Width: v.screenWidth || 1920,
+                        Height: v.screenHeight || 1080
                     }
                 }
             };
@@ -1877,14 +1876,15 @@
                 };
             }
 
-            if (v.proxyMode === 'custom' && v.customProxy) {
+            if (v.proxyMode === 'custom') {
+                const cfg = v.proxyConfig || v.customProxy || {};
                 return {
                     Mode: 'custom',
-                    Type: v.customProxy.type || 'http',
-                    Host: v.customProxy.host || '',
-                    Port: v.customProxy.port || 0,
-                    Username: v.customProxy.username || '',
-                    Password: v.customProxy.password || ''
+                    Type: cfg.Type || cfg.type || 'http',
+                    Host: cfg.Host || cfg.host || '',
+                    Port: cfg.Port || cfg.port || 0,
+                    Username: cfg.Username || cfg.username || '',
+                    Password: cfg.Password || cfg.password || ''
                 };
             }
 
@@ -1957,7 +1957,7 @@
             };
         },
 
-        _buildFormContainer(template, browserCatalog) {
+        _buildFormContainer(template) {
             const container = document.createElement('div');
             container.style.cssText = 'display: flex; gap: 0; flex: 1; background: var(--bg-surface); border-radius: 8px; overflow: hidden; height: 100%; border: 1px solid var(--border-default);';
 
@@ -1977,7 +1977,7 @@
 
             // Sticky Header for Name/Group/Tags
             const stickyHeader = document.createElement('div');
-            stickyHeader.style.cssText = 'display: flex; flex-direction: column; gap: 12px; padding: 20px 24px; border-bottom: 1px solid var(--border-default); background: var(--bg-surface); z-index: 10;';
+            stickyHeader.style.cssText = 'display: flex; flex-direction: column; gap: 8px; padding: 20px 24px; border-bottom: 1px solid var(--border-default); background: var(--bg-surface); z-index: 10;';
 
             const createLabelWrap = (labelText, el) => {
                 const w = document.createElement('div');
@@ -1996,8 +1996,8 @@
             // Row 1: Mode + Name (hide mode toggle in edit mode)
             const row1 = document.createElement('div');
             row1.style.cssText = this._mode === 'edit' 
-                ? 'display: block; width: 100%; margin-bottom: 16px;'
-                : 'display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; margin-bottom: 12px;';
+                ? 'display: block; width: 100%; margin-bottom: 8px;'
+                : 'display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; margin-bottom: 8px;';
 
             const nameWrap = document.createElement('div');
             nameWrap.style.cssText = 'display: flex; gap: 12px; align-items: flex-end; width: 100%;';
@@ -2165,7 +2165,7 @@
                     this._modal.setLoading(true, 'Generating new fingerprint...');
                     try {
                         const fp = await DuckBridge.call('profile.generateFingerprint', {
-                            platform: tabValues.os || 'Windows',
+                            platform: tabValues.os || null,
                             browser:  tabValues.browser || 'chromium',
                             version:  tabValues.browserVersion || null,
                             model:    tabValues.osModel || null
@@ -2240,7 +2240,7 @@
                 );
                 if (el) el.textContent = text;
             };
-            set('Operating System', fp.platform || 'Windows');
+            set('Operating System', fp.platform || null);
             set('Browser', `Chromium ${fp.browserVersion || null}`);
             set('User Agent', fp.userAgent ? fp.userAgent.substring(0, 40) + '...' : 'â€”');
             set('Screen Resolution', fp.screen || 'â€”');

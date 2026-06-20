@@ -1,6 +1,4 @@
-// BulkRename.js - Bulk Rename Proxies
-
-(function() {
+﻿(function() {
     'use strict';
 
     window.ProxyModals = window.ProxyModals || {};
@@ -15,9 +13,9 @@
             if (this._proxies.length === 0) return;
             
             this._computedNames = this._proxies.map(p => ({
-                id: p.Id ?? p.id,
-                oldName: p.Name ?? p.name,
-                newName: p.Name ?? p.name
+                id: p.Id || p.id,
+                oldName: p.Name || p.name,
+                newName: p.Name || p.name
             }));
 
             if (this._modal) {
@@ -29,20 +27,20 @@
 
             // 1. Top Banner
             const banner = document.createElement('div');
-            banner.style.cssText = 'background: #f4f6fc; border: 1px solid #d4ddf1; border-radius: 8px; padding: 16px; display: flex; align-items: flex-start; gap: 12px;';
+            banner.style.cssText = 'background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 8px; padding: 16px; display: flex; align-items: flex-start; gap: 12px;';
             
             const bannerIcon = document.createElement('span');
             bannerIcon.className = 'material-symbols-outlined';
             bannerIcon.textContent = 'playlist_add_check';
-            bannerIcon.style.cssText = 'color: #5a73d8; transform: scaleX(-1); font-size: 22px;';
+            bannerIcon.style.cssText = 'color: var(--primary); transform: scaleX(-1); font-size: 22px;';
             
             const bannerContent = document.createElement('div');
             bannerContent.style.cssText = 'display: flex; flex-direction: column; gap: 4px;';
             const bannerTitle = document.createElement('div');
-            bannerTitle.style.cssText = 'font-weight: 600; font-size: 14px; color: #1e293b;';
+            bannerTitle.style.cssText = 'font-weight: 600; font-size: 14px; color: var(--text-primary);';
             bannerTitle.textContent = 'Batch Editor active';
             const bannerSub = document.createElement('div');
-            bannerSub.style.cssText = 'font-size: 13px; color: #64748b;';
+            bannerSub.style.cssText = 'font-size: 13px; color: var(--text-secondary);';
             bannerSub.textContent = 'Only rows with a valid non-empty name will be submitted to the database.';
             
             bannerContent.appendChild(bannerTitle);
@@ -66,7 +64,7 @@
             
             const pLabel = prefixCtrl.element.querySelector('.ui-label');
             if(pLabel) {
-                pLabel.style.color = '#8e9eab';
+                pLabel.style.color = 'var(--text-secondary)';
                 pLabel.style.fontWeight = '600';
                 pLabel.style.fontSize = '11px';
             }
@@ -83,7 +81,7 @@
             
             const sLabel = startCtrl.element.querySelector('.ui-label');
             if(sLabel) {
-                sLabel.style.color = '#8e9eab';
+                sLabel.style.color = 'var(--text-secondary)';
                 sLabel.style.fontWeight = '600';
                 sLabel.style.fontSize = '12px';
             }
@@ -97,29 +95,28 @@
 
             // 3. Bottom Section (List of rows)
             const listWrap = document.createElement('div');
-            listWrap.style.cssText = 'flex: 1; min-height: 0; border: 1px solid var(--border-default); background: var(--bg-subtle, #f8fafc); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;';
+            listWrap.style.cssText = 'flex: 1; min-height: 0; border: 1px solid var(--border-default); background: var(--bg-surface); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;';
             
-            const inputControls = []; 
+            const inputControls = [];
 
             this._computedNames.forEach((item) => {
                 const row = document.createElement('div');
                 row.style.cssText = 'display: flex; align-items: center; gap: 16px;';
                 
                 const oldNameDiv = document.createElement('div');
-                oldNameDiv.style.cssText = 'flex: 1; font-size: 13px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 4px;';
+                oldNameDiv.style.cssText = 'flex: 1; font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 4px;';
                 oldNameDiv.textContent = item.oldName || '-';
                 oldNameDiv.title = item.oldName;
                 
                 const arrow = document.createElement('span');
                 arrow.className = 'material-symbols-outlined';
                 arrow.textContent = 'arrow_forward';
-                arrow.style.cssText = 'font-size: 18px; color: #94a3b8;';
+                arrow.style.cssText = 'font-size: 18px; color: var(--text-muted, #94a3b8);';
                 
                 const newNameContainer = document.createElement('div');
                 newNameContainer.style.cssText = 'flex: 1;';
                 
                 const inputCtrl = window.DuckControls.Input.create({
-                    icon: 'edit_document',
                     placeholder: 'New name...',
                     value: item.newName
                 });
@@ -170,67 +167,44 @@
                 subtitle: 'Rename multiple proxies using a pattern or prefix.',
                 icon: 'edit_note',
                 content: modalBody,
-                size: 'lg',
+                width: '600px',
+                height: '70vh',
                 buttons: [
-                    { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, m) => m.close() },
-                    { text: 'Submit to database', icon: 'save', class: 'duck-btn-primary', onClick: () => {
-                        const validData = this._computedNames.filter(c => c.newName && c.newName.trim() !== '');
-                        if (validData.length === 0) {
-                            return;
+                    { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
+                    { text: 'Submit Changes', icon: 'save', class: 'duck-btn-primary', onClick: async (e, modal) => {
+                        modal.setLoading(true, 'Saving changes...');
+                        try {
+                            const updates = inputControls
+                                .filter(item => item.data.newName && item.data.newName.trim() !== '')
+                                .map(item => ({
+                                    id: item.data.id,
+                                    name: item.data.newName.trim()
+                                }));
+                            
+                            if (updates.length > 0) {
+                                for (const update of updates) {
+                                    await DuckBridge.call('proxy.updateName', { id: update.id, name: update.name });
+                                }
+                            }
+                            
+                            modal.close();
+                            if (window.DuckApp && window.DuckApp.Proxies) {
+                                window.DuckApp.Proxies.refresh();
+                            }
+                            window.DuckControls.Toast?.success?.('Success', `Updated ${updates.length} proxies successfully.`);
+                        } catch (err) {
+                            modal.setLoading(false);
+                            console.error(err);
+                            window.DuckControls.Toast?.error?.('Update Failed', err?.message || 'An error occurred while saving.');
                         }
-                        this._applyRename();
                     }}
                 ],
-                closeOnOverlay: false,
-                onClose: () => { this._modal = null; }
+                onClose: () => {
+                    this._modal = null;
+                }
             });
 
-            this._modal.container.style.height = '75vh';
             this._modal.open();
-        },
-
-        async _applyRename() {
-            if (!this._computedNames || this._computedNames.length === 0) return;
-            
-            const changes = this._computedNames
-                .filter(x => x.newName !== x.oldName && x.newName.trim() !== '')
-                .map(x => ({
-                    id: x.id,
-                    name: x.newName.trim()
-                }));
-            
-            if (changes.length === 0) {
-                return;
-            }
-            
-            const submitBtn = this._modal?.container?.querySelector('.duck-btn-primary');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="material-symbols-outlined duck-btn-icon animate-spin">progress_activity</span> Saving...';
-            }
-            
-            try {
-                const proxyFetches = changes.map(c => DuckBridge.call('proxy.get', { id: c.id }));
-                const proxies = await Promise.all(proxyFetches);
-                
-                const updatePromises = changes.map((c, i) => {
-                    const proxy = proxies[i] || {};
-                    return DuckBridge.call('proxy.update', { ...proxy, id: c.id, name: c.name });
-                });
-                await Promise.all(updatePromises);
-                
-                if (this._modal) this._modal.close();
-                
-                if (window.ProxiesView?.loadProxies) {
-                    await window.ProxiesView.loadProxies();
-                }
-            } catch (err) {
-                console.error('Bulk Rename Error:', err);
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span class="material-symbols-outlined duck-btn-icon">save</span> Submit to database';
-                }
-            }
         }
     };
 })();

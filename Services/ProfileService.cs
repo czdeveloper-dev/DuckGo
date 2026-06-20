@@ -20,15 +20,21 @@ public class ProfileService
     };
 
     private readonly IProfileRepository _profileRepo;
-    private readonly IGroupRepository _groupRepo;
-    private readonly ITagRepository _tagRepo;
+    private readonly IProfileGroupRepository _groupRepo;
+    private readonly IProfileTagRepository _tagRepo;
     private readonly IProxyRepository _proxyRepo;
     private readonly FingerprintService _fingerprintSvc;
-
+    
+    // Hardcoded platform mapping
+    private static readonly Dictionary<string, string> PlatformMap = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "Win32", "Windows" }, { "Windows", "Windows" }, { "Darwin", "macOS" }, { "Linux", "Linux" }
+    };
+    
     public ProfileService(
         IProfileRepository profileRepo,
-        IGroupRepository groupRepo,
-        ITagRepository tagRepo,
+        IProfileGroupRepository groupRepo,
+        IProfileTagRepository tagRepo,
         IProxyRepository proxyRepo,
         FingerprintService fingerprintSvc)
     {
@@ -37,6 +43,15 @@ public class ProfileService
         _tagRepo = tagRepo;
         _proxyRepo = proxyRepo;
         _fingerprintSvc = fingerprintSvc;
+    }
+    
+    /// <summary>
+    /// Get platform display name from platform string
+    /// </summary>
+    private string? GetPlatformFromString(string? platformString)
+    {
+        if (string.IsNullOrEmpty(platformString)) return null;
+        return PlatformMap.TryGetValue(platformString, out var name) ? name : platformString;
     }
 
     public async Task<ProfileListResponse> GetProfilesAsync(
@@ -50,18 +65,34 @@ public class ProfileService
         var profiles = await _profileRepo.GetAllAsync(search, idStr, groupId, tagIds, browserType);
         var allTags = await _tagRepo.GetAllAsync();
         var tagDict = allTags.ToDictionary(t => t.Id, t => t.Name);
-
+        
         var items = profiles.Select(p =>
         {
             p.TagIds = TryDeserialize(p.TagIdsJson, () => JsonSerializer.Deserialize<List<int>>(p.TagIdsJson)) ?? new();
             p.TagNames = p.TagIds.Select(id => tagDict.GetValueOrDefault(id, "")).Where(n => n != "").ToList();
 
-            string platform = "Windows";
+            string? platform = null;
             string? customProxyName = null;
             if (!string.IsNullOrEmpty(p.ProfileData))
             {
-                if (p.ProfileData.Contains("\"MacIntel\"") || p.ProfileData.Contains("\"Darwin\"") || p.ProfileData.Contains("\"macOS\"")) platform = "MacOS";
-                else if (p.ProfileData.Contains("\"Linux")) platform = "Linux";
+                // Detect platform from ProfileData using hardcoded mapping
+                try
+                {
+                    var doc = System.Text.Json.JsonDocument.Parse(p.ProfileData);
+                    if (doc.RootElement.TryGetProperty("System", out var sys) &&
+                        sys.TryGetProperty("Platform", out var plat))
+                    {
+                        var platVal = plat.ValueKind == System.Text.Json.JsonValueKind.Object
+                            ? plat.GetProperty("Value").GetString()
+                            : plat.GetString();
+                        
+                        if (!string.IsNullOrEmpty(platVal))
+                        {
+                            platform = GetPlatformFromString(platVal);
+                        }
+                    }
+                }
+                catch { }
 
                 if (!p.ProxyId.HasValue && p.ProfileData.Contains("\"Network\"") && p.ProfileData.Contains("\"custom\""))
                 {
@@ -84,6 +115,12 @@ public class ProfileService
                             if (!string.IsNullOrEmpty(host))
                             {
                                 customProxyName = $"{type}://{host}:{port}";
+                                var username = proxy.TryGetProperty("Username", out var u) ? u.GetString() : "";
+                                var password = proxy.TryGetProperty("Password", out var pass) ? pass.GetString() : "";
+                                if (!string.IsNullOrEmpty(username))
+                                {
+                                    customProxyName += $":{username}:{password}";
+                                }
                             }
                         }
                     } catch {}
@@ -94,7 +131,7 @@ public class ProfileService
             var realMessage = ProfileStatusService.GetMessage(p.Id);
             if (string.IsNullOrEmpty(realMessage)) realMessage = p.Message;
 
-            return new ProfileListItem
+            return new ProfileDetailItem
             {
                 Id = p.Id,
                 Name = p.Name,
@@ -113,7 +150,8 @@ public class ProfileService
                 Status = realStatus,
                 CreatedAt = p.CreatedAt,
                 LastOpened = p.LastOpened,
-                Message = realMessage
+                Message = realMessage,
+                ProfileData = p.ProfileData
             };
         }).ToList();
 
@@ -284,12 +322,32 @@ public class ProfileService
         cfg.System ??= SystemConfig.Default;
         cfg.System.BrowserVersion = browserVersion;
 
-        if (autoUpdateUA)
+        if (autoUpdateUA && cfg.System.UserAgent != null && !string.IsNullOrEmpty(cfg.System.UserAgent.Value))
         {
+            var ua = cfg.System.UserAgent.Value;
+            var tmpl = await _fingerprintSvc.GetTemplatesAsync();
+            OsModel? matchedModel = null;
+
+            foreach (var osTmpl in tmpl.OS.Values)
+            {
+                foreach (var model in osTmpl.Models)
+                {
+                    if (ua.Contains(model.Name))
+                    {
+                        matchedModel = model;
+                        break;
+                    }
+                }
+                if (matchedModel != null) break;
+            }
+
             var newFp = await _fingerprintSvc.GenerateAsync(
                 platform: cfg.System.Platform?.Value,
-                browserType: existing.BrowserType
+                browserType: existing.BrowserType,
+                osModelName: matchedModel?.Name,
+                browserVersion: browserVersion
             );
+            
             if (newFp.System?.UserAgent != null)
             {
                 cfg.System.UserAgent = newFp.System.UserAgent;

@@ -18,6 +18,7 @@
         create(options = {}) {
             const wrap = document.createElement('div');
             wrap.className = 'duck-tabcontrol';
+            wrap.style.background = '#fff';
             if (options.variant === 'horizontal') {
                 wrap.classList.add('duck-tabcontrol-horizontal');
             }
@@ -44,6 +45,7 @@
 
             const contentArea = document.createElement('div');
             contentArea.className = 'duck-tabcontrol-content';
+            contentArea.style.background = '#fff';
 
             wrap.appendChild(sidebar);
             wrap.appendChild(contentArea);
@@ -63,7 +65,20 @@
                     
                     const nameSpan = document.createElement('span');
                     nameSpan.className = 'duck-tabcontrol-item-name';
-                    nameSpan.textContent = tab.name;
+                    
+                    if (tab.icon) {
+                        const iconEl = document.createElement('span');
+                        iconEl.style.cssText = 'display:flex;align-items:center;gap:6px;';
+                        if (tab.icon.includes('/') || tab.icon.includes('.')) {
+                            iconEl.innerHTML = `<img src="${tab.icon}" style="width:16px;height:16px;object-fit:contain;"> <span>${tab.name}</span>`;
+                        } else {
+                            iconEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;">${tab.icon}</span> <span>${tab.name}</span>`;
+                        }
+                        nameSpan.appendChild(iconEl);
+                    } else {
+                        nameSpan.textContent = tab.name;
+                    }
+                    
                     item.appendChild(nameSpan);
 
                     if (tab.canDelete) {

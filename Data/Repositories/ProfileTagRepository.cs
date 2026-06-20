@@ -1,5 +1,4 @@
 using DuckGo.Models.Entities;
-using Microsoft.Data.Sqlite;
 
 namespace DuckGo.Data.Repositories;
 

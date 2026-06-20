@@ -233,16 +233,16 @@ window.ProfileModals.ChangeLocation = {
                             profileData.Location.Longitude = lng;
 
                             await DuckBridge.call('profile.update', {
-                                id: p.id ?? p.Id,
-                                name: p.name ?? p.Name,
-                                groupId: p.groupId ?? p.GroupId,
-                                tagIds: p.tagIds ?? p.TagIds,
-                                proxyId: p.proxyId ?? p.ProxyId,
-                                browserType: p.browserType ?? p.BrowserType,
-                                browserVersion: p.browserVersion ?? p.BrowserVersion,
+                                id: p.id || p.Id,
+                                name: p.name || p.Name,
+                                groupId: p.groupId || p.GroupId,
+                                tagIds: p.tagIds || p.TagIds,
+                                proxyId: p.proxyId || p.ProxyId,
+                                browserType: p.browserType || p.BrowserType,
+                                browserVersion: p.browserVersion || p.BrowserVersion,
                                 profileData: JSON.stringify(profileData),
-                                notes: p.notes ?? p.Notes,
-                                cookies: p.cookies ?? p.Cookies
+                                notes: p.notes || p.Notes,
+                                cookies: p.cookies || p.Cookies
                             });
                         }
                         

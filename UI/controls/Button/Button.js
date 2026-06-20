@@ -1,4 +1,4 @@
-﻿// Button.js - Button control component
+// Button.js - Button control component
 
 (function() {
     'use strict';
@@ -15,7 +15,6 @@
                 size: options.size || 'md',
                 disabled: options.disabled || false,
                 loading: options.loading || false,
-                spinning: options.spinning || false,
                 icon: options.icon || null,
                 text: options.text || null,
                 iconPosition: options.iconPosition || 'left',
@@ -65,9 +64,9 @@
                 this.setDropdownArrow(true);
             }
 
-            // Set spinning
-            if (this.options.spinning) {
-                this.setSpinning(true);
+            // Set loading
+            if (this.options.loading) {
+                this.setLoading(true);
             }
 
             // Set disabled
@@ -91,29 +90,14 @@
         }
 
         async _handleClick(e) {
-            if (this.options.disabled || this.options.loading || this.options.spinning) {
+            if (this.options.disabled || this.options.loading) {
                 e.preventDefault();
                 e.stopPropagation();
                 return;
             }
 
             if (this.options.onClick) {
-                const result = this.options.onClick(e, this);
-                // Only auto-spin if not managed by Modal (no _noAutoSpin flag)
-                if (result instanceof Promise && !this._noAutoSpin) {
-                    this.setSpinning(true);
-                    this.element.disabled = true;
-                    const minTimePromise = new Promise(resolve => setTimeout(resolve, 300));
-                    try {
-                        await Promise.all([result, minTimePromise]);
-                    } finally {
-                        this.setSpinning(false);
-                        if (!this.options.disabled && !this.options.loading) {
-                            this.element.removeAttribute('disabled');
-                            this.element.disabled = false;
-                        }
-                    }
-                }
+                this.options.onClick(e, this);
             }
         }
 
@@ -154,7 +138,7 @@
             if (!textNode) {
                 textNode = document.createTextNode(text);
                 const dropdownArrow = this.element.querySelector('.duck-btn-dropdown-arrow');
-                if (dropdownArrow) {
+                if (dropdownArrow && dropdownArrow.parentNode === this.element) {
                     this.element.insertBefore(textNode, dropdownArrow);
                 } else {
                     this.element.appendChild(textNode);
@@ -183,25 +167,38 @@
         setLoading(loading) {
             this.options.loading = loading;
             if (loading) {
-                // Lazy-inject spinner only when first needed
-                if (!this.element.querySelector('.duck-btn-spinner')) {
-                    const spinner = document.createElement('div');
+                // Hide original icon
+                const iconEl = this.element.querySelector('.duck-btn-icon');
+                if (iconEl) iconEl.style.display = 'none';
+
+                // Show spinner SVG
+                let spinner = this.element.querySelector('.duck-btn-spinner');
+                if (!spinner) {
+                    spinner = document.createElement('span');
                     spinner.className = 'duck-btn-spinner';
+                    spinner.innerHTML = `<svg class="spinner-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>`;
                     this.element.prepend(spinner);
+                } else {
+                    spinner.style.display = '';
                 }
+
                 this.element.classList.add('duck-btn-loading');
                 this.element.setAttribute('disabled', 'disabled');
             } else {
                 this.element.classList.remove('duck-btn-loading');
+
+                // Restore original icon
+                const iconEl = this.element.querySelector('.duck-btn-icon');
+                if (iconEl) iconEl.style.display = '';
+
+                // Hide spinner
+                const spinner = this.element.querySelector('.duck-btn-spinner');
+                if (spinner) spinner.style.display = 'none';
+
                 if (!this.options.disabled) {
                     this.element.removeAttribute('disabled');
                 }
             }
-        }
-
-        setSpinning(spinning) {
-            this.options.spinning = spinning;
-            this.element.classList.toggle('duck-btn-spin', spinning);
         }
 
         setDisabled(disabled) {

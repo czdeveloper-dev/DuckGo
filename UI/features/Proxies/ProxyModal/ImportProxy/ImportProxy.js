@@ -6,6 +6,23 @@ window.ProxyModals.ImportProxy = {
     _scanAbortController: null,
     _fileUploader: null,
     _file: null,
+    _proxyGroups: [],
+    _proxyTags: [],
+    
+    async _loadEntityData() {
+        try {
+            const [groups, tags] = await Promise.all([
+                DuckBridge.call('proxygroup.list').catch(() => []),
+                DuckBridge.call('proxytag.list').catch(() => [])
+            ]);
+            this._proxyGroups = groups || [];
+            this._proxyTags = tags || [];
+        } catch (e) {
+            console.warn('[ImportProxy] Failed to load entity data:', e);
+            this._proxyGroups = [];
+            this._proxyTags = [];
+        }
+    },
     
     _cancelScan() {
         this._isScanning = false;
@@ -29,18 +46,51 @@ window.ProxyModals.ImportProxy = {
         }
     },
 
-    show(onComplete = null) {
+    async show(onComplete = null) {
         this._onComplete = onComplete;
         this._scanResults = null;
         this._isImporting = false;
         this._file = null;
+        
+        // Load groups and tags first
+        await this._loadEntityData();
+        
         if (this._modal) {
             this._modal.destroy();
             this._modal = null;
         }
 
         const modalBody = document.createElement('div');
-        modalBody.style.cssText = 'display:flex;flex-direction:column;gap:20px;';
+        modalBody.style.cssText = 'display:flex;flex-direction:column;gap:16px;';
+        
+        // 0. Group + Tags Section
+        const groupTagsSection = document.createElement('div');
+        groupTagsSection.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:12px;';
+        
+        const groupCol = document.createElement('div');
+        this._groupCtrl = DuckControls.Select.create({
+            label: 'GROUP',
+            placeholder: 'No Group (Optional)',
+            options: [
+                { label: 'No Group', value: '' },
+                ...this._proxyGroups.map(g => ({ label: g.Name || g.name || '', value: String(g.Id || g.id) }))
+            ],
+            width: '100%'
+        });
+        groupCol.appendChild(this._groupCtrl.element);
+        
+        const tagCol = document.createElement('div');
+        this._tagCtrl = DuckControls.MultiSelectComboBox.create({
+            label: 'TAGS',
+            placeholder: 'Select tags (Optional)',
+            options: this._proxyTags.map(t => ({ label: t.Name || t.name || '', value: String(t.Id || t.id) })),
+            width: '100%'
+        });
+        tagCol.appendChild(this._tagCtrl.element);
+        
+        groupTagsSection.appendChild(groupCol);
+        groupTagsSection.appendChild(tagCol);
+        modalBody.appendChild(groupTagsSection);
         
         // 1. File Upload Section
         const fileSection = document.createElement('div');
@@ -108,6 +158,7 @@ window.ProxyModals.ImportProxy = {
         });
         taWrap.appendChild(ta.element);
 
+        // Validation error message element
         this._valMsg = document.createElement('div');
         this._valMsg.style.cssText = 'font-size: 12px; color: #eab308; display: none; align-items: center; gap: 6px; padding: 8px; background: rgba(234, 179, 8, 0.1); border-radius: 4px; margin-top: 8px;';
         taWrap.appendChild(this._valMsg);
@@ -115,6 +166,14 @@ window.ProxyModals.ImportProxy = {
         this._showValMsg = (msg) => {
             this._valMsg.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;">error</span> ${msg}`;
             this._valMsg.style.display = 'flex';
+        };
+        
+        this._hideValMsg = () => {
+            this._valMsg.style.display = 'none';
+            // Also call setError if available on textarea
+            if (this._ta && typeof this._ta.setError === 'function') {
+                this._ta.setError(null);
+            }
         };
 
         inputWrap.appendChild(taWrap);
@@ -133,15 +192,25 @@ window.ProxyModals.ImportProxy = {
             content: modalBody,
             footer: statusLabel, 
             size: 'lg',
-            closeOnOverlay: true,
+            closeOnOverlay: false, // Prevent closing during import
             buttons: [
                 { text: 'Scan Proxies', class: 'duck-btn-secondary', position: 'left', icon: 'search', onClick: () => this._scanProxies() },
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, m) => {
+                    // Abort ongoing operations
+                    if (this._isScanning) {
+                        this._cancelScan();
+                    }
+                    this._isImporting = false;
                     m.close();
                 }},
                 { text: 'Import', class: 'duck-btn-primary', id: 'import-btn', icon: 'public', onClick: () => this._doImport() }
             ],
-            onClose: () => { this._modal = null; this._isImporting = false; }
+            onClose: () => { 
+                // Cancel any ongoing import/scan
+                this._cancelScan();
+                this._isImporting = false; 
+                this._modal = null; 
+            }
         });
 
         // Initialize FileUploader after modal is created
@@ -257,7 +326,7 @@ window.ProxyModals.ImportProxy = {
         if (validEl) validEl.textContent = validCount;
         if (totalEl) totalEl.textContent = lines.length;
         
-        const importBtn = document.getElementById('import-btn');
+        const importBtn = this._modal?.container?.querySelector('#import-btn');
         if (importBtn) {
             importBtn.disabled = validCount === 0;
         }
@@ -305,7 +374,7 @@ window.ProxyModals.ImportProxy = {
             <strong>Quick Scan</strong> (5s timeout) - TCP connect only, fast for checking proxy availability.
             <br><span style="color:var(--accent);">Deep Scan</span> (15s timeout) - Full HTTP validation, used when importing.
         `;
-        scanModalBody.insertBefore(infoEl, scanModalBody.firstChild);
+        scanModalBody.prepend(infoEl);
         
         const updateStats = () => {
             const total = this._scanResults.length;
@@ -345,6 +414,11 @@ window.ProxyModals.ImportProxy = {
         tableContainer.appendChild(table);
         
         const tbody = table.querySelector('#proxy-scan-tbody');
+        if (!tbody) {
+            console.error('[ImportProxy] Error: tbody element not found');
+            return;
+        }
+        
         this._scanResults = [];
         
         this._validProxies.forEach(proxy => {
@@ -469,15 +543,18 @@ window.ProxyModals.ImportProxy = {
                     if (!this._isScanning) return;
                     activeTasks++;
 
-                    const req = {
-                        type: r.type || 'http',
-                        host: r.host,
-                        port: r.port,
-                        username: r.username,
-                        password: r.password
-                    };
+                    let checkType = r.type || 'http';
+                    let hasTypePrefix = !!r.type;
 
                     try {
+                        const req = {
+                            type: checkType,
+                            host: r.host,
+                            port: r.port,
+                            username: r.username,
+                            password: r.password
+                        };
+
                         const res = await DuckBridge.call('proxy.check', req, { signal: this._scanAbortController?.signal });
                         if (!this._isScanning) { activeTasks--; return; }
 
@@ -485,19 +562,36 @@ window.ProxyModals.ImportProxy = {
                             r.status = 'alive';
                             r.ping = res.latencyMs || 0;
 
-                            const stEl = r.tr.querySelector('.scan-status');
+                            if (!hasTypePrefix) {
+                                try {
+                                    const detectReq = { host: r.host, port: r.port, username: r.username, password: r.password };
+                                    const detectRes = await DuckBridge.call('proxy.detectType', detectReq);
+                                    if (detectRes && detectRes.type) {
+                                        r.detectedType = detectRes.type;
+                                        checkType = detectRes.type;
+                                    }
+                                } catch (detectErr) {
+                                    console.log('[ImportProxy] Type detection failed, using default:', detectErr);
+                                }
+                            }
+
+                            r.detectedType = r.detectedType || checkType;
+
+                            const stEl = r.tr?.querySelector?.('.scan-status');
                             if (stEl) stEl.innerHTML = '<span class="duck-badge duck-badge-success">Alive</span>';
-                            const pEl = r.tr.querySelector('.scan-ping');
+                            const pEl = r.tr?.querySelector?.('.scan-ping');
                             if (pEl) pEl.textContent = r.ping + 'ms';
+                            const tEl = r.tr?.querySelector?.('.scan-type');
+                            if (tEl) tEl.textContent = (r.detectedType || 'http').toUpperCase();
                         } else {
                             r.status = res?.status || 'dead';
-                            const stEl = r.tr.querySelector('.scan-status');
+                            const stEl = r.tr?.querySelector?.('.scan-status');
                             if (stEl) stEl.innerHTML = `<span class="duck-badge duck-badge-${r.status === 'timeout' ? 'warning' : 'danger'}">${r.status === 'timeout' ? 'Timeout' : 'Dead'}</span>`;
                         }
                     } catch (e) {
                         if (e.name === 'AbortError' || !this._isScanning) { activeTasks--; return; }
                         r.status = 'dead';
-                        const stEl = r.tr.querySelector('.scan-status');
+                        const stEl = r.tr?.querySelector?.('.scan-status');
                         if (stEl) stEl.innerHTML = '<span class="duck-badge duck-badge-danger">Error</span>';
                     }
                     
@@ -536,41 +630,102 @@ window.ProxyModals.ImportProxy = {
     },
     
     async _doImport() {
-        const val = this._ta?.textarea?.value?.trim();
-        if (!val) {
-            return this._showValMsg('Field is required');
-        }
-        if (this._valMsg) this._valMsg.style.display = 'none';
-
-        const statusEl = document.getElementById('proxy-import-status');
-        
-        if (!this._validProxies || this._validProxies.length === 0) {
-            if (statusEl) {
-                statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px; color:var(--danger);">error</span> No valid proxies to import.`;
-            }
-            return;
-        }
-        
-        this._isImporting = true;
-        const importBtn = document.getElementById('import-btn');
-        if (importBtn) {
-            importBtn.disabled = true;
-            importBtn.innerHTML = `<span class="duck-spinner-ring" style="width:14px;height:14px;border-width:2px;"></span> Scanning & Importing...`;
-        }
-
         try {
+            // Hide any previous error message
+            this._hideValMsg();
+            
+            const val = this._ta?.textarea?.value?.trim();
+            if (!val) {
+                this._showValMsg('Field is required');
+                if (this._ta && typeof this._ta.setError === 'function') {
+                    this._ta.setError('Field is required');
+                }
+                return;
+            }
+
+            const statusEl = document.getElementById('proxy-import-status');
+            
+            if (!this._validProxies || this._validProxies.length === 0) {
+                this._showValMsg('No valid proxies to import');
+                if (this._ta && typeof this._ta.setError === 'function') {
+                    this._ta.setError('No valid proxies found');
+                }
+                if (statusEl) {
+                    statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px; color:var(--danger);">error</span> No valid proxies to import.`;
+                }
+                return;
+            }
+            
+            // Lock modal to prevent closing during import
+            this._modal.setLoading(true, 'Importing...');
+            this._isImporting = true;
+            
+            // Get Group and Tags values (with null checks)
+            const groupValue = (this._groupCtrl && typeof this._groupCtrl.getValue === 'function') ? this._groupCtrl.getValue() : '';
+            const groupId = groupValue ? parseInt(groupValue) : null;
+            const tagValues = (this._tagCtrl && typeof this._tagCtrl.getValues === 'function') ? this._tagCtrl.getValues() : [];
+            const tagIds = tagValues.map(v => parseInt(v)).filter(v => !isNaN(v));
+            
+            // Prepare proxies with detected type info
+            let proxiesToImport;
+            if (this._scanResults && this._scanResults.length > 0) {
+                // Use scan results with detected types
+                proxiesToImport = this._scanResults
+                    .filter(r => r.status === 'alive')
+                    .map(r => {
+                        const type = r.detectedType || r.type || 'http';
+                        // Format: type://user:pass@host:port
+                        let proxyStr = '';
+                        if (r.username && r.password) {
+                            proxyStr = `${type}://${r.username}:${r.password}@${r.host}:${r.port}`;
+                        } else if (r.username) {
+                            proxyStr = `${type}://${r.username}@${r.host}:${r.port}`;
+                        } else {
+                            proxyStr = `${type}://${r.host}:${r.port}`;
+                        }
+                        return proxyStr;
+                    });
+                
+                if (proxiesToImport.length === 0) {
+                    this._modal.setLoading(false);
+                    this._isImporting = false;
+                    this._showValMsg('No alive proxies to import. Please scan first.');
+                    if (statusEl) {
+                        statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px; color:var(--danger);">error</span> No alive proxies to import. Please scan first.`;
+                    }
+                    return;
+                }
+            } else {
+                // No scan results, import directly - backend will detect types
+                proxiesToImport = this._validProxies;
+            }
+            
             if (statusEl) {
                 statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px; color:var(--accent); animation: duck-spin 1s linear infinite;">sync</span> Scanning & importing ${this._validProxies.length} proxies...`;
             }
 
-            const res = await DuckBridge.call('proxy.scanAndImport', {
-                proxies: this._validProxies
-            });
-
-            console.log('[ImportProxy] scanAndImport result:', res);
+            const importPayload = {
+                proxies: proxiesToImport,
+                groupId: groupId,
+                tagIds: tagIds.length > 0 ? tagIds : null
+            };
+            
+            const res = await DuckBridge.call('proxy.scanAndImport', importPayload);
 
             if (res && (res.success === true || res.Imported !== undefined)) {
-                this._modal?.close();
+                const importedCount = res.Imported || res.imported || this._validProxies.length;
+                
+                if (statusEl) {
+                    statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px; color:var(--success);">check_circle</span> Successfully imported ${importedCount} proxy${importedCount > 1 ? 'ies' : ''}!`;
+                }
+                
+                // Close modal after short delay
+                setTimeout(() => {
+                    if (this._modal) {
+                        this._modal.setLoading(false);
+                        this._modal.close();
+                    }
+                }, 1000);
                 
                 if (window.ProxiesView) {
                     await window.ProxiesView.loadProxyGroups?.();
@@ -580,17 +735,16 @@ window.ProxyModals.ImportProxy = {
                 if (this._onComplete) await this._onComplete();
             } else {
                 console.error('[ImportProxy] Import failed:', res);
+                this._modal.setLoading(false);
+                this._isImporting = false;
                 window.DuckControls.Toast?.error?.('Import Failed', res?.error || 'Unknown error');
             }
         } catch (e) {
             console.error('[ImportProxy] Error:', e);
+            this._modal.setLoading(false);
+            this._isImporting = false;
+            this._showValMsg(e?.message || 'Import failed');
             window.DuckControls.Toast?.error?.('Import Failed', e?.message || 'Unknown error');
-        }
-        
-        this._isImporting = false;
-        if (importBtn) {
-            importBtn.disabled = false;
-            importBtn.innerHTML = 'Import';
         }
     }
 };

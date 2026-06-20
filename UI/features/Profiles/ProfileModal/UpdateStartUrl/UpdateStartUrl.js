@@ -18,44 +18,70 @@ window.ProfileModals.UpdateStartUrl = {
 
         const info = document.createElement('div');
         info.style.cssText = 'font-size: 13px; color: var(--text-secondary); line-height: 1.5;';
-        info.innerHTML = isBulkMode 
-            ? 'Enter Start URLs for multiple profiles. You can enter one URL for all, or use the format <code>ProfileName|URL</code> (one per line) to assign specific URLs.'
-            : 'Enter the Start URL for this profile. Leave empty to use the default new tab page.';
+        info.innerHTML = 'Enter the Start URL(s) for the selected profile(s). In bulk mode, use the format <code>ProfileName|URL</code> (one per line) to assign specific URLs.';
         modalBody.appendChild(info);
 
+        // Toggle between single input and textarea
+        const toggleWrap = document.createElement('div');
+        toggleWrap.style.cssText = 'display:flex;align-items:center;gap:12px;';
+
+        let useBulkMode = isBulkMode;
         let singleInput = null;
         let bulkTextarea = null;
+        let inputContainer = document.createElement('div');
+        let textareaContainer = document.createElement('div');
 
-        if (isBulkMode) {
-            bulkTextarea = DuckControls.Textarea.create({
-                icon: 'link',
-                label: 'Start URLs',
-                placeholder: 'https://example.com\nOR\nProfile1|https://example.com\nProfile2|https://google.com',
-                rows: 6
-            });
-            modalBody.appendChild(bulkTextarea.element);
-        } else {
-            singleInput = DuckControls.Input.create({
-                label: 'Start URL',
-                placeholder: 'https://example.com',
-                icon: 'link'
-            });
-            modalBody.appendChild(singleInput.element);
-        }
+        const toggleCtrl = DuckControls.Checkbox.create(null, {
+            label: 'Bulk Mode (Multiple URLs)',
+            checked: useBulkMode,
+            onChange: (e) => {
+                useBulkMode = e.checked;
+                if (useBulkMode) {
+                    inputContainer.style.display = 'none';
+                    textareaContainer.style.display = '';
+                } else {
+                    inputContainer.style.display = '';
+                    textareaContainer.style.display = 'none';
+                }
+            }
+        });
+        toggleWrap.appendChild(toggleCtrl.element);
+        modalBody.appendChild(toggleWrap);
+
+        // Single input container
+        inputContainer.style.display = isBulkMode ? 'none' : '';
+        singleInput = DuckControls.Input.create({
+            label: 'Start URL',
+            placeholder: 'https://example.com',
+            icon: 'link'
+        });
+        inputContainer.appendChild(singleInput.element);
+        modalBody.appendChild(inputContainer);
+
+        // Textarea container
+        textareaContainer.style.display = isBulkMode ? '' : 'none';
+        bulkTextarea = DuckControls.Textarea.create({
+            icon: 'link',
+            label: 'Start URLs (ProfileName|URL format)',
+            placeholder: 'Profile1|https://example.com\nProfile2|https://google.com',
+            rows: 6
+        });
+        textareaContainer.appendChild(bulkTextarea.element);
+        modalBody.appendChild(textareaContainer);
 
         this._modal = DuckControls.Modal.create({
             defaultEnter: !isBulkMode,
             title: 'Update Start URL',
-            subtitle: '<span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Applied to ' + count + ' selected profiles',
+            subtitle: '<span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Applied to ' + count + ' selected profile(s)',
             icon: 'link',
             content: modalBody,
             size: 'md',
             buttons: [
                 { text: 'Cancel', class: 'duck-btn-surface', onClick: (e, modal) => modal.close() },
                 { text: 'Save Start URL', icon: 'save', class: 'duck-btn-primary', onClick: async (e, modal) => {
-                    const data = isBulkMode ? bulkTextarea.getValue() : singleInput.getValue();
-                    if (!data) {
-                        if (isBulkMode) bulkTextarea.setError?.('Please enter at least one ProfileName|URL entry');
+                    const data = useBulkMode ? bulkTextarea.getValue() : singleInput.getValue();
+                    if (!data || !data.trim()) {
+                        if (useBulkMode) bulkTextarea.setError?.('Please enter at least one URL');
                         else singleInput.setError?.('Please enter a Start URL');
                         return;
                     }
@@ -67,13 +93,16 @@ window.ProfileModals.UpdateStartUrl = {
                         let bulkMapping = {};
                         let isAllSameUrl = false;
                         let defaultBulkUrl = '';
-                        if (isBulkMode) {
+
+                        if (useBulkMode) {
                             const lines = data.split('\n').map(l => l.trim()).filter(l => l);
                             const hasPipes = lines.some(l => l.includes('|'));
                             if (!hasPipes) {
+                                // No pipes - same URL for all
                                 isAllSameUrl = true;
                                 defaultBulkUrl = data.trim();
                             } else {
+                                // Parse ProfileName|URL format
                                 for (let line of lines) {
                                     const parts = line.split('|');
                                     if (parts.length >= 2) {
@@ -88,10 +117,10 @@ window.ProfileModals.UpdateStartUrl = {
                             if (!p) continue;
 
                             let newUrl;
-                            if (isBulkMode) {
+                            if (useBulkMode) {
                                 newUrl = isAllSameUrl ? defaultBulkUrl : bulkMapping[p.name || p.Name];
                             } else {
-                                newUrl = data;
+                                newUrl = data.trim();
                             }
                             if (newUrl === undefined) continue;
 
@@ -100,16 +129,16 @@ window.ProfileModals.UpdateStartUrl = {
                             profileData.StartUrl = newUrl;
 
                             await DuckBridge.call('profile.update', {
-                                id: p.id ?? p.Id,
-                                name: p.name ?? p.Name,
-                                groupId: p.groupId ?? p.GroupId,
-                                tagIds: p.tagIds ?? p.TagIds,
-                                proxyId: p.proxyId ?? p.ProxyId,
-                                browserType: p.browserType ?? p.BrowserType,
-                                browserVersion: p.browserVersion ?? p.BrowserVersion,
+                                id: p.id || p.Id,
+                                name: p.name || p.Name,
+                                groupId: p.groupId || p.GroupId,
+                                tagIds: p.tagIds || p.TagIds,
+                                proxyId: p.proxyId || p.ProxyId,
+                                browserType: p.browserType || p.BrowserType,
+                                browserVersion: p.browserVersion || p.BrowserVersion,
                                 profileData: JSON.stringify(profileData),
-                                notes: p.notes ?? p.Notes,
-                                cookies: p.cookies ?? p.Cookies
+                                notes: p.notes || p.Notes,
+                                cookies: p.cookies || p.Cookies
                             });
                         }
 

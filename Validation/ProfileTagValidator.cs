@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace DuckGo.Validation;
 
-public class TagValidator : IValidator
+public class ProfileTagValidator : IValidator
 {
     public string[] SupportedActions => new[] { "tag.create", "tag.update", "tag.delete", "tag.list" };
 

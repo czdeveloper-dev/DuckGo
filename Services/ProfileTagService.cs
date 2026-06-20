@@ -4,11 +4,11 @@ using DuckGo.Models.Entities;
 
 namespace DuckGo.Services;
 
-public class TagService
+public class ProfileTagService
 {
-    private readonly ITagRepository _repo;
+    private readonly IProfileTagRepository _repo;
 
-    public TagService(ITagRepository repo) => _repo = repo;
+    public ProfileTagService(IProfileTagRepository repo) => _repo = repo;
 
     public async Task<List<ProfileTag>> GetTagsAsync()
         => await _repo.GetAllAsync();

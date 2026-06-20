@@ -1,4 +1,4 @@
-﻿window.ProfileModals = window.ProfileModals || {};
+window.ProfileModals = window.ProfileModals || {};
 
 window.ProfileModals.ManageCookies = {
     _modal: null,
@@ -397,7 +397,7 @@ window.ProfileModals.ManageCookies = {
                 groupId: profile?.groupId || null,
                 tagIds: profile?.tagIds || null,
                 proxyId: profile?.proxyId || null,
-                browserType: profile?.browserType || 'Chromium',
+                browserType: profile?.browserType || null,
                 profileData: profile?.profileData || '{}',
                 notes: profile?.notes || '',
                 cookies: cookiesJson

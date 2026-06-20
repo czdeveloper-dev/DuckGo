@@ -189,3 +189,13 @@
     border-color: var(--accent);
     background: var(--accent-glow);
 }
+
+/* ── Bulk Actions Bar (Proxies) ─────────────────────────── */
+/* Inherit from Profiles.css bulk-actions-bar styles */
+#proxy-bulk-actions {
+    display: none;
+}
+
+#proxy-bulk-actions.visible {
+    display: flex;
+}

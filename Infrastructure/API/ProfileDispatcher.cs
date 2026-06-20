@@ -46,7 +46,9 @@ namespace DuckGo.Infrastructure.API
                     "profile.update" => await UpdateAsync(payload),
                     "profile.delete" => await DeleteAsync(payload),
                     "profile.duplicate" => await DuplicateAsync(payload),
+                    "profile.compare" => await CompareAsync(payload),
                     "profile.getFingerprintTemplate" => await GetFingerprintTemplateAsync(),
+                    "profile.getCatalog" => await GetCatalogAsync(),
                     "profile.generateFingerprint" => await GenerateFingerprintAsync(payload),
                     "profile.bulkCreate" => await BulkCreateAsync(payload),
                     "profile.bulkDelete" => await BulkDeleteAsync(payload),
@@ -62,6 +64,7 @@ namespace DuckGo.Infrastructure.API
                     "profile.importProfiles" => await ImportProfilesAsync(payload),
                     "profile.getResource" => await GetResourceAsync(payload),
                     "profile.updateResource" => await UpdateResourceAsync(payload),
+                    "profile.bulkRename" => await BulkRenameAsync(payload),
                     _ => (false, $"Unknown action: {action}", null)
                 };
             }
@@ -153,6 +156,38 @@ namespace DuckGo.Infrastructure.API
             var name = payload?.GetProperty("name").GetString() ?? "Copy";
             if (!id.HasValue) return (false, "Missing id", null);
             var result = await _service.DuplicateProfileAsync(id.Value, name);
+            return (true, null, WrapInElement(result));
+        }
+
+        private async Task<(bool, string?, JsonElement?)> CompareAsync(JsonElement? payload)
+        {
+            if (payload == null) return (false, "Missing payload", null);
+            
+            int? profileId1 = null;
+            int? profileId2 = null;
+            
+            if (payload.Value.TryGetProperty("profileId1", out var p1) && p1.ValueKind == JsonValueKind.Number)
+                profileId1 = p1.GetInt32();
+            
+            if (payload.Value.TryGetProperty("profileId2", out var p2) && p2.ValueKind == JsonValueKind.Number)
+                profileId2 = p2.GetInt32();
+            
+            // Validate required fields
+            if (!profileId1.HasValue) return (false, "Profile 1 Required", null);
+            if (!profileId2.HasValue) return (false, "Profile 2 Required", null);
+            
+            var p1Data = await _service.GetProfileAsync(profileId1.Value);
+            var p2Data = await _service.GetProfileAsync(profileId2.Value);
+            
+            if (p1Data == null) return (false, $"Profile {profileId1} not found", null);
+            if (p2Data == null) return (false, $"Profile {profileId2} not found", null);
+            
+            var result = new
+            {
+                profile1 = new { id = p1Data.Id, name = p1Data.Name, browserVersion = p1Data.BrowserVersion, profileData = p1Data.ProfileData },
+                profile2 = new { id = p2Data.Id, name = p2Data.Name, browserVersion = p2Data.BrowserVersion, profileData = p2Data.ProfileData }
+            };
+            
             return (true, null, WrapInElement(result));
         }
 
@@ -625,7 +660,7 @@ namespace DuckGo.Infrastructure.API
 
             var profilesResponse = await _service.GetProfilesAsync();
             var allProfiles = profilesResponse.Items.ToList();
-            var targetProfiles = new List<Models.DTOs.ProfileListItem>();
+            var targetProfiles = new List<Models.DTOs.ProfileDetailItem>();
 
             if (targetVal == "selected")
             {
@@ -936,6 +971,82 @@ namespace DuckGo.Infrastructure.API
                     proxies = items,
                     total = items.Count
                 }));
+            }
+            catch (Exception ex)
+            {
+                return (false, ex.Message, null);
+            }
+        }
+
+        private Task<(bool, string?, JsonElement?)> GetCatalogAsync()
+        {
+            var result = new
+            {
+                browsers = new[] {
+                    new { type = "chromium", name = "Chromium", defaultVersion = "150.0.7849.0" },
+                    new { type = "firefox", name = "Firefox", defaultVersion = "121.0" },
+                    new { type = "edge", name = "Edge", defaultVersion = "120.0.2210.91" }
+                },
+                platforms = new[] {
+                    new { osKey = "Windows", displayName = "Windows", platformString = "Win32", bitness = "64" },
+                    new { osKey = "Windows", displayName = "Windows (32-bit)", platformString = "Win32", bitness = "32" },
+                    new { osKey = "macOS", displayName = "macOS", platformString = "Darwin", bitness = "64" },
+                    new { osKey = "Linux", displayName = "Linux", platformString = "Linux", bitness = "64" }
+                }
+            };
+            
+            return Task.FromResult<(bool, string?, JsonElement?)>((true, null, WrapInElement(result)));
+        }
+
+        private async Task<(bool, string?, JsonElement?)> BulkRenameAsync(JsonElement? payload)
+        {
+            if (!payload.HasValue) return (false, "Missing payload", null);
+
+            try
+            {
+                var changes = new List<(int Id, string Name)>();
+
+                if (payload.Value.TryGetProperty("changes", out var changesProp) && changesProp.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in changesProp.EnumerateArray())
+                    {
+                        if (item.ValueKind == JsonValueKind.Object)
+                        {
+                            var id = item.TryGetProperty("id", out var idProp) ? idProp.GetInt32() : 0;
+                            var name = item.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "" : "";
+                            if (id > 0 && !string.IsNullOrEmpty(name))
+                            {
+                                changes.Add((id, name));
+                            }
+                        }
+                    }
+                }
+
+                if (changes.Count == 0)
+                    return (false, "No valid changes provided", null);
+
+                foreach (var (id, name) in changes)
+                {
+                    var profile = await _service.GetProfileAsync(id);
+                    if (profile != null)
+                    {
+                        var req = new ProfileUpdateRequest(
+                            Id: id,
+                            Name: name,
+                            GroupId: profile.GroupId,
+                            TagIds: profile.TagIds,
+                            ProxyId: profile.ProxyId,
+                            BrowserType: profile.BrowserType ?? "Chromium",
+                            BrowserVersion: profile.BrowserVersion,
+                            ProfileData: profile.ProfileData ?? "{}",
+                            Notes: profile.Notes,
+                            Cookies: profile.Cookies
+                        );
+                        await _service.UpdateProfileAsync(req);
+                    }
+                }
+
+                return (true, null, WrapInElement(new { updated = changes.Count }));
             }
             catch (Exception ex)
             {
