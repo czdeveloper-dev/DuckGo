@@ -4,10 +4,10 @@
       "browserType": "chromium",
       "versions": [
         {
-          "version": "150.0.7849.0",
-          "description": "Chrome 150 Stable",
-          "downloadUrl": "http://127.0.0.1:8081/150.0.7849.0.zip",
-          "md5": ""
+          "version": "149.0.7827.115",
+          "description": "Chrome 149 Stable",
+          "downloadUrl": "http://127.0.0.1:8081/149.0.7827.115.zip",
+          "sha256": "f00aa26de530869494fccc01cdbcc811add1be5b55027647aa96c086145aa05a"
         }
       ]
     }
