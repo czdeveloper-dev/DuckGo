@@ -1,7 +1,7 @@
 {
   "browsers": [
     {
-      "browserType": "chromium",
+      "browserType": "Chromium",
       "versions": [
         {
           "version": "149.0.7827.115",
