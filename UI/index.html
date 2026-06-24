@@ -10,6 +10,9 @@
         var t = localStorage.getItem('theme');
         if (t === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.style.backgroundColor = '#0f1117';
+        } else {
+            document.documentElement.style.backgroundColor = '#F8FAFC';
         }
     })();
     </script>
@@ -156,6 +159,12 @@
 
     <!-- Schedule Modal Scripts -->
     <script src="http://duckgo.local/features/Schedule/ScheduleModal/CreateTask.js?v=30"></script>
+
+    <!-- Automation Modal Scripts -->
+    <script src="http://duckgo.local/features/Automation/AutomationModal/DeleteWorkflow/DeleteWorkflow.js?v=30"></script>
+    <script src="http://duckgo.local/features/Automation/AutomationModal/ExportWorkflow/ExportWorkflow.js?v=30"></script>
+    <script src="http://duckgo.local/features/Automation/AutomationModal/ImportWorkflow/ImportWorkflow.js?v=30"></script>
+    <script src="http://duckgo.local/features/Automation/AutomationModal/EditWorkflow/EditWorkflow.js?v=30"></script>
 
     <!-- Feature Scripts (must load before app.js) -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js?v=30"></script>

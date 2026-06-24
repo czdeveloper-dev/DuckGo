@@ -25,7 +25,7 @@
             if (options.label) {
                 const label = document.createElement('div');
                 label.className = 'duck-textarea-label';
-                label.innerHTML = (options.label || '') + (_required ? ' <span style="color: var(--danger, #ef4444);">*</span>' : '');
+                label.innerHTML = (options.label || '') + (_required ? ' <span style="color: var(--danger, var(--danger));">*</span>' : '');
                 wrap.appendChild(label);
             }
 
@@ -65,15 +65,15 @@
             wrap.appendChild(inputContainer);
 
             const setError = (message) => {
-                textarea.style.borderColor = 'var(--danger, #ef4444)';
+                textarea.style.borderColor = 'var(--danger, var(--danger))';
                 textarea.style.background = 'rgba(239, 68, 68, 0.05)';
                 if (!_errorLabel) {
                     _errorLabel = document.createElement('div');
                     _errorLabel.className = 'field-error-label';
-                    _errorLabel.style.cssText = 'font-size: 12px; color: var(--danger, #ef4444); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; font-weight: 500;';
+                    _errorLabel.style.cssText = 'font-size: 12px; color: var(--danger, var(--danger)); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; font-weight: 500;';
                     wrap.prepend(_errorLabel);
                 }
-                _errorLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:var(--danger,#ef4444)">error</span> ' + message;
+                _errorLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:var(--danger,var(--danger))">error</span> ' + message;
                 _errorLabel.style.display = 'flex';
             };
             const clearError = () => {
@@ -110,4 +110,5 @@
         }
     };
 })();
+
 

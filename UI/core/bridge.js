@@ -105,8 +105,14 @@
             try {
                 if (!payload || typeof payload !== 'object') return;
 
-                if (payload.type === 'response') {
-                    const { id, success, error, data } = payload;
+                const msgType = String(payload.type || payload.Type || '').toLowerCase();
+
+                if (msgType === 'response') {
+                    const id = payload.id !== undefined ? payload.id : payload.Id;
+                    const success = payload.success !== undefined ? payload.success : payload.Success;
+                    const error = payload.error !== undefined ? payload.error : payload.Error;
+                    const data = payload.data !== undefined ? payload.data : payload.Data;
+                    
                     const cb = this._callbacks[id];
                     if (!cb) {
                         return;
@@ -132,10 +138,17 @@
                     return;
                 }
 
-                if (payload.type === 'push') {
-                    const { channel, payload: p } = payload;
+                if (msgType === 'push') {
+                    const channel = String(payload.channel || payload.Channel || '').toLowerCase();
+                    const p = payload.payload !== undefined ? payload.payload : payload.Payload;
 
                     if (channel === 'toast' && p) {
+                        if (window.Toast) {
+                            window.Toast.push(p);
+                        }
+                    }
+
+                    if (channel === 'download-toast' && p) {
                         if (window.Toast) {
                             window.Toast.push(p);
                         }

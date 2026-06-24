@@ -395,25 +395,25 @@
             const _setProxyStatus = (status, latencyMs) => {
                 proxyStatusWrap.style.display = 'flex';
                 if (status === 'alive') {
-                    proxyStatusWrap.style.borderColor = 'var(--success, #22c55e)';
+                    proxyStatusWrap.style.borderColor = 'var(--success)';
                     proxyStatusWrap.style.background = 'rgba(34, 197, 94, 0.08)';
-                    statusDot.style.background = 'var(--success, #22c55e)';
+                    statusDot.style.background = 'var(--success)';
                     statusLabel.textContent = latencyMs != null ? `Connected — ${latencyMs}ms` : 'Connected';
-                    statusLabel.style.color = 'var(--success, #22c55e)';
+                    statusLabel.style.color = 'var(--success)';
                     latencyLabel.textContent = latencyMs != null ? `${latencyMs}ms` : '';
                 } else if (status === 'not_found') {
-                    proxyStatusWrap.style.borderColor = 'var(--warning, #f59e0b)';
+                    proxyStatusWrap.style.borderColor = 'var(--warning)';
                     proxyStatusWrap.style.background = 'rgba(245, 158, 11, 0.08)';
-                    statusDot.style.background = 'var(--warning, #f59e0b)';
+                    statusDot.style.background = 'var(--warning)';
                     statusLabel.textContent = 'Proxy not found';
-                    statusLabel.style.color = 'var(--warning, #f59e0b)';
+                    statusLabel.style.color = 'var(--warning)';
                     latencyLabel.textContent = '';
                 } else {
-                    proxyStatusWrap.style.borderColor = 'var(--danger, #ef4444)';
+                    proxyStatusWrap.style.borderColor = 'var(--danger, var(--danger))';
                     proxyStatusWrap.style.background = 'rgba(239, 68, 68, 0.08)';
-                    statusDot.style.background = 'var(--danger, #ef4444)';
+                    statusDot.style.background = 'var(--danger, var(--danger))';
                     statusLabel.textContent = latencyMs != null ? `Connection failed — ${latencyMs}ms` : 'Connection failed';
-                    statusLabel.style.color = 'var(--danger, #ef4444)';
+                    statusLabel.style.color = 'var(--danger, var(--danger))';
                     latencyLabel.textContent = latencyMs != null ? `${latencyMs}ms` : '';
                 }
             };
@@ -702,3 +702,4 @@
         },
     };
 })();
+

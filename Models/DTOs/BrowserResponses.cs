@@ -19,4 +19,5 @@ public class BrowserVersionItemResponse
     public string Description { get; set; } = "";
     public string DownloadUrl { get; set; } = "";
     public string Md5 { get; set; } = "";
+    public string Sha256 { get; set; } = "";
 }

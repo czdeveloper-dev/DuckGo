@@ -102,9 +102,24 @@ public class FingerprintTemplate
                         {
                             if (webglBlock["MaxTextureSize"] is JsonValue maxTexVal && maxTexVal.TryGetValue<int>(out var maxTex))
                                 osTemplate.WebGL.MaxTextureSize = maxTex;
-                            
+
                             if (webglBlock["Extensions"] is JsonArray extArr)
                                 osTemplate.WebGL.Extensions = extArr.Select(x => x!.GetValue<string>()).ToList();
+                        }
+
+                        // Parse TLS fingerprint data
+                        if (osTemplate != null && osBlock["TLS"] is JsonObject tlsBlock)
+                        {
+                            osTemplate.TLS = new TlsFingerprintTemplate
+                            {
+                                Os = tlsBlock["Os"]?.GetValue<string>() ?? "",
+                                CipherList = tlsBlock["CipherList"] is JsonArray cipherArr
+                                    ? cipherArr.Select(x => x!.GetValue<string>()).ToList()
+                                    : new List<string>(),
+                                CurvesList = tlsBlock["CurvesList"] is JsonArray curvesArr
+                                    ? curvesArr.Select(x => x!.GetValue<string>()).ToList()
+                                    : new List<string>()
+                            };
                         }
 
                         tmpl.OS[kvp.Key] = osTemplate!;
@@ -132,6 +147,18 @@ public class OsTemplate
     public WebGLTemplate WebGL { get; set; } = new();
     public long StorageQuota { get; set; } = 549755813888;
     public Dictionary<string, List<ConnectionPreset>> ConnectionTypes { get; set; } = new();
+    /// <summary>TLS fingerprint data for this OS family. Loaded from default_fingerprint.json.</summary>
+    public TlsFingerprintTemplate? TLS { get; set; }
+}
+
+public class TlsFingerprintTemplate
+{
+    /// <summary>OS key for TLS fingerprinting: windows, macos, linux, android, ios.</summary>
+    public string Os { get; set; } = "";
+    /// <summary>TLS 1.3 + 1.2 cipher suite list in preference order.</summary>
+    public List<string> CipherList { get; set; } = new();
+    /// <summary>Elliptic curve list for TLS key exchange.</summary>
+    public List<string> CurvesList { get; set; } = new();
 }
 
 public class ConnectionPreset

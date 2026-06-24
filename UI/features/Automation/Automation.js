@@ -9,12 +9,27 @@
         _automationsData: [],
         _groups: [],
         _tags: [],
+        _visibleCols: new Set(['seq', 'name', 'author', 'groupName', 'tags', 'description', 'created', 'lastopened', 'action']),
+
+        _loadColPreferences() {
+            try {
+                const saved = localStorage.getItem('automation_visible_cols');
+                if (saved) {
+                    const arr = JSON.parse(saved);
+                    if (Array.isArray(arr) && arr.length > 0) {
+                        this._visibleCols = new Set(arr);
+                    }
+                }
+            } catch (e) {}
+            // Ensure mandatory columns are always visible
+            ['select', 'seq', 'name', 'action'].forEach(c => this._visibleCols.add(c));
+        },
 
         // — Mock Data ————————————————————————————————————————————————————
         _mockAutomations: [
-            { id: 1, name: 'Auto Login FB', author: 'Admin', groupName: 'Social', tags: ['Facebook', 'Login'], description: 'Auto login to Facebook accounts', lastOpened: '2026-06-20T10:00:00', enabled: true },
-            { id: 2, name: 'Tiktok Uploader', author: 'Admin', groupName: 'Social', tags: ['Tiktok'], description: 'Auto upload videos to TikTok in bulk', lastOpened: '2026-06-19T15:30:00', enabled: false },
-            { id: 3, name: 'Google Search Scraper', author: 'User', groupName: 'SEO', tags: ['Google', 'Scrape'], description: 'Scrape keyword data from Google', lastOpened: '2026-06-18T09:15:00', enabled: true }
+            { id: 1, name: 'Auto Login FB', author: 'Admin', groupName: 'Social', tags: ['Facebook', 'Login'], description: 'Auto login to Facebook accounts', created: '2026-06-15T08:00:00', lastOpened: '2026-06-20T10:00:00', enabled: true },
+            { id: 2, name: 'Tiktok Uploader', author: 'Admin', groupName: 'Social', tags: ['Tiktok'], description: 'Auto upload videos to TikTok in bulk', created: '2026-06-16T12:00:00', lastOpened: '2026-06-19T15:30:00', enabled: false },
+            { id: 3, name: 'Google Search Scraper', author: 'User', groupName: 'SEO', tags: ['Google', 'Scrape'], description: 'Scrape keyword data from Google', created: '2026-06-17T09:30:00', lastOpened: '2026-06-18T09:15:00', enabled: true }
         ],
         _mockGroups: [{ id: 1, Name: 'Social' }, { id: 2, Name: 'SEO' }],
         _mockTags: [{ id: 1, Name: 'Facebook' }, { id: 2, Name: 'Tiktok' }, { id: 3, Name: 'Google' }, { id: 4, Name: 'Login' }, { id: 5, Name: 'Scrape' }],
@@ -23,6 +38,7 @@
         async onShow() {
             if (!this._initialized) {
                 this._initialized = true;
+                this._loadColPreferences();
                 this.initUI();
             }
             await this.loadGroups();
@@ -128,6 +144,24 @@
                 });
             }
 
+            // Customize Columns button
+            const colsEl = document.getElementById('auto-ctrl-cols');
+            if (colsEl) {
+                DuckControls.Button.create(colsEl, {
+                    variant: 'surface', icon: 'view_column',
+                    onClick: () => {
+                        if (window.ProfileModals?.CustomizeColumn) {
+                            window.ProfileModals.CustomizeColumn.show(this._visibleCols, () => {
+                                localStorage.setItem('automation_visible_cols', JSON.stringify(Array.from(this._visibleCols)));
+                                if (this._table && this._table.updateColumnVisibility) {
+                                    this._table.updateColumnVisibility(this._visibleCols);
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+
             // Create Workflow button
             const createEl = document.getElementById('auto-ctrl-create');
             if (createEl) {
@@ -139,6 +173,7 @@
 
             this._initSearchControls();
             this._initSelectControls();
+            this._initActionChips();
             this._initBulkActionsUI();
             this._buildTable();
         },
@@ -157,7 +192,7 @@
             const idContainer = document.getElementById('auto-ctrl-id');
             if (idContainer) {
                 this._idCtrl = DuckControls.Input.create({
-                    label: 'ID', placeholder: 'Workflow ID', icon: 'tag',
+                    label: 'ID', placeholder: '1,2,3 or 4-5', icon: 'tag',
                     width: '140px', bgVariant: 'subtle',
                     onInput: (e) => { this._filters.id = e.target.value; this.loadAutomations(); }
                 });
@@ -205,7 +240,7 @@
                 head.className = 'filter-stacked-head';
                 const lbl = document.createElement('span');
                 lbl.className = 'ui-label-sm';
-                lbl.textContent = 'TOTAL AUTOMATIONS';
+                lbl.textContent = 'TOTAL WORKFLOW';
                 head.appendChild(lbl);
                 wrap.appendChild(head);
                 this._statEl = document.createElement('div');
@@ -215,6 +250,25 @@
                 wrap.appendChild(this._statEl);
                 statContainer.appendChild(wrap);
             }
+        },
+
+        _initActionChips() {
+            const chipsContainer = document.getElementById('auto-ctrl-chips');
+            if (!chipsContainer) return;
+
+            const mk = (el, cfg) => DuckControls.Button.create(el, cfg);
+
+            const autoEl = document.createElement('button');
+            chipsContainer.appendChild(autoEl);
+            mk(autoEl, { variant: 'chip', icon: 'account_tree', text: 'Automation', dropdownArrow: true, onClick: () => {} });
+            DuckControls.ContextMenu.create(autoEl, {
+                items: [
+                    { label: 'Import Workflow', icon: 'publish', onClick: () => { window.AutomationModals?.ImportWorkflow?.show([...this._selectedIds]); } },
+                    { label: 'Export Workflow', icon: 'download', onClick: () => { if (this._selectedIds.size > 0) window.AutomationModals?.ExportWorkflow?.show([...this._selectedIds]); } },
+                    'divider',
+                    { label: 'Delete Selected', icon: 'delete_sweep', danger: true, onClick: () => { if (this._selectedIds.size > 0) window.AutomationModals?.DeleteWorkflow?.show([...this._selectedIds]); } }
+                ]
+            });
         },
 
         _initBulkActionsUI() {
@@ -227,18 +281,17 @@
                 if (el) DuckControls.Button.create(el, { text, icon, variant, onClick });
             };
 
-            mk('auto-ctrl-bulk-import', 'Import Workflow', 'download', 'surface', () => window.DuckControls?.Toast?.info('Import Workflow'));
-            mk('auto-ctrl-bulk-export', 'Export Workflow', 'upload',   'surface', () => window.DuckControls?.Toast?.info('Export Workflow'));
+            mk('auto-ctrl-bulk-export', 'Export Workflow', 'upload',   'surface', () => { if (this._selectedIds.size > 0) window.AutomationModals?.ExportWorkflow?.show([...this._selectedIds]); });
             mk('auto-ctrl-bulk-copy',   'Copy Workflow ID','content_copy','surface', () => window.DuckControls?.Toast?.info('Copy Workflow ID'));
-            mk('auto-ctrl-bulk-delete', 'Delete selected', 'delete',  'danger',  () => window.DuckControls?.Toast?.info('Delete selected'));
+            mk('auto-ctrl-bulk-delete', 'Delete Workflow', 'delete',  'danger',  () => { if (this._selectedIds.size > 0) window.AutomationModals?.DeleteWorkflow?.show([...this._selectedIds]); });
 
             const closeEl = document.getElementById('auto-ctrl-bulk-close');
             if (closeEl) {
                 DuckControls.Button.create(closeEl, {
-                    variant: 'surface', icon: 'close',
+                    variant: 'ghost', size: 'sm', icon: 'close',
                     onClick: () => {
+                        this._table?.clearChecked?.();
                         this._selectedIds.clear();
-                        this._table?.setChecked?.([]);
                         this._updateBulkActions();
                     }
                 });
@@ -437,12 +490,12 @@
                 window.DuckControls?.Toast?.success?.(row.enabled ? 'Workflow enabled' : 'Workflow disabled');
             };
 
-            // Copy Workflow button
-            const copyBtn = document.createElement('button');
-            mk(copyBtn, { icon: 'content_copy', variant: 'ghost', size: 'sm' });
-            copyBtn.classList.add('duck-btn-icon-only');
-            copyBtn.title = 'Copy Workflow';
-            copyBtn.onclick = (e) => { e.stopPropagation(); this._onCopy(row.id); };
+            // Edit Workflow button
+            const editBtn = document.createElement('button');
+            mk(editBtn, { icon: 'settings', variant: 'ghost', size: 'sm' });
+            editBtn.classList.add('duck-btn-icon-only');
+            editBtn.title = 'Edit Workflow';
+            editBtn.onclick = (e) => { e.stopPropagation(); window.AutomationModals?.EditWorkflow?.show(row.id); };
 
             // 3-dots more button
             const moreBtn = document.createElement('button');
@@ -453,17 +506,18 @@
             if (window.DuckControls?.ContextMenu) {
                 DuckControls.ContextMenu.create(moreBtn, {
                     items: [
+                        { label: 'Copy Workflow',     icon: 'content_copy', onClick: () => this._onCopy(row.id) },
                         { label: 'Pin Workflow',      icon: 'push_pin',     onClick: () => window.DuckControls?.Toast?.info('Pin: ' + row.id) },
-                        { label: 'Duplicate',         icon: 'content_copy', onClick: () => window.DuckControls?.Toast?.info('Duplicate: ' + row.id) },
-                        { label: 'Export',            icon: 'upload',       onClick: () => window.DuckControls?.Toast?.info('Export: ' + row.id) },
+                        { label: 'Duplicate',         icon: 'file_copy',    onClick: () => window.DuckControls?.Toast?.info('Duplicate: ' + row.id) },
+                        { label: 'Export',            icon: 'upload',       onClick: () => window.AutomationModals?.ExportWorkflow?.show([row.id]) },
                         'divider',
-                        { label: 'Delete Workflow',   icon: 'delete', danger: true, onClick: () => window.DuckControls?.Toast?.info('Delete: ' + row.id) }
+                        { label: 'Delete Workflow',   icon: 'delete', danger: true, onClick: () => window.AutomationModals?.DeleteWorkflow?.show([row.id]) }
                     ]
                 });
             }
 
             wrap.appendChild(toggleBtn);
-            wrap.appendChild(copyBtn);
+            wrap.appendChild(editBtn);
             wrap.appendChild(moreBtn);
             return wrap;
         },
@@ -480,10 +534,11 @@
                 { id: 'seq',         label: '#',           width: '40px',  minWidth: '40px',  locked: true, lockedPosition: 'left', resizable: false, align: 'center',
                   render: (r) => { const el = document.createElement('span'); el.textContent = r.seq; return el; } },
                 { id: 'name',        label: 'NAME',        width: '240px', minWidth: '120px', locked: true, lockedPosition: 'left', resizable: true,  render: (r) => this._renderNameCell(r) },
-                { id: 'author',      label: 'AUTHOR',      width: '160px', minWidth: '120px',                                       render: (r) => this._renderAuthorCell(r) },
+                { id: 'author',      label: 'AUTHOR',      width: '160px', minWidth: '160px', maxWidth: '240px',                    render: (r) => this._renderAuthorCell(r) },
                 { id: 'groupName',   label: 'GROUP',       width: '160px', minWidth: '160px', maxWidth: '240px',                    render: (r) => this._renderGroupCell(r) },
                 { id: 'tags',        label: 'TAGS',        width: '160px', minWidth: '160px', maxWidth: '240px',                    render: (r) => this._renderTagsCell(r) },
                 { id: 'description', label: 'DESCRIPTION', width: '240px', minWidth: '240px', maxWidth: '320px',                    render: (r) => this._renderDescCell(r) },
+                { id: 'created',     label: 'CREATED TIME', width: '200px', minWidth: '200px', resizable: false,                    render: (r) => this._renderDateCell(r.createdAt || r.created) },
                 { id: 'lastopened',  label: 'LAST OPENED', width: '200px', minWidth: '200px', resizable: false,                     render: (r) => this._renderDateCell(r.lastOpened) },
                 { id: 'filler', fillSpace: true },
                 { id: 'action',      label: 'CONTROL',     width: '170px', locked: true, lockedPosition: 'right', resizable: false, render: (r) => this._renderActionCell(r) }
@@ -497,6 +552,10 @@
             });
             container.style.cssText = 'flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;';
             if (this._table.element) container.appendChild(this._table.element);
+            
+            if (this._table.updateColumnVisibility) {
+                this._table.updateColumnVisibility(this._visibleCols);
+            }
         },
 
         _loadTableData(items) {
@@ -520,11 +579,16 @@
             e.preventDefault();
             DuckControls.ContextMenu.create(null, {
                 items: [
-                    { label: 'Pin Workflow',    icon: 'push_pin',     onClick: () => window.DuckControls?.Toast?.info('Pin: ' + row.id) },
-                    { label: 'Duplicate',       icon: 'content_copy', onClick: () => window.DuckControls?.Toast?.info('Duplicate: ' + row.id) },
-                    { label: 'Export',          icon: 'upload',       onClick: () => window.DuckControls?.Toast?.info('Export: ' + row.id) },
+                    { 
+                        label: 'Copy', icon: 'content_copy', dropdownArrow: true, 
+                        items: [
+                            { label: 'Copy Name', onClick: () => { window.DuckControls?.Toast?.success?.('Copied Name'); } },
+                            { label: 'Copy Workflow ID', onClick: () => { window.DuckControls?.Toast?.success?.('Copied Workflow ID'); } }
+                        ]
+                    },
+                    { label: 'Export Workflow', icon: 'upload', onClick: () => window.AutomationModals?.ExportWorkflow?.show([row.id]) },
                     'divider',
-                    { label: 'Delete Workflow', icon: 'delete', danger: true, onClick: () => window.DuckControls?.Toast?.info('Delete: ' + row.id) }
+                    { label: 'Delete Selected', icon: 'delete', danger: true, onClick: () => window.AutomationModals?.DeleteWorkflow?.show([row.id]) }
                 ]
             });
         }
@@ -535,3 +599,5 @@
     }
     window.AutomationView = VIEW;
 })();
+
+

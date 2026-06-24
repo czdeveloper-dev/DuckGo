@@ -89,6 +89,7 @@ public class DuckPipeClient : IDisposable
         var chromePath = FindChromePath();
         if (string.IsNullOrEmpty(chromePath)) return null;
 
+        // NO env var with HMAC key - it goes in the pipe CONNECT message
         var args = $"--remote-debugging-port={remoteDebuggingPort} --profile-directory=\"{profileDir}\"";
         return Process.Start(new ProcessStartInfo(chromePath, args) { UseShellExecute = false });
     }

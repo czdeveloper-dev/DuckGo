@@ -1,4 +1,4 @@
-﻿window.ProfileModals = window.ProfileModals || {};
+window.ProfileModals = window.ProfileModals || {};
 
 window.ProfileModals.ExportProfiles = {
     _modal: null,
@@ -52,12 +52,12 @@ window.ProfileModals.ExportProfiles = {
 
         // Validation Message Container
         this._valMsg = document.createElement('div');
-        this._valMsg.style.cssText = 'font-size: 12px; color: #eab308; display: none; align-items: center; gap: 6px; padding: 8px; background: rgba(234, 179, 8, 0.1); border-radius: 4px;';
+        this._valMsg.style.cssText = 'font-size: 12px; color: var(--warning); display: none; align-items: center; gap: 6px; padding: 8px; background: var(--warning-bg); border-radius: 4px;';
         modalBody.appendChild(this._valMsg);
 
         const updateValidation = () => {
-            if (!this._modal || !this._modal.element) return;
-            const submitBtn = this._modal.element.querySelector('.duck-btn-primary');
+            if (!this._modal || !this._modal.container) return;
+            const submitBtn = this._modal.container.querySelector('.duck-btn-primary');
             if (!submitBtn) return;
 
             if ((selectedFormat === 'json' || selectedFormat === 'txt') && count !== 1) {
@@ -140,3 +140,4 @@ window.ProfileModals.ExportProfiles = {
         this._modal.open();
     }
 };
+

@@ -15,6 +15,10 @@ public class FingerprintService
 
     private const string EmbeddedFingerprintResourceName = "DuckGo.Assets.default_fingerprint.json";
 
+    /// <summary>Static cached template — shared across all instances. Loaded once at startup.</summary>
+    private static FingerprintTemplate? _cachedTemplate;
+    private static readonly object _cacheLock = new();
+
     static FingerprintService()
     {
         var assetHandler = new HttpClientHandler
@@ -35,6 +39,33 @@ public class FingerprintService
     private static DateTime _geoCacheExpiry = DateTime.MinValue;
 
     private FingerprintTemplate? _templates;
+
+    /// <summary>
+    /// Synchronously load the cached template from embedded resource.
+    /// Falls back to null if loading fails — callers handle null gracefully.
+    /// </summary>
+    public static FingerprintTemplate? GetCachedTemplateSync()
+    {
+        if (_cachedTemplate != null) return _cachedTemplate;
+        lock (_cacheLock)
+        {
+            if (_cachedTemplate != null) return _cachedTemplate;
+            try
+            {
+                var assembly = typeof(FingerprintService).Assembly;
+                using var stream = assembly.GetManifestResourceStream(EmbeddedFingerprintResourceName);
+                if (stream == null) return null;
+                using var reader = new StreamReader(stream);
+                var json = reader.ReadToEnd();
+                _cachedTemplate = FingerprintTemplate.FromJson(json);
+                return _cachedTemplate;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
 
     /// <summary>
     /// Create a service that fetches fingerprint template from HTTP.
@@ -112,14 +143,14 @@ public class FingerprintService
         var tmpl = await LoadTemplatesAsync();
 
         // Pick OS
-        var osKey = platform ?? tmpl.OS.Keys.ToList()[Random.Shared.Next(tmpl.OS.Count)];
+        var osKey = platform ?? (tmpl.OS.Count > 0 ? tmpl.OS.Keys.ToList()[Random.Shared.Next(tmpl.OS.Count)] : "Windows");
         if (!tmpl.OS.TryGetValue(osKey, out var osTmpl))
-            osTmpl = tmpl.OS.Values.First();
+            osTmpl = tmpl.OS.Values.FirstOrDefault() ?? new OsTemplate();
 
         // Pick OS model
         var osModel = osModelName != null
-            ? osTmpl.Models.FirstOrDefault(m => m.Name == osModelName) ?? osTmpl.Models.First()
-            : osTmpl.Models[Random.Shared.Next(osTmpl.Models.Count)];
+            ? osTmpl.Models?.FirstOrDefault(m => m.Name == osModelName) ?? osTmpl.Models?.FirstOrDefault() ?? new OsModel { Name = "Default", UserAgentTemplate = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/{VERSION}.0.0.0 Safari/537.36" }
+            : (osTmpl.Models?.Count > 0 ? osTmpl.Models[Random.Shared.Next(osTmpl.Models.Count)] : new OsModel { Name = "Default", UserAgentTemplate = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/{VERSION}.0.0.0 Safari/537.36" });
 
         // Browser version (default Chromium 138)
         var version = browserVersion ?? "138";
@@ -134,42 +165,45 @@ public class FingerprintService
         // Screen
         var screenPreset = screenWidth.HasValue && screenHeight.HasValue
             ? new ScreenPreset { Width = screenWidth.Value, Height = screenHeight.Value, PixelRatio = pixelRatio ?? 1.0 }
-            : osTmpl.ScreenPresets[Random.Shared.Next(osTmpl.ScreenPresets.Count)];
+            : (osTmpl.ScreenPresets?.Count > 0 ? osTmpl.ScreenPresets[Random.Shared.Next(osTmpl.ScreenPresets.Count)] : new ScreenPreset { Width = 1920, Height = 1080, PixelRatio = 1.0 });
 
         // Hardware tier
-        var hwTier = osTmpl.HardwareTiers[Random.Shared.Next(osTmpl.HardwareTiers.Count)];
+        var hwTier = osTmpl.HardwareTiers?.Count > 0 ? osTmpl.HardwareTiers[Random.Shared.Next(osTmpl.HardwareTiers.Count)] : new HardwareTier { Concurrency = 4, Memory = 8 };
 
         // Timezone
-        var tz = timezone ?? tmpl.Timezones[Random.Shared.Next(tmpl.Timezones.Count)];
+        var tz = timezone ?? (tmpl.Timezones?.Count > 0 ? tmpl.Timezones[Random.Shared.Next(tmpl.Timezones.Count)] : "UTC");
 
         // Languages
         var langs = languages?.Count > 0 ? languages : new List<string> { "en-US", "en" };
         var acceptLang = string.Join(",", langs);
 
         // WebGL GPU — pick a vendor first, then pick a renderer from that vendor
-        string gpuVendor;
-        string gpuRenderer;
-        if (webglRenderer != null)
+        string gpuVendor = "Google Inc. (NVIDIA)";
+        string gpuRenderer = "ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0, D3D11)";
+        if (osTmpl.WebGL?.VendorGPUs != null && osTmpl.WebGL.VendorGPUs.Count > 0)
         {
-            gpuVendor = osTmpl.WebGL.VendorGPUs
-                .FirstOrDefault(kvp => kvp.Value.Contains(webglRenderer))
-                .Key ?? osTmpl.WebGL.VendorGPUs.Keys.ElementAt(Random.Shared.Next(osTmpl.WebGL.VendorGPUs.Count));
-            gpuRenderer = webglRenderer;
-        }
-        else if (webglVendor != null)
-        {
-            gpuVendor = osTmpl.WebGL.VendorGPUs.Keys
-                .FirstOrDefault(v => v.Contains(webglVendor, StringComparison.OrdinalIgnoreCase))
-                ?? osTmpl.WebGL.VendorGPUs.Keys.ElementAt(Random.Shared.Next(osTmpl.WebGL.VendorGPUs.Count));
-            var renderers = osTmpl.WebGL.VendorGPUs[gpuVendor];
-            gpuRenderer = renderers[Random.Shared.Next(renderers.Count)];
-        }
-        else
-        {
-            var vendors = osTmpl.WebGL.VendorGPUs.Keys.ToList();
-            gpuVendor = vendors[Random.Shared.Next(vendors.Count)];
-            var renderers = osTmpl.WebGL.VendorGPUs[gpuVendor];
-            gpuRenderer = renderers[Random.Shared.Next(renderers.Count)];
+            if (webglRenderer != null)
+            {
+                gpuVendor = osTmpl.WebGL.VendorGPUs
+                    .FirstOrDefault(kvp => kvp.Value.Contains(webglRenderer))
+                    .Key ?? osTmpl.WebGL.VendorGPUs.Keys.ElementAt(Random.Shared.Next(osTmpl.WebGL.VendorGPUs.Count));
+                gpuRenderer = webglRenderer;
+            }
+            else if (webglVendor != null)
+            {
+                gpuVendor = osTmpl.WebGL.VendorGPUs.Keys
+                    .FirstOrDefault(v => v.Contains(webglVendor, StringComparison.OrdinalIgnoreCase))
+                    ?? osTmpl.WebGL.VendorGPUs.Keys.ElementAt(Random.Shared.Next(osTmpl.WebGL.VendorGPUs.Count));
+                var renderers = osTmpl.WebGL.VendorGPUs[gpuVendor];
+                gpuRenderer = renderers.Count > 0 ? renderers[Random.Shared.Next(renderers.Count)] : "ANGLE (NVIDIA, NVIDIA GeForce RTX 3080)";
+            }
+            else
+            {
+                var vendors = osTmpl.WebGL.VendorGPUs.Keys.ToList();
+                gpuVendor = vendors[Random.Shared.Next(vendors.Count)];
+                var renderers = osTmpl.WebGL.VendorGPUs[gpuVendor];
+                gpuRenderer = renderers.Count > 0 ? renderers[Random.Shared.Next(renderers.Count)] : "ANGLE (NVIDIA, NVIDIA GeForce RTX 3080)";
+            }
         }
 
         // Noise seeds
@@ -267,9 +301,9 @@ public class FingerprintService
                     Fonts = new FontsConfig
                     {
                         Mode = "noise",
-                        FontList = osTmpl.Fonts
-                            .Take(Random.Shared.Next(osTmpl.Fonts.Count / 2, osTmpl.Fonts.Count))
-                            .ToList()
+                        FontList = osTmpl.Fonts?.Count > 0
+                            ? osTmpl.Fonts.Take(Random.Shared.Next(osTmpl.Fonts.Count / 2, osTmpl.Fonts.Count)).ToList()
+                            : new List<string>()
                     },
                     Plugins = new PluginsConfig
                     {
@@ -323,8 +357,8 @@ public class FingerprintService
 
             // Pick random connection type category (wifi, 4g, 3g, etc.)
             var categories = osTmpl.ConnectionTypes.Keys.ToList();
-            var selectedCategory = categories[Random.Shared.Next(categories.Count)];
-            var presets = osTmpl.ConnectionTypes[selectedCategory];
+            var selectedCategory = categories.Count > 0 ? categories[Random.Shared.Next(categories.Count)] : "wifi";
+            var presets = osTmpl.ConnectionTypes.TryGetValue(selectedCategory, out var p) ? p : null;
 
             if (presets == null || presets.Count == 0)
             {

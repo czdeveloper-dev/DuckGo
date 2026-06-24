@@ -31,6 +31,7 @@ public partial class MainWindow : Window
     private BrowserLifecycleService? _browserLifecycleService;
     private ProfileStatusService? _profileStatusService;
     private ToastService? _toastService;
+    private DownloadToastService? _downloadToastService;
     private DuckPipeClient? _pipeClient;
 
     private IProfileRepository? _profileRepo;
@@ -58,6 +59,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _downloadToastService = new DownloadToastService();
         Loaded += OnLoaded;
     }
 
@@ -106,14 +108,23 @@ public partial class MainWindow : Window
 
             Action<Models.DTOs.ProfileMessageUpdate> onMessageUpdate = msg => { };
 
-            Action<string, object> onPush = (channel, payload) => { };
-
             Action<Models.DTOs.ToastPayload> onToast = toast =>
             {
                 try
                 {
                     var json = System.Text.Json.JsonSerializer.Serialize(
                         new { type = "push", channel = "toast", payload = toast });
+                    WebView.CoreWebView2?.PostWebMessageAsJson(json);
+                }
+                catch { }
+            };
+
+            Action<string, object> onPush = (channel, payload) =>
+            {
+                try
+                {
+                    var json = System.Text.Json.JsonSerializer.Serialize(
+                        new { type = "push", channel, payload });
                     WebView.CoreWebView2?.PostWebMessageAsJson(json);
                 }
                 catch { }
@@ -140,17 +151,46 @@ public partial class MainWindow : Window
                 catch { }
             };
 
-            _profileStatusService = new ProfileStatusService(onMessageUpdate, onProfileMessage);
-            _browserProvisioningService = new BrowserProvisioningService(
-                _browserCatalogService, installedBrowserRepo, onToast, onMessageUpdate, onProfileMessage);
+            _profileStatusService = new ProfileStatusService(onMessageUpdate, onProfileMessage, _profileRepo);
 
-            var browserPath = GetInstalledBrowserPath();
-            var duckBrowserManager = new DuckBrowserManager(browserPath);
+            Action<DownloadProgress> onDownloadProgress = progress =>
+            {
+                if (progress.IsError)
+                {
+                    System.Windows.Application.Current?.Dispatcher.Invoke(() => {
+                        _downloadToastService?.Fail("Download Failed", progress.ErrorMessage ?? "Unknown error");
+                    });
+                }
+                else if (progress.IsComplete)
+                {
+                    System.Windows.Application.Current?.Dispatcher.Invoke(() => {
+                        _downloadToastService?.Complete("Download Complete", progress.Status);
+                    });
+                }
+                else
+                {
+                    System.Windows.Application.Current?.Dispatcher.Invoke(() => {
+                        _downloadToastService?.UpdateProgress(
+                            progress.Progress,
+                            progress.DownloadedText,
+                            progress.TotalText,
+                            progress.Status);
+                    });
+                }
+            };
+
+            _browserProvisioningService = new BrowserProvisioningService(
+                _browserCatalogService, installedBrowserRepo, onToast, onMessageUpdate, onProfileMessage, onDownloadProgress);
+
+            var duckBrowserManager = new DuckBrowserManager();
 
             _browserLifecycleService = new BrowserLifecycleService(
                 _profileRepo, _browserCatalogService, _browserProvisioningService,
-                _profileStatusService, _pipeClient, duckBrowserManager, onToast);
+                _profileStatusService, _pipeClient, duckBrowserManager, onToast, _downloadToastService);
             _toastService = new ToastService(onToast);
+
+            // Initialize DownloadToastService - it sends messages via WebView2 bridge (no WPF control)
+            _downloadToastService.Initialize(onPush);
 
             _dispatcher = new MessageDispatcher(new IDispatcher[]
             {

@@ -1,0 +1,3 @@
+
+/* Scrollbar corner fix for dark theme */
+::-webkit-scrollbar-corner { background: transparent; }

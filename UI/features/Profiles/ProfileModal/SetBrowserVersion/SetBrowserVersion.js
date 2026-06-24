@@ -92,7 +92,14 @@ window.ProfileModals.SetBrowserVersion = {
             }
         }
 
-        DuckBridge.call('browser.listVersions').then(catalog => {
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout fetching versions')), 3000)
+        );
+
+        Promise.race([
+            DuckBridge.call('browser.listVersions'),
+            timeoutPromise
+        ]).then(catalog => {
             loader.style.opacity = '0';
             setTimeout(() => loader.remove(), 300);
 
@@ -161,7 +168,50 @@ window.ProfileModals.SetBrowserVersion = {
 
         }).catch(err => {
             console.error('Failed to fetch browser versions:', err);
-            loader.innerHTML = `<div style="color: var(--danger);">Failed to load versions. Please try again.</div>`;
+            loader.style.opacity = '0';
+            setTimeout(() => loader.remove(), 300);
+
+            // Fallback UI
+            const manualWrap = document.createElement('div');
+            manualWrap.style.cssText = 'background: var(--bg-subtle); padding: 16px; border-radius: 6px; border: 1px solid var(--border-light); display: flex; flex-direction: column; gap: 12px;';
+            
+            const info = document.createElement('div');
+            info.style.cssText = 'color: var(--warning); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px;';
+            info.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">warning</span> Could not fetch versions. Please enter manually.';
+            manualWrap.appendChild(info);
+
+            const inputWrap = document.createElement('div');
+            inputWrap.innerHTML = `
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Browser Version</div>
+                <input type="text" class="duck-input" placeholder="e.g. 138" value="${currentVersion || '138'}" style="width: 100%;">
+            `;
+            manualWrap.appendChild(inputWrap);
+
+            const inputEl = inputWrap.querySelector('input');
+            selectedVersion = inputEl.value;
+            selectedBrowserType = defaultBrowserType || 'chromium';
+
+            inputEl.addEventListener('input', (e) => {
+                selectedVersion = e.target.value.trim();
+                if (submitBtn) submitBtn.disabled = !selectedVersion;
+            });
+
+            contentWrap.appendChild(manualWrap);
+            
+            const cbWrap = document.createElement('div');
+            contentWrap.appendChild(cbWrap);
+
+            DuckControls.Checkbox.create(cbWrap, {
+                label: 'Automatically update User-Agent to match browser version (Recommended)',
+                checked: true,
+                onChange: (e) => {
+                    autoUpdateUA = e.checked;
+                }
+            });
+
+            contentWrap.style.opacity = '1';
+            contentWrap.style.pointerEvents = 'auto';
+            if (submitBtn) submitBtn.disabled = false;
         });
     },
 

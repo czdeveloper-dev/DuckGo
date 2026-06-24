@@ -94,7 +94,7 @@ window.ProfileModals.ManageCookies = {
         // â”€â”€ Pending changes indicator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         const dirtyBanner = document.createElement('div');
         dirtyBanner.id = '_dirtyBanner';
-        dirtyBanner.style.cssText = 'display:none;align-items:center;gap:8px;padding:8px 12px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);border-radius:6px;font-size:12px;color:var(--warning,#f59e0b);';
+        dirtyBanner.style.cssText = 'display:none;align-items:center;gap:8px;padding:8px 12px;background:var(--warning-bg);border:1px solid var(--warning-border);border-radius:6px;font-size:12px;color:var(--warning);';
         dirtyBanner.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px">edit</span> Unsaved changes â€” click Save to persist.';
         this._dirtyBanner = dirtyBanner;
         modalBody.appendChild(dirtyBanner);
@@ -393,13 +393,14 @@ window.ProfileModals.ManageCookies = {
             const cookiesJson = JSON.stringify(this._cookies);
             await DuckBridge.call('profile.update', {
                 id: this._profileId,
-                name: profile?.name || 'Unnamed Profile',
-                groupId: profile?.groupId || null,
-                tagIds: profile?.tagIds || null,
-                proxyId: profile?.proxyId || null,
-                browserType: profile?.browserType || null,
-                profileData: profile?.profileData || '{}',
-                notes: profile?.notes || '',
+                name: profile?.name || profile?.Name || 'Unnamed Profile',
+                groupId: profile?.groupId || profile?.GroupId || null,
+                tagIds: profile?.tagIds || profile?.TagIds || null,
+                proxyId: profile?.proxyId || profile?.ProxyId || null,
+                browserType: profile?.browserType || profile?.BrowserType || 'Chromium',
+                browserVersion: profile?.browserVersion || profile?.BrowserVersion || '138',
+                profileData: profile?.profileData || profile?.ProfileData || '{}',
+                notes: profile?.notes || profile?.Notes || '',
                 cookies: cookiesJson
             });
             this._markClean();

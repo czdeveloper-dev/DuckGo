@@ -235,14 +235,14 @@ window.ProfileModals.ChangeLocation = {
                             await DuckBridge.call('profile.update', {
                                 id: p.id || p.Id,
                                 name: p.name || p.Name,
-                                groupId: p.groupId || p.GroupId,
-                                tagIds: p.tagIds || p.TagIds,
-                                proxyId: p.proxyId || p.ProxyId,
-                                browserType: p.browserType || p.BrowserType,
-                                browserVersion: p.browserVersion || p.BrowserVersion,
+                                groupId: p.groupId || p.GroupId || null,
+                                tagIds: p.tagIds || p.TagIds || null,
+                                proxyId: p.proxyId || p.ProxyId || null,
+                                browserType: p.browserType || p.BrowserType || 'Chromium',
+                                browserVersion: p.browserVersion || p.BrowserVersion || '138',
                                 profileData: JSON.stringify(profileData),
-                                notes: p.notes || p.Notes,
-                                cookies: p.cookies || p.Cookies
+                                notes: p.notes || p.Notes || '',
+                                cookies: p.cookies || p.Cookies || null
                             });
                         }
                         

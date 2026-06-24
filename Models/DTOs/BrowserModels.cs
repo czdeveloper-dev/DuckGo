@@ -69,6 +69,7 @@ public class BrowserCatalog
     public string Description { get; set; } = "";
     public string DownloadUrl { get; set; } = "";
     public string Md5 { get; set; } = "";
+    public string Sha256 { get; set; } = "";
     public string ExecutableRelativePath { get; set; } = "";
     public string ArchiveType { get; set; } = "zip";
 }

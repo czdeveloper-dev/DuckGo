@@ -1,4 +1,4 @@
-﻿window.ProfileModals = window.ProfileModals || {};
+window.ProfileModals = window.ProfileModals || {};
 
 window.ProfileModals.DeleteProfiles = {
     show(selectedIds, onConfirm) {
@@ -17,8 +17,8 @@ window.ProfileModals.DeleteProfiles = {
             content: `
                 <div style="font-size: 13px; color: var(--text-primary); line-height: 1.5;">
                     <p style="margin-bottom: 12px; font-weight: 500;">Are you sure you want to permanently delete the selected profile${count > 1 ? 's' : ''}?</p>
-                    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px; border-radius: 6px; margin-bottom: 12px;">
-                        <div style="color: #ef4444; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+                    <div style="background: var(--danger-bg); border: 1px solid var(--danger-border); padding: 12px; border-radius: 6px; margin-bottom: 12px;">
+                        <div style="color: var(--danger); font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
                             <span class="material-symbols-outlined" style="font-size: 16px;">warning</span> Irreversible Action
                         </div>
                         <ul style="list-style: disc; margin-left: 20px; color: var(--text-secondary); margin-bottom: 0;">
@@ -40,4 +40,5 @@ window.ProfileModals.DeleteProfiles = {
         }).open();
     }
 };
+
 

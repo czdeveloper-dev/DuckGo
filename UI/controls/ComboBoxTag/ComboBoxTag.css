@@ -55,7 +55,7 @@
 }
 
 .duck-comboboxtag-remove:hover {
-    color: var(--danger, #e74c3c);
+    color: var(--danger);
 }
 
 .duck-comboboxtag-input {

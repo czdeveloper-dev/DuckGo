@@ -129,7 +129,8 @@ public class ProfileService
 
             var realStatus = ProfileStatusService.GetStatus(p.Id);
             var realMessage = ProfileStatusService.GetMessage(p.Id);
-            if (string.IsNullOrEmpty(realMessage)) realMessage = p.Message;
+            // Use runtime state if set, otherwise fall back to persisted DB values
+            if (string.IsNullOrEmpty(realMessage) && !string.IsNullOrEmpty(p.Message)) realMessage = p.Message;
 
             return new ProfileDetailItem
             {
@@ -425,7 +426,7 @@ public class ProfileService
         cfg.Security ??= new SecurityConfig();
 
         cfg.Profile.ProfileName = req.Name;
-        cfg.Profile.StartURL = req.StartUrl?.Trim() ?? "";
+        cfg.Profile.StartURL = req.StartUrl != null ? req.StartUrl.Trim() : (cfg.Profile.StartURL ?? "");
 
         var fp = req.Fingerprint;
         if (fp == null) return;

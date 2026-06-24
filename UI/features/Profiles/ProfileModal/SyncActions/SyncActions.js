@@ -1,4 +1,4 @@
-﻿window.ProfileModals = window.ProfileModals || {};
+window.ProfileModals = window.ProfileModals || {};
 
 window.ProfileModals.SyncActions = {
     _modal: null,
@@ -52,8 +52,8 @@ window.ProfileModals.SyncActions = {
         pasteTitleWrap.appendChild(pasteTitle);
         
         const pasteBadge = document.createElement('div');
-        pasteBadge.style.cssText = 'font-size: 12px; color: var(--text-secondary); background: var(--bg-surface-hover, #f8f9fa); padding: 8px 12px; border-radius: 6px; border: 1px dashed var(--border-default); line-height: 1.4; display: flex; align-items: center; gap: 6px;';
-        pasteBadge.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px; color: var(--info, #0dcaf0);">info</span> <span><b>Enter</b> = Next Browser &bull; <b>Shift+Enter</b> = Newline</span>';
+        pasteBadge.style.cssText = 'font-size: 12px; color: var(--text-secondary); background: var(--bg-subtle); padding: 8px 12px; border-radius: 6px; border: 1px dashed var(--border-default); line-height: 1.4; display: flex; align-items: center; gap: 6px;';
+        pasteBadge.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px; color: var(--info);">info</span> <span><b>Enter</b> = Next Browser &bull; <b>Shift+Enter</b> = Newline</span>';
         pasteTitleWrap.appendChild(pasteBadge);
         
         leftCol.appendChild(pasteTitleWrap);
@@ -61,7 +61,7 @@ window.ProfileModals.SyncActions = {
         pasteTa = window.DuckControls.Textarea.create({
                 icon: 'sync',
             placeholder: 'Text for browser 1...\nText for browser 2...\n(Press Shift+Enter for multiple lines in the same browser)',
-            rows: 6
+            fullHeight: true
         });
         
         
@@ -118,7 +118,7 @@ window.ProfileModals.SyncActions = {
         rightTitleWrap.appendChild(rightTitle);
         
         const rightBadge = document.createElement('div');
-        rightBadge.style.cssText = 'font-size: 12px; color: var(--text-secondary); background: var(--bg-surface-hover, #f8f9fa); padding: 8px 12px; border-radius: 6px; border: 1px dashed var(--border-default); line-height: 1.4;';
+        rightBadge.style.cssText = 'font-size: 12px; color: var(--text-secondary); background: var(--bg-subtle); padding: 8px 12px; border-radius: 6px; border: 1px dashed var(--border-default); line-height: 1.4;';
         rightBadge.innerHTML = 'Mirrors mouse movements, clicks, and keystrokes from the <b>Master Profile</b> to all <b>Target Profiles</b> in real-time.';
         rightTitleWrap.appendChild(rightBadge);
         
@@ -325,7 +325,7 @@ window.ProfileModals.SyncActions = {
             if (isSyncing) {
                 startBtn.classList.remove('duck-btn-primary');
                 startBtn.classList.add('duck-btn-danger'); // Assuming danger class exists for red, else we can use inline style or just change text
-                startBtn.style.background = 'var(--danger, #dc3545)';
+                startBtn.style.background = 'var(--danger)';
                 startBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">stop</span> Stop Sync';
             } else {
                 startBtn.classList.add('duck-btn-primary');
@@ -360,5 +360,6 @@ window.ProfileModals.SyncActions = {
         this._modal.open();
     }
 };
+
 
 

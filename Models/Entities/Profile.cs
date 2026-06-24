@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace DuckGo.Models.Entities;
@@ -17,7 +18,10 @@ public class Profile
     public string Cookies { get; set; } = "[]";
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime? LastOpened { get; set; }
+    [NotMapped]
     public string Message { get; set; } = "";
+    
+    [NotMapped]
     public string Status { get; set; } = "ready";
 
     [JsonIgnore]

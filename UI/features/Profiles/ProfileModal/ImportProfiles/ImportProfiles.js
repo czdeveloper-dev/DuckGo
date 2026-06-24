@@ -32,7 +32,7 @@ window.ProfileModals.ImportProfiles = {
         modalBody.appendChild(uploaderContainer);
 
         const valMsg = document.createElement('div');
-        valMsg.style.cssText = 'font-size: 12px; color: #eab308; display: none; align-items: center; gap: 6px; padding: 8px; background: rgba(234, 179, 8, 0.1); border-radius: 4px;';
+        valMsg.style.cssText = 'font-size: 12px; color: var(--warning); display: none; align-items: center; gap: 6px; padding: 8px; background: var(--warning-bg); border-radius: 4px;';
         modalBody.appendChild(valMsg);
 
         let selectedFile = null;
@@ -132,4 +132,5 @@ window.ProfileModals.ImportProfiles = {
         }
     }
 };
+
 

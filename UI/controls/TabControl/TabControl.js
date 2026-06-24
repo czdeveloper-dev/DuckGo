@@ -18,7 +18,7 @@
         create(options = {}) {
             const wrap = document.createElement('div');
             wrap.className = 'duck-tabcontrol';
-            wrap.style.background = '#fff';
+            wrap.style.background = 'var(--bg-surface)';
             if (options.variant === 'horizontal') {
                 wrap.classList.add('duck-tabcontrol-horizontal');
             }
@@ -45,7 +45,7 @@
 
             const contentArea = document.createElement('div');
             contentArea.className = 'duck-tabcontrol-content';
-            contentArea.style.background = '#fff';
+            contentArea.style.background = 'var(--bg-surface)';
 
             wrap.appendChild(sidebar);
             wrap.appendChild(contentArea);

@@ -24,6 +24,7 @@ public static class AppConfig
     public const int PipeConnectTimeoutMs = 300;
     public const int PipeReadTimeoutMs = 300;
     public const string ChromeExeName = "chrome.exe";
+    public const int StartPort = 9222;
 
     public static TimeSpan HeartbeatInterval => TimeSpan.FromSeconds(10);
 

@@ -93,7 +93,7 @@ window.ProfileModals.ImportProxy = {
         taWrap.appendChild(ta.element);
 
         this._valMsg = document.createElement('div');
-        this._valMsg.style.cssText = 'font-size: 12px; color: #eab308; display: none; align-items: center; gap: 6px; padding: 8px; background: rgba(234, 179, 8, 0.1); border-radius: 4px; margin-top: 8px;';
+        this._valMsg.style.cssText = 'font-size: 12px; color: var(--warning); display: none; align-items: center; gap: 6px; padding: 8px; background: var(--warning-bg); border-radius: 4px; margin-top: 8px;';
         taWrap.appendChild(this._valMsg);
 
         this._showValMsg = (msg) => {
@@ -743,3 +743,4 @@ window.ProfileModals.ImportProxy = {
         }
     }
 };
+

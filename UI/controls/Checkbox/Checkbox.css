@@ -81,7 +81,7 @@
     position: absolute;
     width: 8px;
     height: 2px;
-    background: white;
+    background: var(--bg-surface);
     border-radius: 1px;
 }
 

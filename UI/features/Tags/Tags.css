@@ -33,7 +33,7 @@
 /* ── Tag Colors ────────────────────────────────────────────── */
 .tag-chip.color-blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border-color: rgba(59, 130, 246, 0.2); }
 .tag-chip.color-green { background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: rgba(16, 185, 129, 0.2); }
-.tag-chip.color-red { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2); }
+.tag-chip.color-red { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
 .tag-chip.color-yellow { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.2); }
 .tag-chip.color-purple { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border-color: rgba(139, 92, 246, 0.2); }
 .tag-chip.color-pink { background: rgba(236, 72, 153, 0.1); color: #ec4899; border-color: rgba(236, 72, 153, 0.2); }
@@ -160,6 +160,7 @@
 
 .tag-badge-blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
 .tag-badge-green { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-.tag-badge-red { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.tag-badge-red { background: var(--danger-bg); color: var(--danger); }
 .tag-badge-yellow { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
 .tag-badge-purple { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+

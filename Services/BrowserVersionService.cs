@@ -55,7 +55,8 @@ public class BrowserVersionService
                                 Version = v.Version,
                                 Description = v.Description,
                                 DownloadUrl = v.DownloadUrl,
-                                Md5 = v.Md5
+                                Md5 = v.Md5,
+                                Sha256 = v.Sha256
                             }).ToList()
                     }).ToList()
             };

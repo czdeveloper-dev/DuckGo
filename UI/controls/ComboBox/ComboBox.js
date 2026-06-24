@@ -36,15 +36,15 @@
             let _errorLabel = null;
             const errorWrap = document.createElement('div');
             errorWrap.className = 'duck-combobox-error-wrap';
-            errorWrap.style.cssText = 'display:none; font-size: 12px; color: var(--danger, #ef4444); margin-top: 4px; font-weight: 500;';
+            errorWrap.style.cssText = 'display:none; font-size: 12px; color: var(--danger, var(--danger)); margin-top: 4px; font-weight: 500;';
             
             const setError = (message) => {
-                selectContainer.style.borderColor = 'var(--danger, #ef4444)';
+                selectContainer.style.borderColor = 'var(--danger, var(--danger))';
                 selectContainer.style.background = 'rgba(239, 68, 68, 0.05)';
                 if (!_errorLabel) {
                     _errorLabel = document.createElement('div');
                     _errorLabel.style.cssText = 'display: flex; align-items: center; gap: 6px;';
-                    _errorLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:var(--danger,#ef4444)">error</span> <span></span>';
+                    _errorLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:var(--danger,var(--danger))">error</span> <span></span>';
                     errorWrap.appendChild(_errorLabel);
                 }
                 _errorLabel.querySelector('span:last-child').textContent = message;
@@ -178,3 +178,4 @@
         }
     };
 })();
+

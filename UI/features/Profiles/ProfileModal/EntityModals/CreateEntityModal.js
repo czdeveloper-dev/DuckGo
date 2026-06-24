@@ -1,4 +1,4 @@
-﻿// CreateEntityModal.js
+// CreateEntityModal.js
 
 (function() {
     'use strict';
@@ -49,7 +49,7 @@
             modalBody.appendChild(nameInput.element);
 
             const valMsg = document.createElement('div');
-            valMsg.style.cssText = 'font-size: 12px; color: #eab308; display: none; align-items: center; gap: 6px; padding: 8px; background: rgba(234, 179, 8, 0.1); border-radius: 4px;';
+            valMsg.style.cssText = 'font-size: 12px; color: var(--warning); display: none; align-items: center; gap: 6px; padding: 8px; background: var(--warning-bg); border-radius: 4px;';
             modalBody.appendChild(valMsg);
 
             const showValMsg = (msg) => {
@@ -88,4 +88,5 @@
         }
     };
 })();
+
 

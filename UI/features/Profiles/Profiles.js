@@ -24,18 +24,8 @@
         _groups: [],
         _tags: [],
         _visibleCols: new Set(['seq', 'name', 'resource', 'group', 'tags', 'proxy', 'note', 'status', 'message', 'created', 'lastopened', 'action']),
-
         // â”€â”€ View entry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        async onShow() {
-            if (!this._initialized) {
-                this._initialized = true;
-                this._loadColPreferences();
-                this.initUI();
-            }
-            await this.loadGroups();
-            await this.loadTags();
-            await this.loadProfiles();
-        },
+        async onShow() { if (!this._initialized) { this._initialized = true; this._loadColPreferences(); this.initUI(); await this.loadGroups(); await this.loadTags(); await this.loadProfiles(); } },
 
         // â”€â”€ Data loaders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         async loadGroups() {
@@ -121,7 +111,7 @@
                     label: g.Name || g.name || '',
                     value: String(g.Id ?? g.id),
                     actions: [
-                        { icon: 'edit', onClick: (e) => this._editGroup(g) }
+                        { icon: 'edit', color: 'var(--accent)', onClick: (e) => this._editGroup(g) }
                     ]
                 }))
             ];
@@ -133,7 +123,7 @@
                     label: t.Name || t.name || '',
                     value: String(t.Id ?? t.id),
                     actions: [
-                        { icon: 'edit', onClick: (e) => this._editTag(t) }
+                        { icon: 'edit', color: 'var(--accent)', onClick: (e) => this._editTag(t) }
                     ]
                 }))
             ];
@@ -295,13 +285,11 @@
             window.addEventListener('profile-status-update', (e) => {
                 const { profileId, status, message } = e.detail || {};
                 if (!profileId) return;
-                
-                // Update the specific profile in our data
+
                 const profile = this._profilesData.find(p => p.id === profileId);
                 if (profile) {
                     if (status) profile.status = status;
                     if (message !== undefined) profile.message = message;
-                    // Update table row without full reload
                     this._table?.updateRow?.(profileId, profile);
                 }
             });
@@ -391,7 +379,7 @@
                     value: this._filters.group,
                     actions: [
                         { text: 'Delete', icon: 'delete', color: 'var(--danger)', onClick: () => this._deleteGroup() },
-                        { text: '+ Create', icon: 'add', onClick: () => this._createGroup() }
+                        { text: '+ Create', icon: 'add', color: 'var(--success)', onClick: () => this._createGroup() }
                     ],
                     options: this._buildGroupOptions(),
                     onChange: (e) => { this._filters.group = e.target.value; this.loadProfiles(); }
@@ -405,7 +393,7 @@
                     label: 'TAG', placeholder: 'All Tags', width: '180px', bgVariant: 'subtle',
                     actions: [
                         { text: 'Delete', icon: 'delete', color: 'var(--danger)', onClick: () => this._deleteTag() },
-                        { text: '+ Create', icon: 'add', onClick: () => this._createTag() }
+                        { text: '+ Create', icon: 'add', color: 'var(--success)', onClick: () => this._createTag() }
                     ],
                     options: this._buildTagOptions(),
                     onChange: (selectedValues) => { this._filters.tag = selectedValues.join(','); this.loadProfiles(); }
@@ -566,11 +554,11 @@
 
         // ——— Bulk / row actions ————————————————————————————————————————————
         async _startProfile(id) {
-            try { await DuckBridge.call('browser.start', { id }); await this.loadProfiles(); }
+            try { await DuckBridge.call('browser.start', { id }); }
             catch (e) { console.error('Failed to start profile:', e); }
         },
         async _stopProfile(id) {
-            try { await DuckBridge.call('browser.stop', { id }); await this.loadProfiles(); }
+            try { await DuckBridge.call('browser.stop', { id }); }
             catch (e) { console.error('Failed to stop profile:', e); }
         },
         async _deleteProfile(id) {
@@ -919,7 +907,7 @@
             const panel = document.createElement('div');
             panel.style.cssText = 'flex:1;min-width:0;display:flex;align-items:center;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:6px;padding:4px 8px;cursor:pointer;';
             const te = document.createElement('span');
-            te.style.cssText = 'font-size:12px;color:var(--text-primary);width:100%;display:block;word-break:break-all;white-space:normal !important;';
+            te.style.cssText = 'font-size:12px;color:var(--text-primary);width:100%;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
             te.textContent = hiddenText;
             panel.appendChild(te);
             panel.addEventListener('click', (e) => { e.stopPropagation(); this._copyToClipboard(ps).then(() => { const orig = te.textContent; te.textContent = 'Copied'; te.style.color = 'var(--success)'; setTimeout(() => { te.textContent = orig; te.style.color = ''; }, 1000); }); });
@@ -1027,8 +1015,14 @@
             const wrap = document.createElement('div');
             wrap.style.cssText = 'display:flex;align-items:center;';
             const st = (row.status || 'stopped').toLowerCase();
+            let color;
+            if (st === 'running') color = 'var(--success)';
+            else if (st === 'starting') color = 'var(--warning)';
+            else if (st === 'ready') color = 'var(--info)';
+            else color = 'var(--danger)';
+            
             const pill = document.createElement('span');
-            pill.style.cssText = `display:inline-block;width:14px;height:6px;border-radius:3px;margin-right:6px;background:${st === 'running' ? '#eab308' : st === 'ready' ? '#3b82f6' : '#ef4444'};`;
+            pill.style.cssText = `display:inline-block;width:14px;height:6px;border-radius:3px;margin-right:6px;background:${color};`;
             const txt = document.createElement('span');
             txt.style.cssText = 'font-size:12px;font-weight:500;';
             txt.textContent = st.charAt(0).toUpperCase() + st.slice(1);
@@ -1046,13 +1040,35 @@
         _renderActionCell(row) {
             const wrap = document.createElement('div');
             wrap.style.cssText = 'display:flex;align-items:center;gap:2px;justify-content:flex-end;';
-            const running = row.status === 'running';
+            const st = (row.status || 'stopped').toLowerCase();
             const mk = (el, cfg) => DuckControls.Button.create(el, cfg);
 
-            const playBtn = document.createElement('button');
-            mk(playBtn, { icon: running ? 'stop' : 'play_arrow', text: running ? 'Stop' : 'Run', variant: running ? 'danger' : 'success', size: 'sm' });
-            playBtn.style.cssText = 'width:70px;justify-content:center;';
-            playBtn.onclick = (e) => { e.stopPropagation(); running ? this._stopProfile(row.id) : this._startProfile(row.id); };
+            if (st === 'running') {
+                const stopBtn = document.createElement('button');
+                mk(stopBtn, { icon: 'stop', text: 'Stop', variant: 'danger', size: 'sm' });
+                stopBtn.style.cssText = 'width:85px;justify-content:center;';
+                stopBtn.onclick = (e) => { e.stopPropagation(); this._stopProfile(row.id); };
+                wrap.appendChild(stopBtn);
+            } else if (st === 'starting') {
+                const startingBtn = document.createElement('button');
+                mk(startingBtn, { icon: 'hourglass_empty', text: 'Starting', variant: 'warning', size: 'sm' });
+                startingBtn.style.cssText = 'width:85px;justify-content:center;cursor:not-allowed;';
+                startingBtn.disabled = true;
+                startingBtn.onclick = (e) => e.stopPropagation();
+                wrap.appendChild(startingBtn);
+            } else {
+                const runBtn = document.createElement('button');
+                mk(runBtn, { icon: 'play_arrow', text: 'Run', variant: 'success', size: 'sm' });
+                runBtn.style.cssText = 'width:85px;justify-content:center;';
+                runBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    row.status = 'starting';
+                    row.message = 'Starting browser...';
+                    if (this._table) this._table.updateRow(row.id, row);
+                    this._startProfile(row.id);
+                };
+                wrap.appendChild(runBtn);
+            }
 
             const gearBtn = document.createElement('button');
             mk(gearBtn, { icon: 'settings', variant: 'ghost', size: 'sm' });
@@ -1068,8 +1084,8 @@
                 window.DuckControls.ContextMenu.create(moreBtn, {
                     items: [
                         { type: 'label', label: 'Profile Actions' },
-                        { label: 'Start Profile', icon: 'play_arrow', onClick: () => this._startProfile(row.id) },
-                        { label: 'Stop Profile', icon: 'stop_circle', onClick: () => this._stopProfile(row.id) },
+                        { label: 'Start Profile', icon: 'play_arrow', onClick: () => { this._startProfile(row.id); } },
+                        { label: 'Stop Profile', icon: 'stop_circle', onClick: () => { this._stopProfile(row.id); } },
                         'divider',
                         { label: 'Check Proxy', icon: 'dns', onClick: () => this._checkSingleProxy(row) },
                         { label: 'Manage Cookies', icon: 'cookie', onClick: () => window.ProfileModals?.ManageCookies?.show([row.id]) },
@@ -1082,7 +1098,8 @@
                 });
             }
 
-            wrap.appendChild(playBtn); wrap.appendChild(gearBtn); wrap.appendChild(moreBtn);
+            wrap.appendChild(gearBtn);
+            wrap.appendChild(moreBtn);
             return wrap;
         },
 
@@ -1161,4 +1178,8 @@
     window.DuckApp?.registerView('profiles', VIEW);
     window.ProfilesView = VIEW;
 })();
+
+
+
+
 

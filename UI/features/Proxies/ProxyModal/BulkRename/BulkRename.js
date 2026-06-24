@@ -1,4 +1,4 @@
-﻿(function() {
+(function() {
     'use strict';
 
     window.ProxyModals = window.ProxyModals || {};
@@ -111,7 +111,7 @@
                 const arrow = document.createElement('span');
                 arrow.className = 'material-symbols-outlined';
                 arrow.textContent = 'arrow_forward';
-                arrow.style.cssText = 'font-size: 18px; color: var(--text-muted, #94a3b8);';
+                arrow.style.cssText = 'font-size: 18px; color: var(--text-muted);';
                 
                 const newNameContainer = document.createElement('div');
                 newNameContainer.style.cssText = 'flex: 1;';

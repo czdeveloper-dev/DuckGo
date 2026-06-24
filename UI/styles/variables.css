@@ -104,6 +104,14 @@
     --font-size-md: 14px;
     --font-size-lg: 16px;
     --font-size-xl: 22px;
+    --success-bg: rgba(16, 185, 129, 0.2);
+    --warning-bg: rgba(245, 158, 11, 0.2);
+    --danger-bg: rgba(239, 68, 68, 0.2);
+    --info-bg: rgba(14, 165, 233, 0.2);
+
+    /* ── Inverse Colors ───────────────────────────────────── */
+    --bg-inverse: #1E293B;
+    --text-inverse: #FFFFFF;
 }
 
 /* ── Dark Theme Override ─────────────────────────────────── */
@@ -137,4 +145,13 @@
     --surface-3: #232738;
     --surface-border: #2a2f3e;
     --surface-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 6px rgba(0, 0, 0, 0.2);
+    --success-bg: rgba(16, 185, 129, 0.2);
+    --warning-bg: rgba(245, 158, 11, 0.2);
+    --danger: #ef4444;
+    --danger-bg: rgba(239, 68, 68, 0.2);
+    --info-bg: rgba(14, 165, 233, 0.2);
+
+    /* ── Inverse Colors ───────────────────────────────────── */
+    --bg-inverse: #e2e8f0;
+    --text-inverse: #0f1117;
 }

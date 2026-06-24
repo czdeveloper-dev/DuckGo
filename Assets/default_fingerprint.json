@@ -200,7 +200,26 @@
         { "EffectiveType": "3g", "Downlink": 0.75, "Rtt": 250 }
       ]
     },
-    "StorageQuota": 549755813888
+    "StorageQuota": 549755813888,
+    "TLS": {
+      "Os": "windows",
+      "CipherList": [
+        "TLS_AES_128_GCM_SHA256",
+        "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256",
+        "ECDHE-ECDSA-AES128-GCM-SHA256",
+        "ECDHE-RSA-AES128-GCM-SHA256",
+        "ECDHE-ECDSA-AES256-GCM-SHA384",
+        "ECDHE-RSA-AES256-GCM-SHA384",
+        "ECDHE-ECDSA-CHACHA20-POLY1305",
+        "ECDHE-RSA-CHACHA20-POLY1305",
+        "ECDHE-RSA-AES128-SHA",
+        "ECDHE-RSA-AES256-SHA",
+        "AES128-GCM-SHA256",
+        "AES256-GCM-SHA384"
+      ],
+      "CurvesList": ["X25519", "P-256", "P-384"]
+    }
   },
 
   "macOS": {
@@ -290,6 +309,24 @@
         { "EffectiveType": "3g", "Downlink": 1.0, "Rtt": 200 },
         { "EffectiveType": "3g", "Downlink": 0.75, "Rtt": 250 }
       ]
+    },
+    "StorageQuota": 549755813888,
+    "TLS": {
+      "Os": "macos",
+      "CipherList": [
+        "TLS_AES_128_GCM_SHA256",
+        "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256",
+        "ECDHE-ECDSA-AES256-GCM-SHA384",
+        "ECDHE-RSA-AES256-GCM-SHA384",
+        "ECDHE-ECDSA-CHACHA20-POLY1305",
+        "ECDHE-RSA-CHACHA20-POLY1305",
+        "ECDHE-ECDSA-AES128-GCM-SHA256",
+        "ECDHE-RSA-AES128-GCM-SHA256",
+        "AES256-GCM-SHA384",
+        "AES128-GCM-SHA256"
+      ],
+      "CurvesList": ["X25519", "P-256", "P-384"]
     }
   },
 
@@ -362,6 +399,21 @@
         { "EffectiveType": "3g", "Downlink": 1.0, "Rtt": 200 },
         { "EffectiveType": "3g", "Downlink": 0.75, "Rtt": 250 }
       ]
+    },
+    "StorageQuota": 274877906944,
+    "TLS": {
+      "Os": "linux",
+      "CipherList": [
+        "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256",
+        "TLS_AES_128_GCM_SHA256",
+        "ECDHE-RSA-AES256-GCM-SHA384",
+        "ECDHE-RSA-CHACHA20-POLY1305",
+        "ECDHE-RSA-AES128-GCM-SHA256",
+        "AES256-GCM-SHA384",
+        "AES128-GCM-SHA256"
+      ],
+      "CurvesList": ["X25519", "P-256", "P-384"]
     }
   },
 
@@ -469,6 +521,19 @@
         { "EffectiveType": "2g", "Downlink": 0.4, "Rtt": 400 },
         { "EffectiveType": "slow-2g", "Downlink": 0.2, "Rtt": 500 }
       ]
+    },
+    "TLS": {
+      "Os": "android",
+      "CipherList": [
+        "TLS_AES_128_GCM_SHA256",
+        "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256",
+        "ECDHE-ECDSA-AES128-GCM-SHA256",
+        "ECDHE-RSA-AES128-GCM-SHA256",
+        "ECDHE-ECDSA-AES256-GCM-SHA384",
+        "ECDHE-RSA-AES256-GCM-SHA384"
+      ],
+      "CurvesList": ["X25519", "P-256", "P-384"]
     }
   },
 
@@ -563,6 +628,19 @@
         { "EffectiveType": "2g", "Downlink": 0.4, "Rtt": 400 },
         { "EffectiveType": "slow-2g", "Downlink": 0.2, "Rtt": 500 }
       ]
+    },
+    "TLS": {
+      "Os": "ios",
+      "CipherList": [
+        "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256",
+        "TLS_AES_128_GCM_SHA256",
+        "ECDHE-256-AES256-GCM-SHA384",
+        "ECDHE-256-AES128-GCM-SHA256",
+        "AES256-GCM-SHA384",
+        "AES128-GCM-SHA256"
+      ],
+      "CurvesList": ["X25519", "P-256", "P-384"]
     }
   }
 }

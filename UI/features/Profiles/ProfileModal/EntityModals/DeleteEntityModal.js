@@ -28,18 +28,18 @@
 
             // Warning Banner
             const warningWrap = document.createElement('div');
-            warningWrap.style.cssText = 'background: color-mix(in srgb, var(--danger, #f44336) 5%, transparent); border: 1px solid color-mix(in srgb, var(--danger, #f44336) 20%, transparent); border-radius: 8px; padding: 16px; display: flex; align-items: flex-start; gap: 12px;';
+            warningWrap.style.cssText = 'background: color-mix(in srgb, var(--danger) 5%, transparent); border: 1px solid color-mix(in srgb, var(--danger) 20%, transparent); border-radius: 8px; padding: 16px; display: flex; align-items: flex-start; gap: 12px;';
             
             const warningIcon = document.createElement('span');
             warningIcon.className = 'material-symbols-outlined';
             warningIcon.textContent = 'warning';
-            warningIcon.style.cssText = 'color: var(--danger, #f44336); font-size: 22px;';
+            warningIcon.style.cssText = 'color: var(--danger); font-size: 22px;';
             
             const bannerContent = document.createElement('div');
             bannerContent.style.cssText = 'display: flex; flex-direction: column; gap: 4px;';
             
             const warningTitle = document.createElement('div');
-            warningTitle.style.cssText = 'font-weight: 600; color: var(--danger, #f44336); font-size: 14px;';
+            warningTitle.style.cssText = 'font-weight: 600; color: var(--danger); font-size: 14px;';
             warningTitle.textContent = `Delete ${entityName}(s)`;
             
             const warningDesc = document.createElement('div');

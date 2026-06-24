@@ -6,8 +6,8 @@
     position: absolute;
     z-index: 10500;
     padding: 6px 10px;
-    background: var(--bg-inverse, #1e293b);
-    color: var(--text-inverse, #ffffff);
+    background: var(--bg-inverse);
+    color: var(--text-inverse);
     font-family: var(--font-family);
     font-size: 11px;
     font-weight: 500;
@@ -44,7 +44,7 @@
     left: 50%;
     margin-left: -4px;
     border-width: 4px 4px 0 4px;
-    border-color: var(--bg-inverse, #1e293b) transparent transparent transparent;
+    border-color: var(--bg-inverse) transparent transparent transparent;
 }
 
 .duck-tooltip[data-position="bottom"] { transform: translateY(-4px); }
@@ -54,7 +54,7 @@
     left: 50%;
     margin-left: -4px;
     border-width: 0 4px 4px 4px;
-    border-color: transparent transparent var(--bg-inverse, #1e293b) transparent;
+    border-color: transparent transparent var(--bg-inverse) transparent;
 }
 
 .duck-tooltip[data-position="left"] { transform: translateX(4px); }
@@ -64,7 +64,7 @@
     top: 50%;
     margin-top: -4px;
     border-width: 4px 0 4px 4px;
-    border-color: transparent transparent transparent var(--bg-inverse, #1e293b);
+    border-color: transparent transparent transparent var(--bg-inverse);
 }
 
 .duck-tooltip[data-position="right"] { transform: translateX(-4px); }
@@ -74,5 +74,5 @@
     top: 50%;
     margin-top: -4px;
     border-width: 4px 4px 4px 0;
-    border-color: transparent var(--bg-inverse, #1e293b) transparent transparent;
+    border-color: transparent var(--bg-inverse) transparent transparent;
 }

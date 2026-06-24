@@ -17,7 +17,7 @@ window.DuckControls.Select = {
             labelEl.className = 'ui-label-sm';
             labelEl.textContent = initialOptions.label;
             if (initialOptions.required) {
-                labelEl.innerHTML += ' <span style="color: var(--danger, #ef4444);">*</span>';
+                labelEl.innerHTML += ' <span style="color: var(--danger, var(--danger));">*</span>';
             }
             head.appendChild(labelEl);
 
@@ -133,18 +133,18 @@ window.DuckControls.Select = {
         let _errorLabel = null;
 
         const setError = (message) => {
-            triggerBtn.style.borderColor = 'var(--danger, #ef4444)';
+            triggerBtn.style.borderColor = 'var(--danger, var(--danger))';
             triggerBtn.style.background = 'rgba(239, 68, 68, 0.05)';
             triggerBtn.classList.add('is-error');
 
             if (!_errorLabel) {
                 _errorLabel = document.createElement('div');
                 _errorLabel.className = 'field-error-label';
-                _errorLabel.style.cssText = 'font-size: 12px; color: var(--danger, #ef4444); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; font-weight: 500;';
+                _errorLabel.style.cssText = 'font-size: 12px; color: var(--danger, var(--danger)); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; font-weight: 500;';
                 // Insert at the top of the control
                 wrap.prepend(_errorLabel);
             }
-            _errorLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:var(--danger,#ef4444)">error</span> ' + message;
+            _errorLabel.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;color:var(--danger,var(--danger))">error</span> ' + message;
             _errorLabel.style.display = 'flex';
         };
 
@@ -190,3 +190,4 @@ window.DuckControls.Select = {
         };
     }
 };
+

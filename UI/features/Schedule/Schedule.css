@@ -15,30 +15,30 @@
 
 /* ── Schedule Type Badges ────────────────────────────────── */
 .sched-badge-immediate {
-    background: rgba(251,191,36,.12);
-    color: var(--warning, #fbbf24);
-    border: 1px solid rgba(251,191,36,.28);
+    background: var(--warning-bg);
+    color: var(--warning);
+    border: 1px solid var(--warning-border);
 }
 .sched-badge-once {
     background: var(--accent-glow);
     color: var(--accent);
-    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+    border: 1px solid var(--accent-glow-strong);
 }
 .sched-badge-interval {
-    background: rgba(168,85,247,.1);
-    color: #c084fc;
-    border: 1px solid rgba(168,85,247,.28);
+    background: var(--info-bg);
+    color: var(--info);
+    border: 1px solid var(--info-border);
 }
 .sched-badge-daily {
-    background: rgba(52,211,153,.1);
-    color: #34d399;
-    border: 1px solid rgba(52,211,153,.28);
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid var(--success-border);
 }
 
 /* ── Schedule Status colours ─────────────────────────────── */
 .sched-status-running  { color: var(--success); }
 .sched-status-idle     { color: var(--text-tertiary); }
-.sched-status-paused   { color: var(--warning, #fbbf24); }
+.sched-status-paused   { color: var(--warning); }
 .sched-status-error    { color: var(--danger); }
 .sched-status-completed{ color: var(--text-secondary); }
 
@@ -102,7 +102,7 @@
 .sched-day-toggle.active {
     background: var(--accent);
     border-color: var(--accent);
-    color: #fff;
+    color: var(--text-inverse);
 }
 .sched-day-toggle:hover:not(.active) {
     border-color: var(--accent);

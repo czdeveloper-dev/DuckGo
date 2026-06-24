@@ -1,4 +1,4 @@
-﻿// ManageData.js
+// ManageData.js
 
 (function() {
     'use strict';
@@ -153,6 +153,35 @@
         },
 
         _refreshTabs() {
+            let emptyState = this._tabControl.element.parentElement.querySelector('.duck-empty-state-manage-data');
+            if (this._tabsData.length === 0) {
+                if (!emptyState) {
+                    emptyState = document.createElement('div');
+                    emptyState.className = 'duck-empty-state-manage-data';
+                    emptyState.style.cssText = 'flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-tertiary);';
+                    emptyState.innerHTML = '<span class="material-symbols-outlined" style="font-size: 36px; opacity: 0.5;">database</span><span style="font-size: 14px; font-weight: 500;">No data resources found</span>';
+                    
+                    const createBtn = document.createElement('button');
+                    createBtn.className = 'duck-btn duck-btn-primary';
+                    createBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">add</span> Create Data Resource';
+                    createBtn.addEventListener('click', () => {
+                        this._showTableConfigModal(null, (config) => {
+                            const newId = 'tab_' + Date.now();
+                            this._tabsData.push({ id: newId, name: config.name, format: config.format, mode: 'list', rows: [] });
+                            this._refreshTabs();
+                            this._tabControl.selectTab(newId);
+                        });
+                    });
+                    emptyState.appendChild(createBtn);
+                    
+                    this._tabControl.element.parentElement.appendChild(emptyState);
+                }
+                this._tabControl.element.style.display = 'none';
+            } else {
+                if (emptyState) emptyState.remove();
+                this._tabControl.element.style.display = '';
+            }
+
             const tabs = this._tabsData.map(tabData => {
                 const content = this._createTabContent(tabData);
                 return {
@@ -376,7 +405,7 @@
                 
                 const lbl = inputCtrl.element.querySelector('.ui-label-sm');
                 if(lbl) {
-                    lbl.style.color = '#8e9eab'; 
+                    lbl.style.color = 'var(--text-tertiary)'; 
                     lbl.style.marginBottom = '2px';
                     lbl.style.fontSize = '10px';
                 }

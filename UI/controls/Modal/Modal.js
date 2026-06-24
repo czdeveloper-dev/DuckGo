@@ -265,9 +265,9 @@
             // Focus first input, or default button (skip if preventAutoFocus is true)
             if (!this.options.preventAutoFocus) {
                 setTimeout(() => {
-                    const inputFocusable = this.container.querySelector('input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])');
-                    if (inputFocusable) {
-                        inputFocusable.focus();
+                    const inputsFocusable = this.container.querySelectorAll('input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])');
+                    if (inputsFocusable.length === 1) {
+                        inputsFocusable[0].focus();
                     } else {
                         let defaultBtn = this.container.querySelector('[data-duck-default="true"]');
                         if (!defaultBtn) defaultBtn = this.container.querySelector('.duck-btn-primary');
@@ -278,8 +278,10 @@
         }
 
         close() {
-            // Prevent closing when locked
-            if (this._locked) return;
+            // If it was loading, ensure we restore state (though it's closing anyway)
+            if (this._locked) {
+                this.setLoading(false);
+            }
 
             this.isOpen = false;
             this.overlay.classList.remove('duck-modal-open');

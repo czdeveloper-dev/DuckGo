@@ -12,4 +12,5 @@ public interface IProfileRepository
     Task BulkDeleteAsync(List<int> ids);
     Task BulkAssignGroupAsync(List<int> profileIds, int? groupId);
     Task UpdateLastOpenedAsync(int id);
+    Task UpdateStatusAsync(int id, string status, string message);
 }

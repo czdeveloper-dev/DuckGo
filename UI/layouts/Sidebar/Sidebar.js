@@ -95,11 +95,10 @@
         _setupThemeToggle() {
             const btn = document.getElementById('btn-theme-toggle');
             if (btn) {
-                // Apply fill style for icon button
-                btn.style.cssText = 'background: transparent; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 8px 12px; width: 100%; border-radius: 6px; transition: background 0.15s;';
+                btn.style.cssText = ''; // Clear any inline styles that might break .nav-item layout
                 
                 btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
+                    // e.preventDefault();
                     this._toggleTheme();
                 });
                 btn.addEventListener('mouseenter', () => {

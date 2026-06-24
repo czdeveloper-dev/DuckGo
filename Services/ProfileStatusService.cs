@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using DuckGo.Data.Repositories;
 
 namespace DuckGo.Services;
 
@@ -6,15 +7,18 @@ public class ProfileStatusService
 {
     private readonly Action<Models.DTOs.ProfileMessageUpdate> _onMessageUpdate;
     private readonly Action<int, string> _onPush;
+    private readonly IProfileRepository _profileRepo;
 
     private static readonly ConcurrentDictionary<int, ProfileRuntimeState> _runtimeStates = new();
 
     public ProfileStatusService(
         Action<Models.DTOs.ProfileMessageUpdate> onMessageUpdate,
-        Action<int, string> onPush)
+        Action<int, string> onPush,
+        IProfileRepository profileRepo)
     {
         _onMessageUpdate = onMessageUpdate;
         _onPush = onPush;
+        _profileRepo = profileRepo;
     }
 
     public static string GetStatus(int profileId) =>
@@ -31,6 +35,8 @@ public class ProfileStatusService
 
         _onMessageUpdate(new Models.DTOs.ProfileMessageUpdate { ProfileId = profileId, Message = message, Status = state.Status });
         _onPush(profileId, message);
+
+        _ = PersistAsync(profileId, state.Status, message);
     }
 
     public void UpdateStatus(int profileId, string status, string? message = null)
@@ -46,6 +52,14 @@ public class ProfileStatusService
             Status = status
         });
         _onPush(profileId, message ?? state.Message);
+
+        _ = PersistAsync(profileId, status, message ?? state.Message);
+    }
+
+    private async Task PersistAsync(int profileId, string status, string message)
+    {
+        try { await _profileRepo.UpdateStatusAsync(profileId, status, message); }
+        catch { }
     }
 
     public static void Clear(int profileId) => _runtimeStates.TryRemove(profileId, out _);

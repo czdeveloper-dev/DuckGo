@@ -10,16 +10,7 @@
         _proxyTags: [],
         _visibleCols: new Set(['seq', 'name', 'group', 'tags', 'proxy_detail', 'status', 'message', 'note', 'created', 'action']),
 
-        async onShow() {
-            if (!this._initialized) {
-                this._loadColPreferences();
-                this._initialized = true;
-                this.initUI();
-            }
-            await this.loadProxyGroups();
-            await this.loadProxyTags();
-            await this.loadProxies();
-        },
+        async onShow() { if (!this._initialized) { this._loadColPreferences(); this._initialized = true; this.initUI(); await this.loadProxyGroups(); await this.loadProxyTags(); await this.loadProxies(); } },
 
         _loadColPreferences() {
             try {
@@ -565,12 +556,6 @@
                 inputCtrl.element.style.display = 'none';
                 
                 if (newVal !== (row.name || '').trim()) {
-                    if (!newVal) {
-                        inputCtrl.setValue(row.name || '');
-                        lbl.textContent = row.name || '-';
-                        window.DuckControls.Toast?.error?.('Error', 'Name cannot be empty');
-                        return;
-                    }
                     const oldName = row.name;
                     (async () => {
                         try {
@@ -694,7 +679,7 @@
             if (row._checking) {
                 // Short pill shape (original style)
                 const pill = document.createElement('span');
-                pill.style.cssText = 'display:inline-block;width:14px;height:6px;border-radius:3px;margin-right:6px;background:#3b82f6;flex-shrink:0;';
+                pill.style.cssText = 'display:inline-block;width:14px;height:6px;border-radius:3px;margin-right:6px;background:var(--info);flex-shrink:0;';
                 const txt = document.createElement('span');
                 txt.style.cssText = 'font-size:12px;font-weight:500;color:var(--text-primary);';
                 txt.textContent = 'Checking';
@@ -703,13 +688,13 @@
             }
             
             const st = String(row.status || 'not_checked').toLowerCase();
-            
-            let color = '#94a3b8';
+            let color = 'var(--text-tertiary)';
             let text = 'Not check';
-            
-            if (st === 'alive') { color = '#22c55e'; text = 'Alive'; }
-            else if (st === 'dead') { color = '#ef4444'; text = 'Dead'; }
-            else if (st === 'timeout') { color = '#f59e0b'; text = 'Timeout'; }
+            if (!st || st === 'not_checked' || st === 'not check') { }
+            else if (st === 'alive') { color = 'var(--success)'; text = 'Alive'; }
+            else if (st === 'dead') { color = 'var(--danger)'; text = 'Dead'; }
+            else if (st === 'timeout') { color = 'var(--warning)'; text = 'Timeout'; }
+            else { color = 'var(--danger)'; text = 'Error'; }
             
             // Short pill dot (original style)
             const pill = document.createElement('span');
@@ -1184,3 +1169,5 @@
     window.DuckApp?.registerView('proxies', VIEW);
     window.ProxiesView = VIEW;
 })();
+
+

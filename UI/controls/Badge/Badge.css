@@ -19,21 +19,33 @@
 
 /* Badge Variants */
 .duck-badge-success {
-    background: rgba(16, 185, 129, 0.1) !important;
-    color: #059669 !important;
-    border-color: rgba(16, 185, 129, 0.2) !important;
+    background: var(--success-bg) !important;
+    color: var(--success) !important;
+    border-color: var(--success-border) !important;
 }
 
 .duck-badge-danger {
-    background: var(--bg-subtle) !important;
-    color: var(--text-secondary) !important;
-    border-color: var(--border-default) !important;
+    background: var(--danger-bg) !important;
+    color: var(--danger) !important;
+    border-color: var(--danger-border) !important;
+}
+
+.duck-badge-warning {
+    background: var(--warning-bg) !important;
+    color: var(--warning) !important;
+    border-color: var(--warning-border) !important;
 }
 
 .duck-badge-info {
-    background: rgba(59, 130, 246, 0.1) !important;
-    color: #3b82f6 !important;
-    border-color: rgba(59, 130, 246, 0.2) !important;
+    background: var(--info-bg) !important;
+    color: var(--info) !important;
+    border-color: var(--info-border) !important;
+}
+
+.duck-badge-inactive {
+    background: var(--bg-subtle) !important;
+    color: var(--text-secondary) !important;
+    border-color: var(--border-default) !important;
 }
 
 /* Stat variant — for large number values like "0/0" in stat panels */

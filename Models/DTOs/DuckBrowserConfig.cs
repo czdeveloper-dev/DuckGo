@@ -4,6 +4,7 @@ namespace DuckGo.Models.DTOs;
 
 /// <summary>
 /// Full config sent to DuckBrowser via Named Pipe
+/// Follows duckbrowser_project_plan.md PHẦN 3 JSON CONFIG SCHEMA
 /// </summary>
 public class DuckBrowserConfig
 {
@@ -24,6 +25,9 @@ public class DuckBrowserConfig
 
     [JsonPropertyName("Location")]
     public DuckLocationConfig? Location { get; set; }
+
+    [JsonPropertyName("UI")]
+    public DuckUiConfig? UI { get; set; }
 
     [JsonPropertyName("Security")]
     public DuckSecurityConfig? Security { get; set; }
@@ -49,11 +53,17 @@ public class DuckProfileConfig
 
 public class DuckSystemConfig
 {
+    [JsonPropertyName("BrowserVersion")]
+    public string BrowserVersion { get; set; } = "138";
+
     [JsonPropertyName("Platform")]
     public string Platform { get; set; } = "Win32";
 
     [JsonPropertyName("Language")]
     public string Language { get; set; } = "en-US";
+
+    [JsonPropertyName("Languages")]
+    public List<string>? Languages { get; set; }
 
     [JsonPropertyName("UserAgent")]
     public string UserAgent { get; set; } = "";
@@ -63,6 +73,9 @@ public class DuckSystemConfig
 
     [JsonPropertyName("Timezone")]
     public string Timezone { get; set; } = "UTC";
+
+    [JsonPropertyName("TimezoneOffset")]
+    public int? TimezoneOffset { get; set; }
 
     [JsonPropertyName("HardwareConcurrency")]
     public int HardwareConcurrency { get; set; } = 8;
@@ -75,6 +88,12 @@ public class DuckSystemConfig
 
     [JsonPropertyName("Bitness")]
     public string Bitness { get; set; } = "64";
+
+    [JsonPropertyName("CpuBrand")]
+    public string? CpuBrand { get; set; }
+
+    [JsonPropertyName("Touch")]
+    public DuckTouchConfig? Touch { get; set; }
 
     [JsonPropertyName("Screen")]
     public DuckScreenConfig? Screen { get; set; }
@@ -93,12 +112,42 @@ public class DuckScreenConfig
 
     [JsonPropertyName("PixelRatio")]
     public double PixelRatio { get; set; } = 1.0;
+
+    [JsonPropertyName("AvailWidth")]
+    public int? AvailWidth { get; set; }
+
+    [JsonPropertyName("AvailHeight")]
+    public int? AvailHeight { get; set; }
+
+    [JsonPropertyName("AvailLeft")]
+    public int? AvailLeft { get; set; }
+
+    [JsonPropertyName("AvailTop")]
+    public int? AvailTop { get; set; }
+
+    [JsonPropertyName("OuterWidth")]
+    public int? OuterWidth { get; set; }
+
+    [JsonPropertyName("OuterHeight")]
+    public int? OuterHeight { get; set; }
+}
+
+public class DuckTouchConfig
+{
+    [JsonPropertyName("MaxTouchPoints")]
+    public int? MaxTouchPoints { get; set; }
+
+    [JsonPropertyName("TouchSupport")]
+    public bool? TouchSupport { get; set; }
 }
 
 public class DuckFingerprintConfig
 {
     [JsonPropertyName("WebGL")]
     public DuckWebGLConfig? WebGL { get; set; }
+
+    [JsonPropertyName("WebGL2")]
+    public DuckWebGL2Config? WebGL2 { get; set; }
 
     [JsonPropertyName("Canvas")]
     public DuckCanvasConfig? Canvas { get; set; }
@@ -113,7 +162,10 @@ public class DuckFingerprintConfig
     public DuckClientRectsConfig? ClientRects { get; set; }
 
     [JsonPropertyName("Fonts")]
-    public List<string>? Fonts { get; set; }
+    public DuckFontsConfig? Fonts { get; set; }
+
+    [JsonPropertyName("Navigator")]
+    public DuckNavigatorConfig? Navigator { get; set; }
 
     [JsonPropertyName("Plugins")]
     public List<DuckPluginConfig>? Plugins { get; set; }
@@ -124,8 +176,26 @@ public class DuckFingerprintConfig
     [JsonPropertyName("MediaDevices")]
     public DuckMediaDevicesConfig? MediaDevices { get; set; }
 
+    [JsonPropertyName("TLS")]
+    public DuckTlsConfig? TLS { get; set; }
+
+    [JsonPropertyName("Speech")]
+    public DuckSpeechConfig? Speech { get; set; }
+
+    [JsonPropertyName("WebRtc")]
+    public DuckWebRtcConfig? WebRtc { get; set; }
+
+    [JsonPropertyName("Dns")]
+    public DuckDnsConfig? Dns { get; set; }
+
+    [JsonPropertyName("Security")]
+    public DuckFingerprintSecurityConfig? Security { get; set; }
+
     [JsonPropertyName("StorageQuota")]
     public long? StorageQuota { get; set; }
+
+    [JsonPropertyName("Storage")]
+    public DuckStorageConfig? Storage { get; set; }
 
     [JsonPropertyName("TLSOSMatch")]
     public string? TLSOSMatch { get; set; }
@@ -151,6 +221,12 @@ public class DuckWebGLConfig
     [JsonPropertyName("NoiseLevel")]
     public double? NoiseLevel { get; set; }
 
+    [JsonPropertyName("Extensions")]
+    public List<string>? Extensions { get; set; }
+
+    [JsonPropertyName("MaxTextureSize")]
+    public int? MaxTextureSize { get; set; }
+
     [JsonPropertyName("ImageSpoofing")]
     public DuckWebGLImageSpoofing? ImageSpoofing { get; set; }
 }
@@ -165,6 +241,54 @@ public class DuckWebGLImageSpoofing
 
     [JsonPropertyName("Pattern")]
     public string Pattern { get; set; } = "default";
+}
+
+public class DuckWebGL2Config
+{
+    [JsonPropertyName("Alpha")]
+    public bool? Alpha { get; set; }
+
+    [JsonPropertyName("Depth")]
+    public bool? Depth { get; set; }
+
+    [JsonPropertyName("Stencil")]
+    public bool? Stencil { get; set; }
+
+    [JsonPropertyName("Antialias")]
+    public bool? Antialias { get; set; }
+
+    [JsonPropertyName("PremultipliedAlpha")]
+    public bool? PremultipliedAlpha { get; set; }
+
+    [JsonPropertyName("PreserveDrawingBuffer")]
+    public bool? PreserveDrawingBuffer { get; set; }
+
+    [JsonPropertyName("FailIfMajorPerformanceCaveat")]
+    public bool? FailIfMajorPerformanceCaveat { get; set; }
+
+    [JsonPropertyName("XRCompatible")]
+    public bool? XRCompatible { get; set; }
+
+    [JsonPropertyName("PowerPreference")]
+    public string? PowerPreference { get; set; }
+
+    [JsonPropertyName("ShaderSource")]
+    public DuckShaderSourceConfig? ShaderSource { get; set; }
+
+    [JsonPropertyName("DrawingBufferWidth")]
+    public int? DrawingBufferWidth { get; set; }
+
+    [JsonPropertyName("DrawingBufferHeight")]
+    public int? DrawingBufferHeight { get; set; }
+}
+
+public class DuckShaderSourceConfig
+{
+    [JsonPropertyName("StripDebugMarkers")]
+    public bool? StripDebugMarkers { get; set; }
+
+    [JsonPropertyName("DebugMarkers")]
+    public List<string>? DebugMarkers { get; set; }
 }
 
 public class DuckCanvasConfig
@@ -189,6 +313,9 @@ public class DuckAudioConfig
 
     [JsonPropertyName("NoiseLevel")]
     public double? NoiseLevel { get; set; }
+
+    [JsonPropertyName("SampleRate")]
+    public int? SampleRate { get; set; }
 }
 
 public class DuckFontMetricsConfig
@@ -213,6 +340,229 @@ public class DuckClientRectsConfig
 
     [JsonPropertyName("NoiseLevel")]
     public double? NoiseLevel { get; set; }
+}
+
+public class DuckFontsConfig
+{
+    [JsonPropertyName("Family")]
+    public List<string>? Family { get; set; }
+
+    [JsonPropertyName("Emoji")]
+    public List<string>? Emoji { get; set; }
+}
+
+public class DuckNavigatorConfig
+{
+    [JsonPropertyName("HardwareConcurrency")]
+    public int? HardwareConcurrency { get; set; }
+
+    [JsonPropertyName("DeviceMemory")]
+    public int? DeviceMemory { get; set; }
+
+    [JsonPropertyName("Platform")]
+    public string? Platform { get; set; }
+
+    [JsonPropertyName("Language")]
+    public string? Language { get; set; }
+
+    [JsonPropertyName("Languages")]
+    public List<string>? Languages { get; set; }
+
+    [JsonPropertyName("Vendor")]
+    public string? Vendor { get; set; }
+
+    [JsonPropertyName("AppCodeName")]
+    public string? AppCodeName { get; set; }
+
+    [JsonPropertyName("AppName")]
+    public string? AppName { get; set; }
+
+    [JsonPropertyName("Product")]
+    public string? Product { get; set; }
+
+    [JsonPropertyName("ProductSub")]
+    public string? ProductSub { get; set; }
+
+    [JsonPropertyName("DoNotTrack")]
+    public string? DoNotTrack { get; set; }
+
+    [JsonPropertyName("CookieEnabled")]
+    public bool? CookieEnabled { get; set; }
+
+    [JsonPropertyName("TLSOSMatch")]
+    public string? TLSOSMatch { get; set; }
+
+    [JsonPropertyName("VisualViewportScale")]
+    public double? VisualViewportScale { get; set; }
+
+    [JsonPropertyName("VisualViewportOffsetLeft")]
+    public double? VisualViewportOffsetLeft { get; set; }
+
+    [JsonPropertyName("VisualViewportOffsetTop")]
+    public double? VisualViewportOffsetTop { get; set; }
+
+    [JsonPropertyName("VisualViewportPageLeft")]
+    public double? VisualViewportPageLeft { get; set; }
+
+    [JsonPropertyName("VisualViewportPageTop")]
+    public double? VisualViewportPageTop { get; set; }
+}
+
+public class DuckTlsConfig
+{
+    [JsonPropertyName("Os")]
+    public string? Os { get; set; }
+
+    [JsonPropertyName("CipherList")]
+    public List<string>? CipherList { get; set; }
+
+    [JsonPropertyName("CurvesList")]
+    public List<string>? CurvesList { get; set; }
+}
+
+public class DuckWebRtcConfig
+{
+    [JsonPropertyName("Policy")]
+    public string? Policy { get; set; }
+
+    [JsonPropertyName("BlockNonProxiedUdp")]
+    public bool? BlockNonProxiedUdp { get; set; }
+}
+
+public class DuckDnsConfig
+{
+    [JsonPropertyName("Policy")]
+    public string? Policy { get; set; }
+}
+
+public class DuckSpeechConfig
+{
+    [JsonPropertyName("Seed")]
+    public int? Seed { get; set; }
+
+    [JsonPropertyName("Voices")]
+    public List<DuckSpeechVoiceConfig>? Voices { get; set; }
+}
+
+public class DuckSpeechVoiceConfig
+{
+    [JsonPropertyName("Name")]
+    public string? Name { get; set; }
+
+    [JsonPropertyName("Lang")]
+    public string? Lang { get; set; }
+
+    [JsonPropertyName("LocalService")]
+    public bool? LocalService { get; set; }
+
+    [JsonPropertyName("Default")]
+    public bool? Default { get; set; }
+
+    [JsonPropertyName("VoiceURI")]
+    public string? VoiceURI { get; set; }
+}
+
+public class DuckFingerprintSecurityConfig
+{
+    [JsonPropertyName("PortBlockMode")]
+    public string? PortBlockMode { get; set; }
+
+    [JsonPropertyName("PortBlockList")]
+    public List<string>? PortBlockList { get; set; }
+
+    [JsonPropertyName("Process")]
+    public DuckSecurityProcessConfig? Process { get; set; }
+
+    [JsonPropertyName("Window")]
+    public DuckSecurityWindowConfig? Window { get; set; }
+
+    [JsonPropertyName("DevTools")]
+    public DuckSecurityDevToolsConfig? DevTools { get; set; }
+
+    [JsonPropertyName("Console")]
+    public DuckSecurityConsoleConfig? Console { get; set; }
+
+    [JsonPropertyName("NodeGlobals")]
+    public DuckSecurityNodeGlobalsConfig? NodeGlobals { get; set; }
+
+    [JsonPropertyName("ProtoGuard")]
+    public DuckSecurityProtoGuardConfig? ProtoGuard { get; set; }
+
+    [JsonPropertyName("CssAnimation")]
+    public DuckSecurityCssAnimationConfig? CssAnimation { get; set; }
+
+    [JsonPropertyName("ChromeInternal")]
+    public DuckSecurityChromeInternalConfig? ChromeInternal { get; set; }
+
+    [JsonPropertyName("FeatureDetection")]
+    public DuckSecurityFeatureDetectionConfig? FeatureDetection { get; set; }
+
+    [JsonPropertyName("Script")]
+    public DuckSecurityScriptConfig? Script { get; set; }
+
+    [JsonPropertyName("Device")]
+    public DuckSecurityDeviceConfig? Device { get; set; }
+
+    [JsonPropertyName("Notification")]
+    public DuckSecurityNotificationConfig? Notification { get; set; }
+
+    [JsonPropertyName("BlobUrl")]
+    public DuckSecurityBlobUrlConfig? BlobUrl { get; set; }
+}
+
+public class DuckSecurityProcessConfig { [JsonPropertyName("Type")] public string? Type { get; set; } }
+public class DuckSecurityWindowConfig { [JsonPropertyName("ChromeOffsetPx")] public int? ChromeOffsetPx { get; set; } }
+public class DuckSecurityDevToolsConfig { [JsonPropertyName("HideApi")] public bool? HideApi { get; set; } [JsonPropertyName("InjectProxy")] public bool? InjectProxy { get; set; } }
+public class DuckSecurityConsoleConfig { [JsonPropertyName("HardenProto")] public bool? HardenProto { get; set; } }
+public class DuckSecurityNodeGlobalsConfig { [JsonPropertyName("Mode")] public string? Mode { get; set; } }
+public class DuckSecurityProtoGuardConfig { [JsonPropertyName("ChainToObject")] public List<string>? ChainToObject { get; set; } [JsonPropertyName("RestoreFunctions")] public List<string>? RestoreFunctions { get; set; } }
+public class DuckSecurityCssAnimationConfig { [JsonPropertyName("AnimationPrefixes")] public List<string>? AnimationPrefixes { get; set; } [JsonPropertyName("KeyframesPrefixes")] public List<string>? KeyframesPrefixes { get; set; } [JsonPropertyName("TransitionPrefixes")] public List<string>? TransitionPrefixes { get; set; } [JsonPropertyName("KeyframeNames")] public List<string>? KeyframeNames { get; set; } }
+public class DuckSecurityChromeInternalConfig { [JsonPropertyName("FakeCsiData")] public bool? FakeCsiData { get; set; } [JsonPropertyName("FakeLoadTimes")] public bool? FakeLoadTimes { get; set; } [JsonPropertyName("EmptyCommands")] public bool? EmptyCommands { get; set; } [JsonPropertyName("ExtraLeakNames")] public List<string>? ExtraLeakNames { get; set; } }
+public class DuckSecurityFeatureDetectionConfig { [JsonPropertyName("IntersectionObserver")] public bool? IntersectionObserver { get; set; } [JsonPropertyName("HeadlessCssQueries")] public List<string>? HeadlessCssQueries { get; set; } [JsonPropertyName("CssSupports")] public DuckSecurityCssSupportsConfig? CssSupports { get; set; } }
+public class DuckSecurityCssSupportsConfig { [JsonPropertyName("Mode")] public string? Mode { get; set; } [JsonPropertyName("Entries")] public List<string>? Entries { get; set; } }
+public class DuckSecurityScriptConfig { [JsonPropertyName("FunctionToString")] public string? FunctionToString { get; set; } [JsonPropertyName("ProtectedNativeFunctionNames")] public List<string>? ProtectedNativeFunctionNames { get; set; } [JsonPropertyName("StackScrubMode")] public string? StackScrubMode { get; set; } [JsonPropertyName("FrameworkPathMarkers")] public List<string>? FrameworkPathMarkers { get; set; } [JsonPropertyName("EvalInvariants")] public DuckSecurityEvalInvariantsConfig? EvalInvariants { get; set; } [JsonPropertyName("CssSupports")] public DuckSecurityCssSupportsConfig? CssSupports { get; set; } [JsonPropertyName("WasmTimingJitterMs")] public double? WasmTimingJitterMs { get; set; } }
+public class DuckSecurityEvalInvariantsConfig { [JsonPropertyName("Names")] public List<string>? Names { get; set; } }
+public class DuckSecurityDeviceConfig { [JsonPropertyName("MockFullscreenAPI")] public bool? MockFullscreenAPI { get; set; } [JsonPropertyName("MockCredentialManagement")] public bool? MockCredentialManagement { get; set; } [JsonPropertyName("MockScreenOrientation")] public bool? MockScreenOrientation { get; set; } [JsonPropertyName("MockPictureInPicture")] public bool? MockPictureInPicture { get; set; } [JsonPropertyName("MockPointerLock")] public bool? MockPointerLock { get; set; } [JsonPropertyName("MockWakeLock")] public bool? MockWakeLock { get; set; } [JsonPropertyName("HideDeviceAPIs")] public bool? HideDeviceAPIs { get; set; } }
+public class DuckSecurityNotificationConfig { [JsonPropertyName("PermissionPolicy")] public string? PermissionPolicy { get; set; } }
+public class DuckSecurityBlobUrlConfig { [JsonPropertyName("Format")] public string? Format { get; set; } }
+
+public class DuckStorageConfig
+{
+    [JsonPropertyName("Persisted")]
+    public bool? Persisted { get; set; }
+}
+
+public class DuckUiConfig
+{
+    [JsonPropertyName("Mode")]
+    public string? Mode { get; set; }
+
+    [JsonPropertyName("Headless")]
+    public DuckHeadlessConfig? Headless { get; set; }
+
+    [JsonPropertyName("WindowSize")]
+    public DuckWindowSizeConfig? WindowSize { get; set; }
+}
+
+public class DuckHeadlessConfig
+{
+    [JsonPropertyName("TimingJitterMs")]
+    public double? TimingJitterMs { get; set; }
+
+    [JsonPropertyName("ChromeOffsetExtraPx")]
+    public int? ChromeOffsetExtraPx { get; set; }
+
+    [JsonPropertyName("PermissionPolicy")]
+    public string? PermissionPolicy { get; set; }
+}
+
+public class DuckWindowSizeConfig
+{
+    [JsonPropertyName("Width")]
+    public int? Width { get; set; }
+
+    [JsonPropertyName("Height")]
+    public int? Height { get; set; }
 }
 
 public class DuckPluginConfig

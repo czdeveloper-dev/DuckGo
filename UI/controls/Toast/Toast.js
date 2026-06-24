@@ -78,7 +78,7 @@
         toast.style.cssText = ''; // Handled by CSS
 
         const iconMap = { success: 'check_circle', error: 'error', info: 'info', warning: 'warning' };
-        const iconColors = { success: '#22c55e', error: '#ef4444', info: '#3b82f6', warning: '#f59e0b' };
+        const iconColors = { success: 'var(--success)', error: 'var(--danger)', info: 'var(--info)', warning: 'var(--warning)' };
 
         const icon = document.createElement('span');
         icon.className = 'material-symbols-outlined duck-toast-icon';
@@ -261,7 +261,7 @@
                 if (pct) pct.textContent = 'Done';
                 var status = document.getElementById('progress-toast-status');
                 if (status) status.textContent = message || 'Download complete';
-                setTimeout(function() { clearProgressToast(); }, 2000);
+                clearProgressToast();
             },
 
             fail: function(message) {
@@ -282,3 +282,4 @@
     // CSS animations now handled in Toast.css
 
 })();
+

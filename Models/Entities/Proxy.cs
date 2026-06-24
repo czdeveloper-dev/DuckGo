@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace DuckGo.Models.Entities;
 
 public class Proxy
@@ -13,8 +15,13 @@ public class Proxy
     public string Password { get; set; } = "";
     public string RotaryApi { get; set; } = "";
     public string Notes { get; set; } = "";
+    [NotMapped]
     public string Status { get; set; } = "unknown";
+    
+    [NotMapped]
     public int? LatencyMs { get; set; }
+    
+    [NotMapped]
     public string? Message { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 

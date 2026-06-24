@@ -72,7 +72,8 @@
 }
 
 .duck-context-item.danger:hover {
-    background: rgba(239, 68, 68, 0.1);
+    background: var(--danger);
+    color: #fff;
 }
 
 .duck-context-item .material-symbols-outlined {
@@ -82,6 +83,10 @@
 
 .duck-context-item.danger .material-symbols-outlined {
     color: var(--danger);
+}
+
+.duck-context-item.danger:hover .material-symbols-outlined {
+    color: #fff;
 }
 
 .duck-context-divider {
@@ -101,7 +106,11 @@
     background: var(--border-default);
     color: var(--text-primary);
 }
-.duck-context-action-btn.danger:hover {
-    background: rgba(239, 68, 68, 0.1);
+.duck-context-action-btn.danger {
     color: var(--danger);
 }
+.duck-context-action-btn.danger:hover {
+    background: var(--danger);
+    color: #fff;
+}
+

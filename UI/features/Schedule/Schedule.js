@@ -569,7 +569,7 @@
             let color = 'var(--text-tertiary)';
             let text = 'Idle';
             if (st === 'running' || st === 'ready') { color = 'var(--success)'; text = st === 'ready' ? 'Ready' : 'Running'; }
-            else if (st === 'paused' || st === 'stopped') { color = 'var(--warning, #fbbf24)'; text = st === 'stopped' ? 'Stopped' : 'Paused'; }
+            else if (st === 'paused' || st === 'stopped') { color = 'var(--warning)'; text = st === 'stopped' ? 'Stopped' : 'Paused'; }
             else if (st === 'error') { color = 'var(--danger)'; text = 'Error'; }
             else if (st === 'finished' || st === 'completed') { color = 'var(--text-secondary)'; text = 'Finished'; }
 
@@ -808,3 +808,5 @@
         });
     }
 })();
+
+

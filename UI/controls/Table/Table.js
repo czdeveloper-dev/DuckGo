@@ -257,23 +257,22 @@ window.DuckControls.Table = {
                     colEl.style.display = 'none';
                     colEl.style.width = '0';
                 } else {
-                    if (idx === fillerIdx && colWidths[fillerIdx] === 0) {
-                        colEl.style.display = 'none';
-                        colEl.style.width = '0';
-                    } else {
-                        colEl.style.display = '';
-                        if (idx === fillerIdx) {
-                            colEl.style.width = ''; // filler absorbs remaining space
-                        } else if (colWidths[idx] > 0) {
-                            colEl.style.width = `${colWidths[idx]}px`;
-                            totalFixed += colWidths[idx];
-                        }
+                    colEl.style.display = '';
+                    if (idx === fillerIdx) {
+                        colEl.style.width = ''; // filler absorbs remaining space
+                    } else if (colWidths[idx] > 0) {
+                        colEl.style.width = `${colWidths[idx]}px`;
+                        totalFixed += colWidths[idx];
                     }
                 }
             });
             if (totalFixed > 0) {
                 table.style.minWidth = totalFixed + 'px';
-                table.style.width = totalFixed + 'px'; // Prevent browser from stretching columns to 100%
+                if (fillerIdx >= 0 && !_hiddenColIds.has(options.columns[fillerIdx].id || 'filler')) {
+                    table.style.width = '100%';
+                } else {
+                    table.style.width = totalFixed + 'px'; // Prevent browser from stretching columns to 100%
+                }
             }
         }
 
@@ -415,7 +414,7 @@ window.DuckControls.Table = {
     position: sticky !important;
     left: ${leftPx}px !important;
     z-index: ${30 - idx} !important;
-    background: var(--row-bg, var(--bg-surface)) !important;
+    background: var(--row-bg, var(--bg-elevated, var(--bg-surface, #ffffff))) !important;
     ${shadowRule}
 }`;
                 leftPx += w;
@@ -452,7 +451,7 @@ window.DuckControls.Table = {
     position: sticky !important;
     right: ${rightPx}px !important;
     z-index: 100 !important;
-    background: var(--row-bg, var(--bg-surface)) !important;
+    background: var(--row-bg, var(--bg-elevated, var(--bg-surface, #ffffff))) !important;
     ${shadowRule}
 }`;
                 rightPx += w;
@@ -462,7 +461,7 @@ window.DuckControls.Table = {
             if (fillerIdx >= 0) {
                 const fillerCol = options.columns[fillerIdx];
                 const cls = `data-col-${fillerCol.id || 'filler'}`;
-                const hideFiller = colWidths[fillerIdx] === 0;
+                const hideFiller = _hiddenColIds.has(fillerCol.id || 'filler');
                 css += `
 #${tableId} th.${cls},
 #${tableId} td.${cls} {
@@ -787,6 +786,87 @@ window.DuckControls.Table = {
             destroy() {
                 ro.disconnect();
                 clearTimeout(roDebounce);
+            },
+            updateRow(id, newRow) {
+                const existingTr = tbody.querySelector(`tr[data-id="${id}"]`);
+                if (!existingTr) return;
+                const rowIndex = parseInt(existingTr.dataset.rowIndex);
+                const frag = document.createDocumentFragment();
+                const tr = document.createElement('tr');
+                tr.dataset.id = newRow.id;
+                tr.dataset.rowIndex = rowIndex;
+                if (newRow.status === 'running' || newRow.status === 'ready') tr.classList.add('profile-running');
+                if (existingTr.classList.contains('selected')) tr.classList.add('selected');
+
+                options.columns.forEach((col, colIdx) => {
+                    const td = document.createElement('td');
+                    td.className = `data-col-${col.id || col.field || 'unknown'}`;
+                    td.dataset.colIndex = colIdx;
+                    if (col.align) td.style.textAlign = col.align;
+
+                    if (col.type === 'checkbox') {
+                        const cbEl = document.createElement('span');
+                        td.appendChild(cbEl);
+                        const cb = window.DuckControls.Checkbox.create(cbEl, {
+                            title: col.title || 'Select',
+                            onChange: e => {
+                                if (e.checked) tr.classList.add('selected');
+                                else tr.classList.remove('selected');
+                                let allChecked = true;
+                                let anyChecked = false;
+                                let total = 0;
+                                tbody.querySelectorAll('td').forEach(t => {
+                                    const rc = t._duckCheckbox;
+                                    if (rc) { total++; if (rc.isChecked()) anyChecked = true; }
+                                });
+                                tbody.querySelectorAll('tr').forEach(r => {
+                                    const firstTd = r.firstElementChild;
+                                    if (firstTd && firstTd._duckCheckbox && !firstTd._duckCheckbox.isChecked()) { allChecked = false; }
+                                });
+                                tbody.querySelectorAll('td').forEach(t => {
+                                    const rc = t._duckCheckbox;
+                                    if (rc) {
+                                        const val = rc.getValue();
+                                        if (options.onSelectionChange && typeof options.onSelectionChange === 'function') {
+                                            if (e.checked) options.onSelectionChange({ added: val, removed: null });
+                                            else options.onSelectionChange({ added: null, removed: val });
+                                        }
+                                    }
+                                });
+                                if (selectAllCheckbox) {
+                                    if (total > 0 && allChecked) selectAllCheckbox.check();
+                                    else { selectAllCheckbox.uncheck(); if (anyChecked) selectAllCheckbox.setIndeterminate(true); else selectAllCheckbox.setIndeterminate(false); }
+                                }
+                            }
+                        });
+                        cb.setValue(newRow.id);
+                        td._duckCheckbox = cb;
+                    } else if (col.id === 'filler') {
+                    } else if (col.render) {
+                        const content = col.render(newRow, rowIndex);
+                        if (typeof content === 'string') td.innerHTML = content;
+                        else if (content instanceof HTMLElement) td.appendChild(content);
+                    } else if (col.field) {
+                        td.textContent = newRow[col.field] ?? '';
+                    }
+
+                    tr.appendChild(td);
+                });
+
+                if (options.onRowContextMenu) {
+                    tr.addEventListener('contextmenu', e => {
+                        e.preventDefault();
+                        options.onRowContextMenu(e, newRow, rowIndex);
+                    });
+                }
+
+                tr.addEventListener('click', (e) => {
+                    if (e.target.closest('button, input, a, .duck-checkbox, .duck-btn, .duck-inline-btn, .proxy-panel, .data-col-name, .data-col-note')) return;
+                    const firstTd = tr.firstElementChild;
+                    if (firstTd && firstTd._duckCheckbox) firstTd._duckCheckbox.element.click();
+                });
+
+                existingTr.replaceWith(tr);
             }
         };
     }

@@ -106,42 +106,53 @@
 
 /* Danger */
 .duck-btn-danger {
-    background: var(--danger-bg);
-    color: var(--danger);
-    border-color: var(--danger-border);
+    background: var(--danger);
+    color: #fff;
+    border-color: var(--danger);
 }
 
 .duck-btn-danger:hover:not(:disabled) {
-    background: var(--danger);
+    background: color-mix(in srgb, var(--danger) 85%, black 15%);
     color: #fff;
+    border-color: color-mix(in srgb, var(--danger) 85%, black 15%);
 }
 
 .duck-btn-danger:active:not(:disabled) {
-    background: #dc2626;
+    background: color-mix(in srgb, var(--danger) 75%, black 25%);
 }
 
 /* Success */
 .duck-btn-success {
-    background: var(--success-bg);
-    color: var(--success);
-    border-color: var(--success-border);
+    background: var(--success);
+    color: #fff;
+    border-color: var(--success);
 }
 
 .duck-btn-success:hover:not(:disabled) {
-    background: var(--success);
+    background: color-mix(in srgb, var(--success) 85%, black 15%);
     color: #fff;
+    border-color: color-mix(in srgb, var(--success) 85%, black 15%);
+}
+
+.duck-btn-success:active:not(:disabled) {
+    background: color-mix(in srgb, var(--success) 75%, black 25%);
 }
 
 /* Warning */
 .duck-btn-warning {
-    background: var(--warning-bg);
-    color: var(--warning);
-    border-color: var(--warning-border);
+    background: var(--warning);
+    color: #fff;
+    border-color: var(--warning);
 }
 
 .duck-btn-warning:hover:not(:disabled) {
-    background: var(--warning);
+    background: color-mix(in srgb, var(--warning) 85%, black 15%);
     color: #fff;
+    border-color: color-mix(in srgb, var(--warning) 85%, black 15%);
+}
+
+.duck-btn-warning:active:not(:disabled) {
+    background: color-mix(in srgb, var(--warning) 75%, black 25%);
 }
 
 /* ── Button Sizes ─────────────────────────────────────────── */

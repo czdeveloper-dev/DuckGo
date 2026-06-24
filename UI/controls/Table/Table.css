@@ -278,3 +278,8 @@ tr.profile-running:hover {
 .duck-table-loader.active { opacity: 1; visibility: visible; pointer-events: auto; }
 .duck-table-loader .spinner { width: 40px; height: 40px; border: 3px solid var(--border-default); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
 .duck-table-loader-text { color: var(--text-secondary); font-size: 14px; font-weight: 500; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+/* Fix for intersection corner */
+.data-table-container::-webkit-scrollbar-corner {
+    background: var(--bg-surface);
+}

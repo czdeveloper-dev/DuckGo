@@ -23,8 +23,8 @@ window.ProfileModals.NewFingerprint = {
             content: `
                 <div style="font-size: 13px; color: var(--text-primary); line-height: 1.5;">
                     <p style="margin-bottom: 12px; font-weight: 500;">Do you want to confirm changing the fingerprint for the selected profiles?</p>
-                    <div style="background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.2); padding: 12px; border-radius: 6px; margin-bottom: 12px;">
-                        <div style="color: #eab308; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+                    <div style="background: var(--warning-bg); border: 1px solid var(--warning-border); padding: 12px; border-radius: 6px; margin-bottom: 12px;">
+                        <div style="color: var(--warning); font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
                             <span class="material-symbols-outlined" style="font-size: 16px;">warning</span> Important Warning
                         </div>
                         <ul style="list-style: disc; margin-left: 20px; color: var(--text-secondary); margin-bottom: 0;">
@@ -47,18 +47,15 @@ window.ProfileModals.NewFingerprint = {
                     try {
                         const idsArray = Array.isArray(selectedIds) ? selectedIds : [...selectedIds];
                         await DuckBridge.call('profile.regenerateFingerprint', idsArray);
-                        if (window.ProfilesView && window.ProfilesView._profilesData) { 
-                            for (let id of idsArray) { 
-                                const profile = window.ProfilesView._profilesData.find(p => p.id === id);
-                                if (profile) {
-                                    profile.message = 'Gernerated fingerprint suscessfully';
-                                    window.ProfilesView._table?.updateRow?.(id, profile);
-                                }
-                            } 
+                        
+                        if (window.ProfilesView) {
+                            if (window.ProfilesView.loadProfiles) window.ProfilesView.loadProfiles();
+                            if (window.ProfilesView.loadGroups) window.ProfilesView.loadGroups();
+                            if (window.ProfilesView.loadTags) window.ProfilesView.loadTags();
                         }
                         modal.close();
                     } catch (err) {
-                        updateStatus(err.message || 'Failed to regenerate fingerprint.', true);
+                        updateStatus(err.message || 'Failed to request new fingerprint.', true);
                         modal.setLoading(false);
                     }
                 }}
@@ -69,4 +66,5 @@ window.ProfileModals.NewFingerprint = {
         }).open();
     }
 };
+
 

@@ -1,4 +1,4 @@
-﻿(function() {
+(function() {
     'use strict';
 
     window.ProfileModals = window.ProfileModals || {};
@@ -59,7 +59,8 @@
             const prefixCtrl = window.DuckControls.Input.create({
                 label: 'PATTERN / PREFIX',
                 placeholder: 'e.g., ACCOUNT_',
-                icon: 'text_format'
+                icon: 'text_format',
+                tabIndex: -1
             });
             prefixContainer.appendChild(prefixCtrl.element);
             
@@ -76,7 +77,8 @@
             const startCtrl = window.DuckControls.Input.create({
                 label: 'START NO.',
                 placeholder: '1',
-                icon: 'numbers'
+                icon: 'numbers',
+                tabIndex: -1
             });
             startCtrl.setValue('1');
             startContainer.appendChild(startCtrl.element);
@@ -114,7 +116,7 @@
                 const arrow = document.createElement('span');
                 arrow.className = 'material-symbols-outlined';
                 arrow.textContent = 'arrow_forward';
-                arrow.style.cssText = 'font-size: 18px; color: var(--text-muted, #94a3b8);';
+                arrow.style.cssText = 'font-size: 18px; color: var(--text-muted);';
                 
                 const newNameContainer = document.createElement('div');
                 newNameContainer.style.cssText = 'flex: 1;';
@@ -196,24 +198,25 @@
                                         await DuckBridge.call('profile.update', {
                                             id: update.id,
                                             name: update.name,
-                                            groupId: profile.groupId,
-                                            tagIds: profile.tagIds,
-                                            proxyId: profile.proxyId,
-                                            browserType: profile.browserType,
-                                            browserVersion: profile.browserVersion,
-                                            profileData: profile.profileData,
-                                            notes: profile.notes,
-                                            cookies: profile.cookies
+                                            groupId: profile.groupId || profile.GroupId || null,
+                                            tagIds: profile.tagIds || profile.TagIds || null,
+                                            proxyId: profile.proxyId || profile.ProxyId || null,
+                                            browserType: profile.browserType || profile.BrowserType || 'Chromium',
+                                            browserVersion: profile.browserVersion || profile.BrowserVersion || '138',
+                                            profileData: profile.profileData || profile.ProfileData || '{}',
+                                            notes: profile.notes || profile.Notes || '',
+                                            cookies: profile.cookies || profile.Cookies || null
                                         });
                                     }
                                 }
                             }
                             
                             modal.close();
-                            if (window.DuckApp && window.DuckApp.Profiles) {
-                                window.DuckApp.Profiles.refresh();
+                            if (window.ProfilesView) {
+                                if (window.ProfilesView.loadProfiles) window.ProfilesView.loadProfiles();
+                                if (window.ProfilesView.loadGroups) window.ProfilesView.loadGroups();
+                                if (window.ProfilesView.loadTags) window.ProfilesView.loadTags();
                             }
-                            window.DuckControls.Toast?.success?.('Success', `Updated ${updates.length} profiles successfully.`);
                         } catch (err) {
                             modal.setLoading(false);
                             console.error(err);

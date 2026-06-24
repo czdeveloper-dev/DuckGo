@@ -154,6 +154,7 @@ public class BrowserCatalogService
                     Description = ver.Description,
                     DownloadUrl = ver.DownloadUrl,
                     Md5 = ver.Md5,
+                    Sha256 = ver.Sha256,
                     ExecutableRelativePath = GetExecutablePathForBrowser(def.BrowserType),
                     ArchiveType = "zip"
                 });

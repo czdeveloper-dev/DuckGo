@@ -75,6 +75,10 @@ public class DatabaseService : IDisposable
         // Add TypeId column if migrating from old schema (without TypeId)
         await EnsureColumnExistsAsync(conn, "Proxies", "TypeId", "ALTER TABLE Proxies ADD COLUMN TypeId INTEGER REFERENCES ProxyTypes(Id) ON DELETE CASCADE");
 
+        // Status + Message columns for runtime state persistence
+        await EnsureColumnExistsAsync(conn, "Profiles", "Status", "ALTER TABLE Profiles ADD COLUMN Status TEXT DEFAULT 'ready'");
+        await EnsureColumnExistsAsync(conn, "Profiles", "Message", "ALTER TABLE Profiles ADD COLUMN Message TEXT DEFAULT ''");
+
         await RunNonQueryAsync(conn, @"
             CREATE TABLE IF NOT EXISTS ProxyTypes (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,

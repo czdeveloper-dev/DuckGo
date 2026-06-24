@@ -37,13 +37,13 @@
 .duck-inline-btn-primary {
     background: var(--accent);
     border-color: var(--accent);
-    color: #fff;
+    color: var(--text-inverse);
 }
 
 .duck-inline-btn-primary:hover {
     background: var(--accent-light);
     border-color: var(--accent-light);
-    color: #fff;
+    color: var(--text-inverse);
 }
 
 .duck-inline-btn-ghost {

@@ -1,9 +1,9 @@
-/**
+﻿/**
  * CreateProfileModal.js
  *
  * Fingerprint template loaded from backend via profile.getFingerprintTemplate.
- * Cascade: OS select â†’ all OS-dependent controls + Overview sync.
- * Every control change triggers _scheduleSync() â†’ Overview updates live.
+ * Cascade: OS select   -->  all OS-dependent controls + Overview sync.
+ * Every control change triggers _scheduleSync()   -->  Overview updates live.
  */
 (function() {
     'use strict';
@@ -36,7 +36,7 @@
             window.addEventListener('profile-created', this._onProfileCreatedBound);
         },
 
-        // â”€â”€ Module init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ===== Module init =====
         _init() {
             this._initProfileCreatedListener();
         },
@@ -712,7 +712,7 @@
             ].join('\n');
         },
 
-        /** Debounced sync â€” call whenever any control changes. */
+        /** Debounced sync — call whenever any control changes. */
         _scheduleSync() {
             // Skip sync during profile loading to prevent overriding loaded values
             if (this._isLoadingProfile) return;
@@ -735,7 +735,7 @@
             const secTab = window.ProfileModals.CreateProfile.SecurityTab;
             const osBlock = tmpl.OS?.[osValue];
 
-            // â”€â”€ GeneralTab: OS model select â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            //   -   -  GeneralTab: OS model select   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   - 
             if (genTab) {
                 // OS list (Windows, macOS, Linux...) from template keys
                 const osKeys = tmpl.OS ? Object.keys(tmpl.OS) : [];
@@ -762,11 +762,11 @@
                 }
             }
 
-            // â”€â”€ HardwareTab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            //   -   -  HardwareTab   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   - 
             if (hwTab) {
                 hwTab._currentOsBlock = osBlock;
 
-                // HardwareTiers â†’ cpuChipSelect (value = "Concurrency-Memory")
+                // HardwareTiers   -->  cpuChipSelect (value = "Concurrency-Memory")
                 const tiers = osBlock?.HardwareTiers || [];
                 const cpuTierOpts = tiers.map(t => ({
                     label: `${t.Concurrency} Cores / ${t.Memory} GB`,
@@ -780,7 +780,7 @@
                     }
                 }
 
-                // ScreenPresets â†’ resChipSelect
+                // ScreenPresets   -->  resChipSelect
                 const presets = osBlock?.ScreenPresets || [];
                 const resOpts = presets.map(p => ({
                     label: `${p.Width} Ã— ${p.Height} @${p.PixelRatio}x`,
@@ -793,7 +793,7 @@
                     }
                 }
 
-                // WebGL vendors â†’ cascade to vendor + renderer
+                // WebGL vendors   -->  cascade to vendor + renderer
                 const vendors = osBlock?.WebGL?.VendorGPUs
                     ? Object.keys(osBlock.WebGL.VendorGPUs)
                     : ['Google Inc. (NVIDIA)'];
@@ -820,12 +820,12 @@
                     }
                 }
 
-                // Cascade completes â€” sync overview immediately (vendor/renderer already set above)
+                // Cascade completes — sync overview immediately (vendor/renderer already set above)
                 if (this._syncTimer) clearTimeout(this._syncTimer);
                 this._syncSummary();
             }
 
-            // â”€â”€ NetworkTab: language options + timezone â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            //   -   -  NetworkTab: language options + timezone   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   - 
             if (netTab) {
                 if (netTab._langTagInput) {
                     const langOpts = (tmpl.Languages || []).map(l => ({
@@ -849,7 +849,7 @@
                 }
             }
 
-            // â”€â”€ SecurityTab: font options â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            //   -   -  SecurityTab: font options   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   - 
             if (secTab) {
                 if (secTab._fontTagInput) {
                     const fontOpts = (osBlock?.Fonts || []).map(f => ({ label: f, value: f }));
@@ -864,7 +864,7 @@
             this._scheduleSync();
         },
 
-        /** Called when WebGL vendor changes â€” update renderer select. */
+        /** Called when WebGL vendor changes — update renderer select. */
         _cascadeVendorChange(vendor) {
             // Skip cascade during profile loading
             if (this._isLoadingProfile) return;
@@ -887,7 +887,7 @@
             this._scheduleSync();
         },
 
-        /** Deferred WebGL vendor cascade â€” waits for ContextMenu to close after setValue. */
+        /** Deferred WebGL vendor cascade — waits for ContextMenu to close after setValue. */
         _scheduleVendorCascade(vendor) {
             if (this._vendorCascadeTimer) clearTimeout(this._vendorCascadeTimer);
             this._vendorCascadeTimer = setTimeout(() => {
@@ -904,7 +904,7 @@
             this._originalProfileData = null;
             this._loadedDbValues = null; // clear cached DB values from previous load
 
-            // â”€â”€ Loading / Error state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            //   -   -  Loading / Error state   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   - 
             const loadingWrap = document.createElement('div');
             loadingWrap.style.cssText = 'display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; height: 100%; gap: 12px;';
             const spinner = document.createElement('div');
@@ -944,7 +944,7 @@
             const submitButtonText = this._mode === 'edit' ? 'Save Changes' : 'Create Profile';
             const submitButtonIcon = this._mode === 'edit' ? 'save' : 'add';
 
-            // Modal â€” submit button disabled until data loads
+            // Modal — submit button disabled until data loads
             this._modal = window.DuckControls.Modal.create({
                 defaultEnter: true,
                 preventAutoFocus: true,
@@ -1076,7 +1076,7 @@
 
             this._modal.open();
 
-            // â”€â”€ Load data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            //   -   -  Load data   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   - 
             await this._loadEntityData();
 
             // In edit mode, load profile data and generate defaults for merging
@@ -1156,7 +1156,7 @@
             }
 
             this._fpTemplate = template;
-            // â”€â”€ Build form and replace skeleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            //   -   -  Build form and replace skeleton   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   - 
             const container = this._buildFormContainer(template);
 
             const modalBody = this._modal?.container?.querySelector('.duck-modal-body');
@@ -1309,7 +1309,7 @@
             const tcMode = (tc) => {
                 if (tc == null) return null;
                 if (typeof tc === 'object' && 'Mode' in tc) return tc.Mode; // new TypedConfig schema
-                return null; // old schema has no mode â†’ treat as null (real)
+                return null; // old schema has no mode   -->  treat as null (real)
             };
 
             // 1. Apply to Name/Group/Tags in sticky header
@@ -1586,9 +1586,9 @@
                     else if (String(dntValue).toLowerCase() === 'disabled') doNotTrackValue = 'disabled';
                 }
 
-                // Fonts: new schema â†’ .FontList array; old schema â†’ raw string[]
+                // Fonts: new schema   -->  .FontList array; old schema   -->  raw string[]
                 const fontsList = fingerprintConfig.Fonts?.FontList || fingerprintConfig.Fonts || [];
-                // FontsMode: new schema â†’ .Mode; old schema â†’ .FontsMode string
+                // FontsMode: new schema   -->  .Mode; old schema   -->  .FontsMode string
                 const fontsMode = tcMode(fingerprintConfig.Fonts) || fingerprintConfig.FontsMode || fingerprintConfig.Fonts?.Mode;
 
                 const secValues = {
@@ -1693,7 +1693,7 @@
             const profileData = {
                 Profile: {
                     ProfileID: String(this._editProfileId),
-                    ProfileName: v.name || this._originalProfileData?.Name || '',
+                    Profilename: (typeof v.name === 'string' && v.name.trim() === '') ? '' : (v.name || this._originalProfileData?.Name || ''),
                     StartURL: v.startUrl || ''
                 },
                 System: {
@@ -1718,9 +1718,9 @@
                         ? { Mode: 'real', Value: null }
                         : { Mode: 'noise', Value: v.timezone === 'auto' ? null : (v.timezone || null) },
                     // Hardware fields: TypedConfig<int>
-                    // Real mode â†’ Mode='real', Value=null (no spoof, browser uses real hardware)
-                    // Custom mode â†’ Mode='noise', Value=user-selected values
-                    // Random mode â†’ Mode='noise', Value=null (browser generates random internally)
+                    // Real mode   -->  Mode='real', Value=null (no spoof, browser uses real hardware)
+                    // Custom mode   -->  Mode='noise', Value=user-selected values
+                    // Random mode   -->  Mode='noise', Value=null (browser generates random internally)
                     HardwareConcurrency: v.cpuMode === 'real'
                         ? { Mode: 'real', Value: null }
                         : { Mode: 'noise', Value: v.concurrency || null },
@@ -1737,7 +1737,7 @@
                     },
                     Languages: v.languages?.length > 0 ? v.languages : (origSys.Languages?.length > 0 ? origSys.Languages : ['en-US', 'en']),
                     Screen: {
-                        // Real mode â†’ no Width/Height/PixelRatio spoofing
+                        // Real mode   -->  no Width/Height/PixelRatio spoofing
                         Mode: v.screenMode === 'real' ? 'real' : (v.screenMode || 'real'),
                         Width: v.screenMode === 'real' ? null : (v.screenWidth || null),
                         Height: v.screenMode === 'real' ? null : (v.screenHeight || null),
@@ -1825,13 +1825,7 @@
                     PortBlockList: v.portBlockList?.length > 0 ? v.portBlockList : (origSec.PortBlockList || null)
                 },
                 Location: this._buildLocationConfigWithOrig(v, origLoc),
-                UI: {
-                    Mode: 'GUI',
-                    WindowSize: {
-                        Width: v.screenWidth || 1920,
-                        Height: v.screenHeight || 1080
-                    }
-                }
+                // UI config (Mode, Headless, WindowSize) is generated dynamically at runtime by DuckBrowserManager
             };
 
             console.log('[CreateProfile] _buildUpdatePayload - profileData to save:', JSON.stringify(profileData, null, 2));
@@ -1848,7 +1842,7 @@
 
             return {
                 id: this._editProfileId,
-                name: v.name || this._originalProfileData?.Name || '',
+                name: (typeof v.name === 'string' && v.name.trim() === '') ? '' : (v.name || this._originalProfileData?.Name || ''),
                 groupId,
                 tagIds: tagIds.length ? tagIds : null,
                 proxyId: v.savedProxyId || null,
@@ -1904,7 +1898,7 @@
                     Accuracy: v.customCoordinates.accuracy || 100
                 };
             }
-            // Real mode â†’ no coordinates spoofing
+            // Real mode   -->  no coordinates spoofing
             if (mode === 'real') {
                 return {
                     Mode: 'real',
@@ -1914,7 +1908,7 @@
                     Accuracy: null
                 };
             }
-            // noise or default mode â†’ clear coordinates (no spoof)
+            // noise or default mode   -->  clear coordinates (no spoof)
             return {
                 Mode: 'noise',
                 Access: access,
@@ -1937,7 +1931,7 @@
                     Accuracy: v.customCoordinates.accuracy || 100
                 };
             }
-            // Real mode â†’ no coordinates spoofing
+            // Real mode   -->  no coordinates spoofing
             if (mode === 'real') {
                 return {
                     Mode: 'real',
@@ -1947,7 +1941,7 @@
                     Accuracy: null
                 };
             }
-            // noise or default mode â†’ clear coordinates (no spoof)
+            // noise or default mode   -->  clear coordinates (no spoof)
             return {
                 Mode: 'noise',
                 Access: access,
@@ -2203,27 +2197,27 @@
                 summaryList.appendChild(row);
             };
             
-            addSummaryItem('Start URL', 'â€”');
-            addSummaryItem('Group', 'â€”');
-            addSummaryItem('Tags', 'â€”');
-            addSummaryItem('Operating System', 'â€”');
-            addSummaryItem('OS Model', 'â€”');
-            addSummaryItem('Browser', 'â€”');
-            addSummaryItem('User Agent', 'â€”');
-            addSummaryItem('Screen Resolution', 'â€”');
-            addSummaryItem('Timezone', 'â€”');
-            addSummaryItem('Language', 'â€”');
-            addSummaryItem('Proxy', 'â€”');
-            addSummaryItem('Coordinates', 'â€”');
-            addSummaryItem('Hardware', 'â€”');
-            addSummaryItem('WebGL', 'â€”');
-            addSummaryItem('Fonts', 'â€”');
-            addSummaryItem('WebRTC', 'â€”');
-            addSummaryItem('SSL', 'â€”');
-            addSummaryItem('Ports', 'â€”');
-            addSummaryItem('Media', 'â€”');
-            addSummaryItem('Speech', 'â€”');
-            addSummaryItem('Rects', 'â€”');
+            addSummaryItem('Start URL', '—');
+            addSummaryItem('Group', '—');
+            addSummaryItem('Tags', '—');
+            addSummaryItem('Operating System', '—');
+            addSummaryItem('OS Model', '—');
+            addSummaryItem('Browser', '—');
+            addSummaryItem('User Agent', '—');
+            addSummaryItem('Screen Resolution', '—');
+            addSummaryItem('Timezone', '—');
+            addSummaryItem('Language', '—');
+            addSummaryItem('Proxy', '—');
+            addSummaryItem('Coordinates', '—');
+            addSummaryItem('Hardware', '—');
+            addSummaryItem('WebGL', '—');
+            addSummaryItem('Fonts', '—');
+            addSummaryItem('WebRTC', '—');
+            addSummaryItem('SSL', '—');
+            addSummaryItem('Ports', '—');
+            addSummaryItem('Media', '—');
+            addSummaryItem('Speech', '—');
+            addSummaryItem('Rects', '—');
 
             summaryWrap.appendChild(summaryList);
             rightPane.appendChild(summaryWrap);
@@ -2242,36 +2236,20 @@
             };
             set('Operating System', fp.platform || null);
             set('Browser', `Chromium ${fp.browserVersion || null}`);
-            set('User Agent', fp.userAgent ? fp.userAgent.substring(0, 40) + '...' : 'â€”');
-            set('Screen Resolution', fp.screen || 'â€”');
+            set('User Agent', fp.userAgent ? fp.userAgent.substring(0, 40) + '...' : '—');
+            set('Screen Resolution', fp.screen || '—');
             set('Timezone', fp.timezone || 'Auto');
-            set('Language', fp.languages || 'â€”');
-            set('Hardware', fp.hardware || 'â€”');
+            set('Language', fp.languages || '—');
+            set('Hardware', fp.hardware || '—');
             set('WebGL', `${fp.webglVendor || ''} / ${fp.webglRenderer || ''}`);
         }
     });
 
-    // â”€â”€ Language display labels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    const _LANG_LABELS = {
-        'en-US': 'English (US)', 'en-GB': 'English (UK)', 'en-AU': 'English (Australia)',
-        'en-CA': 'English (Canada)', 'en-IN': 'English (India)',
-        'de-DE': 'German (Germany)', 'de-AT': 'German (Austria)', 'de-CH': 'German (Swiss)',
-        'fr-FR': 'French (France)', 'fr-CA': 'French (Canada)', 'fr-BE': 'French (Belgium)',
-        'es-ES': 'Spanish (Spain)', 'es-MX': 'Spanish (Mexico)', 'es-AR': 'Spanish (Argentina)',
-        'pt-BR': 'Portuguese (Brazil)', 'pt-PT': 'Portuguese (Portugal)',
-        'it-IT': 'Italian', 'nl-NL': 'Dutch', 'pl-PL': 'Polish',
-        'cs-CZ': 'Czech', 'hu-HU': 'Hungarian', 'ro-RO': 'Romanian',
-        'ru-RU': 'Russian', 'uk-UA': 'Ukrainian', 'tr-TR': 'Turkish',
-        'ar-SA': 'Arabic', 'he-IL': 'Hebrew',
-        'ja-JP': 'Japanese', 'ko-KR': 'Korean', 'zh-CN': 'Chinese (Simplified)',
-        'zh-TW': 'Chinese (Traditional)', 'zh-HK': 'Chinese (Hong Kong)',
-        'th-TH': 'Thai', 'vi-VN': 'Vietnamese', 'id-ID': 'Indonesian',
-        'ms-MY': 'Malay', 'tl-PH': 'Filipino'
-    };
-
+    // ===== Language display labels =====
     // Auto-init
     window.ProfileModals.CreateProfile._init();
 })();
+
 
 
 

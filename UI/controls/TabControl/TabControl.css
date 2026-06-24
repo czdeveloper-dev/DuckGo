@@ -150,3 +150,23 @@
     color: var(--text-primary);
 }
 
+
+/* Custom scrollbar for TabControl */
+.duck-tabcontrol-list::-webkit-scrollbar,
+.duck-tabcontrol-pane::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.duck-tabcontrol-list::-webkit-scrollbar-track,
+.duck-tabcontrol-pane::-webkit-scrollbar-track {
+    background: transparent;
+}
+.duck-tabcontrol-list::-webkit-scrollbar-thumb,
+.duck-tabcontrol-pane::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 4px;
+}
+.duck-tabcontrol-list::-webkit-scrollbar-thumb:hover,
+.duck-tabcontrol-pane::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}

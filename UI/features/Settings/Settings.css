@@ -146,7 +146,7 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--bg-surface);
     top: 2px;
     left: 2px;
     transition: all var(--t);
