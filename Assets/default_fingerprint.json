@@ -310,7 +310,6 @@
         { "EffectiveType": "3g", "Downlink": 0.75, "Rtt": 250 }
       ]
     },
-    "StorageQuota": 549755813888,
     "TLS": {
       "Os": "macos",
       "CipherList": [
@@ -400,7 +399,6 @@
         { "EffectiveType": "3g", "Downlink": 0.75, "Rtt": 250 }
       ]
     },
-    "StorageQuota": 274877906944,
     "TLS": {
       "Os": "linux",
       "CipherList": [
